@@ -1,0 +1,524 @@
+/* TipTap Editor Typography Styles - Shadcn UI Compatible */
+
+.prose {
+  color: var(--foreground);
+  max-width: none;
+  line-height: 1.7;
+  font-size: 14px;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  letter-spacing: -0.025em;
+}
+
+.prose h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3em;
+}
+
+.prose h2 {
+  font-size: 1.5em;
+}
+
+.prose h3 {
+  font-size: 1.25em;
+}
+
+.prose h4 {
+  font-size: 1.125em;
+}
+
+.prose p {
+  color: var(--foreground);
+  margin: 0.75em 0;
+}
+
+.prose strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.prose em {
+  color: var(--foreground);
+  font-style: italic;
+}
+
+.prose code {
+  background-color: var(--muted);
+  color: var(--foreground);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.prose pre {
+  background-color: var(--muted);
+  color: var(--foreground);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  margin: 1em 0;
+  position: relative;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875em;
+  border: none;
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 1rem;
+  color: var(--muted-foreground);
+  font-style: italic;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, transparent 100%);
+  padding: 1rem 1rem 1rem 1.5rem;
+  margin: 1em 0;
+  border-radius: 0 0.375rem 0.375rem 0;
+  position: relative;
+}
+
+.prose blockquote::before {
+  content: '"';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  font-size: 2em;
+  color: var(--primary);
+  opacity: 0.3;
+  font-family: serif;
+}
+
+.prose ul, .prose ol {
+  color: var(--foreground);
+  padding-left: 1.5rem;
+  margin: 0.75em 0;
+}
+
+.prose li {
+  margin: 0.25em 0;
+  padding-left: 0.25rem;
+}
+
+.prose ul li::marker {
+  color: var(--primary);
+}
+
+.prose ol li::marker {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.prose th, .prose td {
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  background: linear-gradient(135deg, var(--muted) 0%, rgba(0, 0, 0, 0.05) 100%);
+  font-weight: 600;
+  color: var(--foreground);
+  position: relative;
+}
+
+.prose th::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.prose tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.prose tr:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+/* Focus and selection styles */
+.ProseMirror-focused {
+  outline: none;
+}
+
+.ProseMirror-selectednode {
+  outline: 2px solid var(--primary);
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Custom scrollbar for code blocks */
+.prose pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.prose pre::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 3px;
+}
+
+.prose pre::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.prose pre::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Link styling */
+.prose a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 130, 246, 0.3);
+  transition: all 0.2s ease;
+}
+
+.prose a:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
+}
+
+/* Image styling */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.prose img:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+}
+
+/* Text color and highlighting */
+.prose [style*="color"] {
+  color: inherit;
+}
+
+.prose mark {
+  background-color: rgba(255, 255, 0, 0.3);
+  border-radius: 0.125rem;
+  padding: 0.125rem 0.25rem;
+  margin: 0 -0.25rem;
+}
+
+/* Support for different highlight colors */
+.prose mark[data-color] {
+  background-color: inherit;
+}
+
+/* Font size variations */
+.prose [style*="font-size"] {
+  font-size: inherit;
+}
+
+/* Font family styling */
+.prose [style*="font-family"] {
+  font-family: inherit;
+}
+
+/* Text alignment styling */
+.prose [style*="text-align:left"],
+.prose [style*="text-align:left"] * {
+  text-align: left !important;
+}
+
+.prose [style*="text-align:center"],
+.prose [style*="text-align:center"] * {
+  text-align: center !important;
+}
+
+.prose [style*="text-align:right"],
+.prose [style*="text-align:right"] * {
+  text-align: right !important;
+}
+
+.prose [style*="text-align:justify"],
+.prose [style*="text-align:justify"] * {
+  text-align: justify !important;
+}
+
+/* Firefox fix for justify alignment with pre-wrap */
+.prose [style*="text-align:justify"] {
+  white-space: normal !important;
+}
+
+/* Drag handle styling */
+.ProseMirror .drag-handle {
+  position: absolute;
+  left: -1.5rem;
+  top: 0;
+  width: 1rem;
+  height: 1.5rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ProseMirror:hover .drag-handle {
+  opacity: 0.7;
+}
+
+.ProseMirror .drag-handle:hover {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.ProseMirror .drag-handle svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: var(--foreground);
+}
+
+/* Enhanced placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--muted-foreground);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Better focus states */
+.ProseMirror-focused {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Table controls styling */
+.table-controls {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.table-controls .table-control-btn {
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.table-controls .table-control-btn:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.table-controls .table-control-btn.destructive:hover {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* Menubar styling for toolbar integration */
+.tiptap-menubar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  height: 32px;
+}
+
+.tiptap-menubar [data-radix-menubar-trigger] {
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  height: 32px;
+  padding: 0 0.5rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.tiptap-menubar [data-radix-menubar-trigger]:hover,
+.tiptap-menubar [data-radix-menubar-trigger][data-state="open"] {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.tiptap-menubar [data-radix-menu-content] {
+  min-width: 180px;
+}
+
+.tiptap-menubar [data-radix-menu-item] {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+/* Drag handle styling */
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: grab;
+  opacity: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.drag-handle:hover {
+  background: var(--accent);
+  opacity: 1 !important;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+/* Show drag handle on hover over editor content */
+.ProseMirror:hover .drag-handle {
+  opacity: 0.7;
+}
+
+/* Hide drag handle in readonly mode */
+.ProseMirror[contenteditable="false"] .drag-handle {
+  display: none;
+}
+
+/* Table of contents styling */
+.toc-content {
+  max-height: 60vh;
+  overflow-y: auto;
+  border-radius: 0.375rem;
+}
+
+.toc-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toc-content::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.toc-content::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 2px;
+}
+
+.toc-content::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Table of contents panel improvements */
+.toc-panel {
+  background: var(--background);
+  border-left: 1px solid var(--border);
+  min-height: 100%;
+}
+
+.toc-panel h3 {
+  color: var(--foreground);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.toc-item {
+  transition: all 0.2s ease;
+  border-radius: 0.25rem;
+  margin-bottom: 0.125rem;
+}
+
+.toc-item:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.toc-item.active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 500;
+}
+
+/* TOC Layout Management */
+.toc-open-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 0;
+}
+
+.toc-open-layout .main-content-area {
+  /* Editor content takes the first grid column */
+  grid-column: 1;
+}
+
+.toc-open-layout .toc-panel {
+  /* TOC takes the second grid column */
+  grid-column: 2;
+  border-left: 1px solid var(--border);
+}
+
+/* Ensure toolbar spans the full width when TOC is open */
+.toc-open-layout .sticky {
+  grid-column: 1 / -1; /* Span all columns */
+  z-index: 30;
+}
+
+/* Heading styles for TOC generation */
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3 {
+  position: relative;
+}
+
+.ProseMirror h1[data-toc-id],
+.ProseMirror h2[data-toc-id],
+.ProseMirror h3[data-toc-id] {
+  scroll-margin-top: 2rem;
+}

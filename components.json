@@ -1,0 +1,33 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "app": "@/app",
+    "auth": "@/app/auth",
+    "admin": "@/app/auth/admin",
+    "database": "@/app/auth/admin/database",
+    "users": "@/app/auth/admin/users",
+    "settings": "@/app/auth/admin/settings",
+    "audit": "@/app/auth/admin/audit",
+    "dashboard": "@/app/auth/admin/dashboard",
+    "profile": "@/app/auth/admin/profile",
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks",
+    "scripts": "@/scripts",
+    "middlewares": "@/middlewares"
+  },
+  "registries": {}
+}

@@ -110,16 +110,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-4 p-4 pt-6">
       {/* Welcome Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
-        <p className="text-muted-foreground">
-          {t("dashboard.welcome_back", { name: user.name || user.email })}
-        </p>
-      </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
+            <p className="text-muted-foreground">
+              {t("dashboard.welcome_back", { name: user.name || user.email })}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
               <CheckCircle className="h-3 w-3 mr-1" />
@@ -182,10 +182,9 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${
-              (monitoringData?.metrics.cpuUsage ?? 0) > 80 ? 'text-red-600' :
+            <div className={`text-2xl font-bold ${(monitoringData?.metrics.cpuUsage ?? 0) > 80 ? 'text-red-600' :
               (monitoringData?.metrics.cpuUsage ?? 0) > 60 ? 'text-yellow-600' : 'text-green-600'
-            }`}>
+              }`}>
               {monitoringData?.metrics.cpuUsage ?? 0}%
             </div>
             <p className="text-xs text-muted-foreground">
@@ -208,13 +207,13 @@ export default function Dashboard() {
             {/* User Profile */}
             <Card className="col-span-4">
               <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                {t("profile.user_profile")}
-              </CardTitle>
-              <CardDescription>
-                {t("profile.user_profile_desc")}
-              </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  {t("profile.user_profile")}
+                </CardTitle>
+                <CardDescription>
+                  {t("profile.user_profile_desc")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-4">
@@ -254,10 +253,10 @@ export default function Dashboard() {
             {/* Quick Actions */}
             <Card className="col-span-3">
               <CardHeader>
-              <CardTitle>{t("actions.quick_actions")}</CardTitle>
-              <CardDescription>
-                {t("actions.common_tasks")}
-              </CardDescription>
+                <CardTitle>{t("actions.quick_actions")}</CardTitle>
+                <CardDescription>
+                  {t("actions.common_tasks")}
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button variant="default" className="w-full justify-start" size="sm">

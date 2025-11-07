@@ -129,7 +129,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 pt-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t("profile.title")}</h1>
         <p className="text-muted-foreground">

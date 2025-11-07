@@ -128,34 +128,63 @@ export default function BlogPostsPage() {
                 // Use Appwrite native pagination when no filters
                 const paginationParams = createPaginationParams(currentPage, pageSize);
                 
-                // Get total count
-                const countResponse = await tablesDB.listRows({
-                    databaseId: DATABASE_ID,
-                    tableId: BLOG_POSTS_COLLECTION_ID,
-                });
-                setTotalPosts(countResponse.rows.length);
+                // Ensure limit and offset are valid numbers
+                const limit = paginationParams.limit || DEFAULT_PAGE_SIZE;
+                const offset = paginationParams.offset || 0;
                 
-                // Get paginated data with sorting
-                const postsData = await tablesDB.listRows({
-                    databaseId: DATABASE_ID,
-                    tableId: BLOG_POSTS_COLLECTION_ID,
-                    queries: [
-                        `limit(${paginationParams.limit})`,
-                        `offset(${paginationParams.offset})`,
-                        `orderDesc("$updatedAt")`
-                    ]
-                });
-                
-                const sortedPosts = postsData.rows
-                    .map((row: any) => ({
-                        ...row,
-                        tags: Array.isArray(row.tags) ? row.tags : [],
-                        seoKeywords: Array.isArray(row.seoKeywords) ? row.seoKeywords : [],
-                        relatedPosts: Array.isArray(row.relatedPosts) ? row.relatedPosts : [],
-                    }));
-                
-                setPosts(sortedPosts);
-                setAllPosts(sortedPosts); // For stats display
+                try {
+                    // Try to use Appwrite native pagination with queries
+                    const countResponse = await tablesDB.listRows({
+                        databaseId: DATABASE_ID,
+                        tableId: BLOG_POSTS_COLLECTION_ID,
+                    });
+                    setTotalPosts(countResponse.rows.length);
+                    
+                    const postsData = await tablesDB.listRows({
+                        databaseId: DATABASE_ID,
+                        tableId: BLOG_POSTS_COLLECTION_ID,
+                        queries: [
+                            `limit(${limit})`,
+                            `offset(${offset})`,
+                            `orderDesc("$updatedAt")`
+                        ]
+                    });
+                    
+                    const sortedPosts = postsData.rows
+                        .map((row: any) => ({
+                            ...row,
+                            tags: Array.isArray(row.tags) ? row.tags : [],
+                            seoKeywords: Array.isArray(row.seoKeywords) ? row.seoKeywords : [],
+                            relatedPosts: Array.isArray(row.relatedPosts) ? row.relatedPosts : [],
+                        }));
+                    
+                    setPosts(sortedPosts);
+                    setAllPosts(sortedPosts); // For stats display
+                } catch (queryError: any) {
+                    // Fallback: Load all data and paginate client-side if query fails
+                    console.warn('Appwrite query failed, falling back to client-side pagination:', queryError);
+                    
+                    const allPostsData = await tablesDB.listRows({
+                        databaseId: DATABASE_ID,
+                        tableId: BLOG_POSTS_COLLECTION_ID,
+                    });
+                    
+                    const allSortedPosts = allPostsData.rows
+                        .map((row: any) => ({
+                            ...row,
+                            tags: Array.isArray(row.tags) ? row.tags : [],
+                            seoKeywords: Array.isArray(row.seoKeywords) ? row.seoKeywords : [],
+                            relatedPosts: Array.isArray(row.relatedPosts) ? row.relatedPosts : [],
+                        }))
+                        .sort((a: any, b: any) => new Date(b.$updatedAt).getTime() - new Date(a.$updatedAt).getTime());
+                    
+                    setTotalPosts(allSortedPosts.length);
+                    setAllPosts(allSortedPosts);
+                    
+                    // Apply client-side pagination
+                    const paginatedPosts = allSortedPosts.slice(offset, offset + limit);
+                    setPosts(paginatedPosts);
+                }
             }
             
             setError(null);
@@ -296,7 +325,7 @@ export default function BlogPostsPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="flex-1 space-y-4 p-4 pt-6">
             {/* Header */}
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">

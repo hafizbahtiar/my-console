@@ -236,7 +236,7 @@ export default function AuditPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 space-y-4 p-4 pt-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

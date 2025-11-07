@@ -459,7 +459,7 @@ export default function BlogCategoriesPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="flex-1 space-y-4 p-4 pt-6">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
@@ -469,7 +469,7 @@ export default function BlogCategoriesPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="flex-1 space-y-4 p-4 pt-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Blog Categories</h1>

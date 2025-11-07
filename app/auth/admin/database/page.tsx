@@ -439,10 +439,19 @@ export default function DatabasePage() {
     setIsRefreshing(true);
 
     try {
+      // Get CSRF token first
+      const csrfResponse = await fetch('/api/csrf-token');
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      const { token } = await csrfResponse.json();
+
+      // Make backup request with CSRF token
       const response = await fetch('/api/backup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-csrf-token': token,
         },
       });
 

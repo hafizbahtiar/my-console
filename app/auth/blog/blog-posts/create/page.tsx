@@ -433,7 +433,7 @@ export default function CreateBlogPostPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 space-y-4 p-4 pt-6">
       {/* Breadcrumb Navigation */}
       <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 py-3">

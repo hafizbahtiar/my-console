@@ -80,7 +80,7 @@ export default function CommunityPostsPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    
+
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -108,15 +108,15 @@ export default function CommunityPostsPage() {
     const loadPosts = async () => {
         try {
             setIsRefreshing(true);
-            
+
             const needsAllData = searchTerm || statusFilter !== 'all';
-            
+
             if (needsAllData) {
                 const allPostsData = await tablesDB.listRows({
                     databaseId: DATABASE_ID,
                     tableId: COMMUNITY_POSTS_COLLECTION_ID,
                 });
-                
+
                 const allSortedPosts = allPostsData.rows
                     .map((row: any) => ({
                         ...row,
@@ -128,11 +128,11 @@ export default function CommunityPostsPage() {
                 setAllPosts(allSortedPosts);
             } else {
                 const paginationParams = createPaginationParams(currentPage, pageSize);
-                
+
                 // Ensure limit and offset are valid numbers
                 const limit = paginationParams.limit || DEFAULT_PAGE_SIZE;
                 const offset = paginationParams.offset || 0;
-                
+
                 try {
                     // Try to use Appwrite native pagination with queries
                     const countResponse = await tablesDB.listRows({
@@ -140,7 +140,7 @@ export default function CommunityPostsPage() {
                         tableId: COMMUNITY_POSTS_COLLECTION_ID,
                     });
                     setTotalPosts(countResponse.rows.length);
-                    
+
                     const postsData = await tablesDB.listRows({
                         databaseId: DATABASE_ID,
                         tableId: COMMUNITY_POSTS_COLLECTION_ID,
@@ -150,13 +150,13 @@ export default function CommunityPostsPage() {
                             `orderDesc("$updatedAt")`
                         ]
                     });
-                    
+
                     const sortedPosts = postsData.rows
                         .map((row: any) => ({
                             ...row,
                             tags: Array.isArray(row.tags) ? row.tags : [],
                         }));
-                    
+
                     setPosts(sortedPosts);
                     setAllPosts(sortedPosts);
                 } catch (queryError: any) {
@@ -166,37 +166,37 @@ export default function CommunityPostsPage() {
                         databaseId: DATABASE_ID,
                         tableId: COMMUNITY_POSTS_COLLECTION_ID,
                     });
-                    
+
                     const allSortedPosts = allPostsData.rows
                         .map((row: any) => ({
                             ...row,
                             tags: Array.isArray(row.tags) ? row.tags : [],
                         }))
                         .sort((a: any, b: any) => new Date(b.$updatedAt || b.$createdAt || 0).getTime() - new Date(a.$updatedAt || a.$createdAt || 0).getTime());
-                    
+
                     setTotalPosts(allSortedPosts.length);
                     setAllPosts(allSortedPosts);
-                    
+
                     // Apply pagination client-side
                     const paginatedPosts = allSortedPosts.slice(offset, offset + limit);
                     setPosts(paginatedPosts);
                 }
             }
-            
+
             setError(null);
         } catch (err: any) {
             console.error('Failed to load community posts:', err);
-            
+
             // Check for authorization errors
-            const isAuthError = err?.code === 401 || 
-                               err?.code === 403 || 
-                               err?.message?.includes('not authorized') ||
-                               err?.message?.includes('authorized') ||
-                               err?.type === 'AppwriteException';
-            
+            const isAuthError = err?.code === 401 ||
+                err?.code === 403 ||
+                err?.message?.includes('not authorized') ||
+                err?.message?.includes('authorized') ||
+                err?.type === 'AppwriteException';
+
             if (isAuthError) {
-                const errorMsg = t('community.posts.auth_error', { 
-                    defaultValue: 'You do not have permission to access community posts. Please contact an administrator to set up the required permissions.' 
+                const errorMsg = t('community.posts.auth_error', {
+                    defaultValue: 'You do not have permission to access community posts. Please contact an administrator to set up the required permissions.'
                 });
                 setError(errorMsg);
                 toast.error(errorMsg);
@@ -204,7 +204,7 @@ export default function CommunityPostsPage() {
                 setError(t('general_use.error'));
                 toast.error(t('general_use.error'));
             }
-            
+
             // Set empty arrays to prevent further errors
             setPosts([]);
             setAllPosts([]);
@@ -267,7 +267,7 @@ export default function CommunityPostsPage() {
 
     // Determine if we need to filter
     const needsFiltering = searchTerm || statusFilter !== 'all';
-    
+
     // Filter all posts first, then paginate
     const filteredAllPosts = needsFiltering ? allPosts.filter(post => {
         const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -276,17 +276,17 @@ export default function CommunityPostsPage() {
         const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
         return matchesSearch && matchesStatus;
     }) : allPosts;
-    
+
     // Apply pagination to filtered results
     const paginationParams = createPaginationParams(currentPage, pageSize);
     const filteredPosts = needsFiltering ? filteredAllPosts.slice(
         paginationParams.offset || 0,
         (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
     ) : posts;
-    
+
     const totalFilteredPosts = filteredAllPosts.length;
     const totalPages = getTotalPages(totalFilteredPosts, pageSize);
-    
+
     // Reset to page 1 when filters change
     useEffect(() => {
         if (currentPage > 1 && needsFiltering) {
@@ -308,7 +308,7 @@ export default function CommunityPostsPage() {
 
     if (isLoading) {
         return (
-            <div className="space-y-8">
+            <div className="flex-1 space-y-4 p-4 pt-6">
                 <div className="space-y-2">
                     <Skeleton className="h-9 w-64" />
                     <Skeleton className="h-6 w-96" />
@@ -342,7 +342,7 @@ export default function CommunityPostsPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="flex-1 space-y-4 p-4 pt-6">
             {/* Header */}
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
@@ -501,7 +501,7 @@ export default function CommunityPostsPage() {
                         {t("community.posts.title")} ({totalFilteredPosts})
                     </CardTitle>
                     <CardDescription>
-                        {t("community.posts.manage_content")} - {t("general_use.showing_entries_paginated", { 
+                        {t("community.posts.manage_content")} - {t("general_use.showing_entries_paginated", {
                             showing: filteredPosts.length.toString(),
                             filtered: totalFilteredPosts.toString(),
                             total: allPosts.length.toString()
@@ -679,7 +679,7 @@ export default function CommunityPostsPage() {
                                 <MessageSquare className="h-12 w-12 text-muted-foreground" />
                             </div>
                             <h3 className="text-xl font-semibold mb-2">
-                                {error && error.includes('permission') 
+                                {error && error.includes('permission')
                                     ? t("community.posts.auth_error_title", { defaultValue: "Permission Denied" })
                                     : t("community.posts.no_posts_found")
                                 }
@@ -688,8 +688,8 @@ export default function CommunityPostsPage() {
                                 {error && error.includes('permission')
                                     ? error
                                     : searchTerm || statusFilter !== 'all'
-                                    ? t("community.posts.adjust_filters")
-                                    : t("community.posts.create_first_post")
+                                        ? t("community.posts.adjust_filters")
+                                        : t("community.posts.create_first_post")
                                 }
                             </p>
                             {(!searchTerm && statusFilter === 'all' && !error) && (
@@ -702,7 +702,7 @@ export default function CommunityPostsPage() {
                             )}
                         </div>
                     )}
-                    
+
                     {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="border-t p-4">
@@ -721,7 +721,7 @@ export default function CommunityPostsPage() {
                                             className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
                                         />
                                     </PaginationItem>
-                                    
+
                                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                         let pageNum: number;
                                         if (totalPages <= 5) {
@@ -733,7 +733,7 @@ export default function CommunityPostsPage() {
                                         } else {
                                             pageNum = currentPage - 2 + i;
                                         }
-                                        
+
                                         return (
                                             <PaginationItem key={pageNum}>
                                                 <PaginationLink
@@ -750,13 +750,13 @@ export default function CommunityPostsPage() {
                                             </PaginationItem>
                                         );
                                     })}
-                                    
+
                                     {totalPages > 5 && currentPage < totalPages - 2 && (
                                         <PaginationItem>
                                             <PaginationEllipsis />
                                         </PaginationItem>
                                     )}
-                                    
+
                                     <PaginationItem>
                                         <PaginationNext
                                             href="#"

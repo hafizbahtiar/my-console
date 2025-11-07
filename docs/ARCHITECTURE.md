@@ -81,7 +81,9 @@ my-console/
 │   │   │   │       ├── types.ts                # TypeScript types
 │   │   │   │       └── utils.ts                # Utility functions
 │   │   │   ├── dashboard/        # Dashboard components
-│   │   │   └── sidebar-nav.tsx  # Navigation sidebar
+│   │   │   └── sidebar-nav.tsx  # Navigation sidebar with logo
+│   │   ├── primary-color-init.tsx # Primary color initialization
+│   │   ├── error-handler-init.tsx  # Global error handler setup
 │   │   └── login.tsx            # Login form component
 │   ├── custom/                   # Custom reusable components
 │   │   └── status-badge.tsx      # Advanced status badge
@@ -111,6 +113,18 @@ my-console/
 ```
 
 ## 🔐 Security Architecture
+
+### Root Layout Initialization
+
+The root layout (`app/layout.tsx`) includes client-side initialization components that run on app startup:
+
+1. **PrimaryColorInit**: Loads saved primary color from localStorage and applies it immediately, ensuring user preferences are restored on page load
+2. **ErrorHandlerInit**: Sets up global error handlers for unhandled promise rejections and errors
+
+These components ensure:
+- User preferences (primary color) are applied before first render
+- Global error handling is active from app startup
+- No server-side execution of client-only code
 
 ### Authentication Flow
 
@@ -151,6 +165,8 @@ sequenceDiagram
 - **Secure Tokens**: Appwrite-managed session handling
 - **Auto-Refresh**: Automatic session validation
 - **Logout Tracking**: Secure session termination with audit
+- **CORS Error Handling**: Comprehensive CORS error detection with helpful console messages and configuration guidance
+- **Error Recovery**: Graceful handling of network and authentication errors
 
 ## 🌍 Internationalization Architecture
 
@@ -427,7 +443,7 @@ const [formData, setFormData] = useState({
 - **Advanced Components**: Charts, Tables, Forms
 
 #### Application Layer
-- **Auth Components**: Login form, protected layouts, sidebar navigation
+- **Auth Components**: Login form, protected layouts, sidebar navigation with logo
 - **Dashboard Components**: Activity feeds, statistics, monitoring
 - **Admin Components**: Audit viewers, database management, security settings
 - **Blog Components**: Post management, category/tag management
@@ -438,6 +454,9 @@ const [formData, setFormData] = useState({
   - **Dialog Components**: Reusable confirmation dialogs
   - **Picker Components**: Visual selection components (icons with search)
   - **Utility Functions**: Shared logic (slug generation, validation)
+- **Initialization Components**: Client-side setup components
+  - **PrimaryColorInit**: Loads and applies primary color from localStorage on app startup
+  - **ErrorHandlerInit**: Sets up global error handlers (unhandled rejections, errors)
 
 ### Component Patterns
 
@@ -473,6 +492,16 @@ This pattern reduces code duplication, improves maintainability, and enables com
 - **Manual**: User toggle in settings
 - **Persistent**: localStorage storage
 - **CSS-in-JS**: Dynamic variable updates
+- **Primary Color Customization**: User-selectable primary accent colors with theme-aware variants
+- **Auto-initialization**: Primary color loaded from localStorage on app startup via `PrimaryColorInit` component
+
+#### SEO & Metadata
+- **Enhanced Metadata**: Comprehensive OpenGraph, Twitter Card, and structured data (JSON-LD)
+- **Dynamic Titles**: Template-based page titles with fallback
+- **Social Sharing**: Optimized images and descriptions for social platforms
+- **Structured Data**: Schema.org WebApplication markup for search engines
+- **Canonical URLs**: Proper canonical link management
+- **Theme Color**: Dynamic theme color based on light/dark mode
 
 ## 🚀 Performance Architecture
 
@@ -492,6 +521,8 @@ This pattern reduces code duplication, improves maintainability, and enables com
 - **Context Optimization**: Minimal re-renders on state changes
 - **Rate Limiting**: Prevents API spam and performance issues
 - **Error Boundaries**: Graceful error handling without crashes
+- **Client-side Initialization**: Error handlers and theme initialization only on client mount
+- **Auto-save Pattern**: Settings update immediately without save buttons for better UX
 
 ### Build Optimization
 

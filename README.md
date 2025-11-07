@@ -24,9 +24,12 @@ My Console is a full-featured admin dashboard application with:
 - **🌍 Internationalization**: Multi-language support (English & Malay)
 - **🎨 Modern UI**: Complete shadcn/ui component library (47+ components)
 - **🌓 Dark Mode**: Built-in theme switching with system preference detection
+- **🎨 Customizable Theme**: User-selectable primary accent colors with theme-aware variants
 - **📱 Responsive Design**: Mobile-first approach with adaptive layouts
 - **📦 Automated Backups**: Cron-based data exports with daily replacement strategy
 - **📝 Blog Management**: Full-featured CMS with rich text editor, SEO optimization, and content analytics
+- **🔍 SEO Optimized**: Comprehensive metadata, OpenGraph tags, Twitter Cards, and structured data
+- **⚡ Auto-save Settings**: Immediate settings updates without save buttons
 
 ### ✨ Key Features
 
@@ -54,6 +57,14 @@ My Console is a full-featured admin dashboard application with:
 - **Browser Detection**: Automatic language detection based on browser settings
 - **Persistent Preferences**: Language settings saved to localStorage
 - **Fallback System**: Graceful fallback to English when translations are missing
+- **Immediate Updates**: Language changes apply instantly with user feedback
+
+#### 🎨 Theme & Customization
+- **Dark Mode**: Built-in theme switching with system preference detection
+- **Primary Color Customization**: 9 color options (default, blue, green, purple, red, orange, pink, cyan, amber)
+- **Theme-aware Colors**: Automatic light/dark variants for each color
+- **Auto-initialization**: User preferences loaded on app startup
+- **Persistent Settings**: All theme preferences saved to localStorage
 
 #### 🎨 UI/UX Components
 - **shadcn/ui Library**: Complete component library with 47+ components
@@ -71,6 +82,23 @@ My Console is a full-featured admin dashboard application with:
 - **Backup History**: Complete backup history with delete functionality using actual backup logs
 - **Activity Tracking**: Real-time audit log integration with live user activity
 - **System Health**: Dynamic database performance and connection monitoring metrics
+
+#### 🔍 SEO & Metadata
+- **Enhanced Metadata**: Comprehensive OpenGraph, Twitter Card, and structured data (JSON-LD)
+- **Dynamic Titles**: Template-based page titles with fallback
+- **Social Sharing**: Optimized images and descriptions for social platforms
+- **Structured Data**: Schema.org WebApplication markup for search engines
+- **Canonical URLs**: Proper canonical link management
+- **Theme Color**: Dynamic theme color based on light/dark mode
+
+#### ⚙️ Settings & Preferences
+- **Auto-save Pattern**: All settings update immediately without save buttons
+- **Theme Selection**: Light, dark, or system preference
+- **Primary Color**: Visual color picker with theme-aware preview
+- **Language Selection**: Instant language switching with feedback
+- **Notification Preferences**: Toggle push notifications and email updates
+- **Security Settings**: Two-factor authentication and password management
+- **Connection Testing**: Built-in Appwrite connection diagnostics
 
 ## 🚀 Getting Started
 
@@ -164,6 +192,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - Centralized database and collection ID constants
 - Environment variable management
 - All collection IDs exported for consistent usage across the application
+
+#### Client-side Initialization (`components/app/`)
+- **PrimaryColorInit**: Loads and applies primary color from localStorage on app startup
+- **ErrorHandlerInit**: Sets up global error handlers for unhandled rejections and errors
+- Ensures user preferences are restored before first render
+- Provides comprehensive error handling from app startup
 
 ## 📚 Component Library
 
@@ -542,7 +576,9 @@ npx shadcn@latest add toast
 │   ├── app/                     # Application-specific components
 │   │   ├── auth/
 │   │   │   ├── dashboard/       # Dashboard components
-│   │   │   └── sidebar-nav.tsx  # Navigation sidebar
+│   │   │   └── sidebar-nav.tsx  # Navigation sidebar with logo
+│   │   ├── primary-color-init.tsx # Primary color initialization
+│   │   ├── error-handler-init.tsx  # Global error handler setup
 │   │   └── login.tsx            # Login form component
 │   ├── custom/                  # Custom reusable components
 │   │   └── status-badge.tsx     # Advanced status badge component

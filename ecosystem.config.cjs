@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: 'my-console',
-            script: 'node_modules/next/dist/bin/next',
+            script: './node_modules/.bin/next',
             args: 'start',
             cwd: './',
             instances: 1, // Set to 'max' for cluster mode, or number for specific instances

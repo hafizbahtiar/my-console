@@ -129,15 +129,44 @@ public/locales/
 
 ### Appwrite Integration
 
-#### Tables API Usage
-```typescript
-// Database Configuration
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID
-const AUDIT_COLLECTION_ID = 'audit_logs'
+#### Centralized Configuration (`lib/appwrite.ts`)
+All Appwrite configuration, including database and collection IDs, is centralized in `lib/appwrite.ts`:
 
-// Client Setup
-const tablesDB = new Tables(client)
+```typescript
+// Import centralized constants
+import { 
+  tablesDB, 
+  DATABASE_ID, 
+  BLOG_POSTS_COLLECTION_ID,
+  BLOG_CATEGORIES_COLLECTION_ID,
+  BLOG_TAGS_COLLECTION_ID,
+  BLOG_COMMENTS_COLLECTION_ID,
+  BLOG_VIEWS_COLLECTION_ID,
+  BLOG_LIKES_COLLECTION_ID,
+  AUDIT_COLLECTION_ID,
+  SECURITY_EVENTS_COLLECTION_ID,
+  IP_BLOCKLIST_COLLECTION_ID
+} from '@/lib/appwrite'
+
+// Usage example
+await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: BLOG_POSTS_COLLECTION_ID
+})
 ```
+
+#### Available Collection IDs
+All collection IDs are exported from `lib/appwrite.ts`:
+- `DATABASE_ID` - Main database ID
+- `BLOG_POSTS_COLLECTION_ID` - Blog posts collection
+- `BLOG_CATEGORIES_COLLECTION_ID` - Blog categories collection
+- `BLOG_TAGS_COLLECTION_ID` - Blog tags collection
+- `BLOG_COMMENTS_COLLECTION_ID` - Blog comments collection
+- `BLOG_VIEWS_COLLECTION_ID` - Blog views analytics collection
+- `BLOG_LIKES_COLLECTION_ID` - Blog likes engagement collection
+- `AUDIT_COLLECTION_ID` - Audit logs collection
+- `SECURITY_EVENTS_COLLECTION_ID` - Security events collection
+- `IP_BLOCKLIST_COLLECTION_ID` - IP blocklist collection
 
 #### Audit Log Schema
 ```typescript

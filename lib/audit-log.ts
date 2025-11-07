@@ -1,9 +1,4 @@
-import { databases, account, tablesDB } from './appwrite'
-import { Models } from 'appwrite'
-
-// Database and Collection IDs
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db'
-const AUDIT_COLLECTION_ID = 'audit_logs'
+import { tablesDB, DATABASE_ID, AUDIT_COLLECTION_ID } from './appwrite'
 
 export interface AuditLogEntry {
   // Required fields
@@ -145,56 +140,77 @@ export class AuditLogger {
   }
 
   // Query helpers
-  async getUserAuditLogs(userId: string, limit: number = 50): Promise<any[]> {
+  async getUserAuditLogs(userId: string, limit: number = 50, offset: number = 0): Promise<{ logs: any[], total: number }> {
     if (!this.checkFetchRateLimit()) {
-      return []
+      return { logs: [], total: 0 }
     }
 
     try {
       const response = await tablesDB.listRows({
         databaseId: DATABASE_ID,
-        tableId: AUDIT_COLLECTION_ID
+        tableId: AUDIT_COLLECTION_ID,
+        queries: [
+          `limit(${limit})`,
+          `offset(${offset})`,
+          `orderDesc("$createdAt")`
+        ]
       })
 
       // Filter and sort on client side to avoid query syntax issues
-      const userLogs = response.rows
+      // Note: We still need to filter by userId client-side since Appwrite queries don't support complex filtering
+      const allLogs = await tablesDB.listRows({
+        databaseId: DATABASE_ID,
+        tableId: AUDIT_COLLECTION_ID
+      })
+
+      const userLogs = allLogs.rows
         .filter((log: any) => log.userId === userId)
         .sort((a: any, b: any) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
-        .slice(0, limit)
 
-      return userLogs
+      const paginatedLogs = userLogs.slice(offset, offset + limit)
+
+      return {
+        logs: paginatedLogs,
+        total: userLogs.length
+      }
     } catch (error) {
       console.error('Failed to fetch audit logs:', error)
-      return []
+      return { logs: [], total: 0 }
     }
   }
 
-  async getRecentLogs(limit: number = 100, userId?: string): Promise<any[]> {
+  async getRecentLogs(limit: number = 100, userId?: string, offset: number = 0): Promise<{ logs: any[], total: number }> {
     if (!this.checkFetchRateLimit()) {
-      return []
+      return { logs: [], total: 0 }
     }
 
     try {
+      // Get all logs for filtering (Appwrite queries don't support complex filtering)
       const response = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: AUDIT_COLLECTION_ID
       })
 
-      // Filter by user if userId is provided, then sort and limit
+      // Filter by user if userId is provided, then sort
       let filteredLogs = response.rows
 
       if (userId) {
         filteredLogs = filteredLogs.filter((log: any) => log.userId === userId)
       }
 
-      const recentLogs = filteredLogs
+      const sortedLogs = filteredLogs
         .sort((a: any, b: any) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
-        .slice(0, limit)
 
-      return recentLogs
+      // Apply pagination
+      const paginatedLogs = sortedLogs.slice(offset, offset + limit)
+
+      return {
+        logs: paginatedLogs,
+        total: sortedLogs.length
+      }
     } catch (error) {
       console.error('Failed to fetch recent logs:', error)
-      return []
+      return { logs: [], total: 0 }
     }
   }
 }

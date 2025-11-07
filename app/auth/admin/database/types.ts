@@ -39,6 +39,8 @@ export interface DatabaseStats {
   uptime: string;
   lastBackup: string;
   backupStatus: string;
+  status: 'online' | 'offline' | 'maintenance' | 'error';
+  active: boolean;
 }
 
 export interface PerformanceMetrics {
@@ -69,4 +71,6 @@ export const COLLECTION_NAMES: Record<string, string> = {
   'blog_categories': 'Blog Categories',
   'blog_posts': 'Blog Posts',
   'blog_tags': 'Blog Tags',
+  'blog_views': 'Blog Views (Analytics)',
+  'blog_likes': 'Blog Likes (Analytics)',
 };

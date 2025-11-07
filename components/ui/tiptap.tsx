@@ -1,6 +1,5 @@
 "use client";
 
-import "./tiptap.css";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlock from "@tiptap/extension-code-block";
@@ -438,7 +437,7 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
 
       {!readonly && (
 
-        <div className={cn("sticky z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm", stickyTop)}>
+        <div className={cn("sticky z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm", stickyTop)}>
           <div className="flex items-center justify-between px-4 py-3 bg-muted/30">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-muted-foreground">Rich Text Editor</span>

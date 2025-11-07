@@ -18,7 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tablesDB, teams } from "@/lib/appwrite";
+import { tablesDB, teams, DATABASE_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
@@ -37,9 +37,6 @@ import type {
   BackupRecord,
 } from "./types";
 import { COLLECTION_NAMES } from "./types";
-
-// Database configuration
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db';
 
 // Function to get collections data
 async function getCollectionsData(): Promise<CollectionInfo[]> {
@@ -261,7 +258,9 @@ async function calculateDatabaseStats(collections: CollectionInfo[]): Promise<Da
     totalSize,
     uptime,
     lastBackup,
-    backupStatus
+    backupStatus,
+    status: 'online' as const, // In production, this would check actual database status
+    active: true // In production, this would check if database is active/responding
   };
 }
 
@@ -431,7 +430,7 @@ export default function DatabasePage() {
     setIsRefreshing(true);
     await loadDatabaseData();
     setIsRefreshing(false);
-    toast.success(t("database.refresh"));
+    toast.success(t("general_use.refresh"));
   };
 
   const handleManualBackup = async () => {
@@ -558,7 +557,7 @@ export default function DatabasePage() {
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {t("database.refresh")}
+            {t("general_use.refresh")}
           </Button>
           <Button size="sm" onClick={handleManualBackup}>
             <Download className="mr-2 h-4 w-4" />
@@ -641,6 +640,7 @@ export default function DatabasePage() {
           <DatabaseOverview
             recentActivity={recentActivity}
             systemHealth={systemHealth}
+            databaseStats={stats ? { status: stats.status, active: stats.active } : null}
           />
         </TabsContent>
 

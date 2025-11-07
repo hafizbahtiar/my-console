@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { AuditStats, AuditFilters, AuditTable } from "@/components/app/auth/audit"
+import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface AuditLog {
   $id: string
@@ -28,8 +38,14 @@ export default function AuditPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const [logs, setLogs] = useState<AuditLog[]>([])
+  const [allLogs, setAllLogs] = useState<AuditLog[]>([]) // Store all logs for filtering
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [totalLogs, setTotalLogs] = useState(0)
 
   // Advanced Filters
   const [searchTerm, setSearchTerm] = useState("")
@@ -45,13 +61,19 @@ export default function AuditPage() {
     if (user?.$id) {
       loadAuditLogs()
     }
-  }, [user?.$id])
+  }, [user?.$id, currentPage, pageSize])
 
   const loadAuditLogs = async () => {
     try {
       setRefreshing(true)
-      const auditLogs = await auditLogger.getRecentLogs(100, user?.$id)
-      setLogs(auditLogs as AuditLog[])
+      const paginationParams = createPaginationParams(currentPage, pageSize)
+      const result = await auditLogger.getRecentLogs(pageSize, user?.$id, paginationParams.offset || 0)
+      setLogs(result.logs as AuditLog[])
+      setTotalLogs(result.total)
+      
+      // Load all logs for filtering
+      const allResult = await auditLogger.getRecentLogs(10000, user?.$id, 0)
+      setAllLogs(allResult.logs as AuditLog[])
     } catch (error) {
       console.error('Failed to load audit logs:', error)
       toast.error(t('general_use.error'))
@@ -61,7 +83,8 @@ export default function AuditPage() {
     }
   }
 
-  const filteredLogs = logs.filter(log => {
+  // Filter all logs first, then paginate
+  const filteredAllLogs = allLogs.filter(log => {
     const matchesSearch = searchTerm === "" ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,10 +110,27 @@ export default function AuditPage() {
 
     return matchesSearch && matchesAction && matchesResource && matchesDateRange && matchesSeverity
   })
+  
+  // Apply pagination to filtered results
+  const paginationParams = createPaginationParams(currentPage, pageSize)
+  const filteredLogs = filteredAllLogs.slice(
+    paginationParams.offset || 0,
+    (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
+  )
+  
+  const totalFilteredLogs = filteredAllLogs.length
+  const totalPages = getTotalPages(totalFilteredLogs, pageSize)
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage > 1) {
+      setCurrentPage(1)
+    }
+  }, [searchTerm, actionFilter, resourceFilter, dateRange, severityFilter])
 
-  // Get unique values for filters
-  const uniqueActions = [...new Set(logs.map(log => log.action))]
-  const uniqueResources = [...new Set(logs.map(log => log.resource))]
+  // Get unique values for filters (use allLogs for complete list)
+  const uniqueActions = [...new Set(allLogs.map(log => log.action))]
+  const uniqueResources = [...new Set(allLogs.map(log => log.resource))]
 
   // Export functionality
   const exportLogs = () => {
@@ -205,11 +245,11 @@ export default function AuditPage() {
 
       {/* Stats Cards */}
       <AuditStats
-        totalLogs={logs.length}
-        todaysLogs={logs.filter(log =>
+        totalLogs={totalFilteredLogs}
+        todaysLogs={filteredAllLogs.filter(log =>
           new Date(log.$createdAt).toDateString() === new Date().toDateString()
         ).length}
-        securityEvents={logs.filter(log => log.action === 'SECURITY_EVENT').length}
+        securityEvents={filteredAllLogs.filter(log => log.action === 'SECURITY_EVENT').length}
       />
 
       {/* Filters & Export */}
@@ -238,8 +278,81 @@ export default function AuditPage() {
       {/* Audit Logs Table */}
       <AuditTable
         filteredLogs={filteredLogs}
-        totalLogs={logs.length}
+        totalLogs={totalFilteredLogs}
       />
+      
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="border-t p-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) {
+                      setCurrentPage(currentPage - 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+              
+              {/* Page numbers */}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(pageNum);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      isActive={currentPage === pageNum}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) {
+                      setCurrentPage(currentPage + 1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/custom/status-badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -35,15 +35,24 @@ import {
   Edit,
   Trash2,
   AlertCircle,
-  CheckCircle,
   RefreshCw,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tablesDB } from "@/lib/appwrite";
+import { tablesDB, DATABASE_ID, BLOG_CATEGORIES_COLLECTION_ID, BLOG_POSTS_COLLECTION_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
+import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface BlogCategory {
   $id: string;
@@ -55,13 +64,80 @@ interface BlogCategory {
   color: string;
   icon?: string;
   isActive: boolean;
-  postCount: number;
   sortOrder: number;
+  postCount?: number; // Calculated dynamically from relationships
 }
 
-// Database configuration
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db';
-const BLOG_CATEGORIES_COLLECTION_ID = 'blog_categories';
+// Function to calculate post counts for categories
+async function calculatePostCounts(categories: BlogCategory[]): Promise<BlogCategory[]> {
+  try {
+    // Get all posts to count relationships
+    const postsResponse = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: BLOG_POSTS_COLLECTION_ID,
+    });
+
+    const posts = postsResponse.rows as any[];
+    console.log('Posts data:', posts.slice(0, 2)); // Debug: check first 2 posts
+    console.log('Available categories:', categories.map(c => ({ id: c.$id, name: c.name })));
+
+    // Count posts per category using relationships
+    const categoryCounts = new Map<string, number>();
+
+    posts.forEach(post => {
+      // Handle different relationship field formats
+      let categoryId: string | null = null;
+
+      console.log('Processing post:', post.$id, 'blogCategories:', post.blogCategories, 'category:', post.category);
+
+      // Case 1: blogCategories is an object with $id (expanded relationship)
+      if (post.blogCategories && typeof post.blogCategories === 'object' && post.blogCategories.$id) {
+        categoryId = post.blogCategories.$id;
+        console.log('Found object relationship:', categoryId);
+      }
+      // Case 2: blogCategories is just a string ID (unexpanded relationship)
+      else if (typeof post.blogCategories === 'string' && post.blogCategories.trim()) {
+        categoryId = post.blogCategories;
+        console.log('Found string relationship:', categoryId);
+      }
+      // Case 3: Fallback to old category string field
+      else if (post.category && typeof post.category === 'string' && post.category.trim()) {
+        categoryId = post.category;
+        console.log('Found legacy category field:', categoryId);
+      }
+      // Case 4: blogCategories might be an empty string or other falsy value
+      else if (post.blogCategories && typeof post.blogCategories === 'string' && post.blogCategories.trim()) {
+        categoryId = post.blogCategories.trim();
+        console.log('Found string blogCategories:', categoryId);
+      }
+
+      if (categoryId) {
+        categoryCounts.set(categoryId, (categoryCounts.get(categoryId) || 0) + 1);
+        console.log('Incremented count for category:', categoryId, 'total now:', categoryCounts.get(categoryId));
+      } else {
+        console.log('No category found for post:', post.$id);
+      }
+    });
+
+    console.log('Category counts:', Object.fromEntries(categoryCounts)); // Debug: show counts
+
+    // Update categories with calculated counts
+    const result = categories.map(category => ({
+      ...category,
+      postCount: categoryCounts.get(category.$id) || 0,
+    }));
+
+    console.log('Final result:', result.map(c => ({ name: c.name, count: c.postCount })));
+    return result;
+  } catch (error) {
+    console.warn('Failed to calculate post counts:', error);
+    // Return categories with 0 counts on error
+    return categories.map(category => ({
+      ...category,
+      postCount: 0,
+    }));
+  }
+}
 
 export default function BlogCategoriesPage() {
   const { user } = useAuth();
@@ -70,9 +146,14 @@ export default function BlogCategoriesPage() {
 
   // State
   const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [allCategories, setAllCategories] = useState<BlogCategory[]>([]); // Store all categories for pagination
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -111,7 +192,7 @@ export default function BlogCategoriesPage() {
     };
 
     loadData();
-  }, [user, router]);
+  }, [user, router, currentPage, pageSize]);
 
   const loadCategories = async () => {
     try {
@@ -121,18 +202,31 @@ export default function BlogCategoriesPage() {
         tableId: BLOG_CATEGORIES_COLLECTION_ID
       });
 
-      // Sort by sortOrder, then by creation date
-      const sortedCategories = response.rows
-        .map((row: any) => ({
-          ...row,
-          postCount: row.postCount || 0,
-        }))
-        .sort((a: BlogCategory, b: BlogCategory) => {
-          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-          return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime();
-        });
+      // Load categories without stored postCount
+      const categoriesData = response.rows.map((row: any) => ({
+        ...row,
+        // postCount will be calculated dynamically
+      }));
 
-      setCategories(sortedCategories);
+      // Calculate post counts using relationships
+      const categoriesWithCounts = await calculatePostCounts(categoriesData as BlogCategory[]);
+
+      // Sort by sortOrder, then by creation date
+      const sortedCategories = categoriesWithCounts.sort((a: BlogCategory, b: BlogCategory) => {
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime();
+      });
+
+      setAllCategories(sortedCategories);
+      
+      // Apply pagination
+      const paginationParams = createPaginationParams(currentPage, pageSize);
+      const paginatedCategories = sortedCategories.slice(
+        paginationParams.offset || 0,
+        (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
+      );
+      
+      setCategories(paginatedCategories);
       setError(null);
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -161,7 +255,6 @@ export default function BlogCategoriesPage() {
         description: formData.description.trim(),
         color: formData.color,
         isActive: formData.isActive,
-        postCount: 0,
         sortOrder: formData.sortOrder,
       };
 
@@ -279,7 +372,6 @@ export default function BlogCategoriesPage() {
         metadata: {
           categoryName: categoryToDelete.name,
           categorySlug: categoryToDelete.slug,
-          postCount: categoryToDelete.postCount,
           description: `Deleted blog category: ${categoryToDelete.name}`
         }
       });
@@ -504,10 +596,14 @@ export default function BlogCategoriesPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Categories ({categories.length})
+            Categories ({allCategories.length})
           </CardTitle>
           <CardDescription>
-            All blog categories in your system
+            All blog categories in your system - {t("general_use.showing_entries_paginated", { 
+              showing: categories.length.toString(),
+              filtered: allCategories.length.toString(),
+              total: allCategories.length.toString()
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -541,9 +637,7 @@ export default function BlogCategoriesPage() {
                       {category.description || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={category.isActive ? "default" : "secondary"}>
-                        {category.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      <StatusBadge status={category.isActive ? "active" : "inactive"} type="blog-category" />
                     </TableCell>
                     <TableCell>{category.postCount}</TableCell>
                     <TableCell>{category.sortOrder}</TableCell>
@@ -579,6 +673,81 @@ export default function BlogCategoriesPage() {
               )}
             </TableBody>
           </Table>
+          
+          {/* Pagination */}
+          {getTotalPages(allCategories.length, pageSize) > 1 && (
+            <div className="border-t p-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) {
+                          setCurrentPage(currentPage - 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, getTotalPages(allCategories.length, pageSize)) }, (_, i) => {
+                    const totalPages = getTotalPages(allCategories.length, pageSize);
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(pageNum);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          isActive={currentPage === pageNum}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  {getTotalPages(allCategories.length, pageSize) > 5 && currentPage < getTotalPages(allCategories.length, pageSize) - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const totalPages = getTotalPages(allCategories.length, pageSize);
+                        if (currentPage < totalPages) {
+                          setCurrentPage(currentPage + 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={currentPage >= getTotalPages(allCategories.length, pageSize) ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/custom/status-badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -34,15 +34,24 @@ import {
   Edit,
   Trash2,
   AlertCircle,
-  CheckCircle,
   RefreshCw,
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tablesDB, teams } from "@/lib/appwrite";
+import { tablesDB, teams, DATABASE_ID, BLOG_TAGS_COLLECTION_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
+import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface BlogTag {
   $id: string;
@@ -55,20 +64,26 @@ interface BlogTag {
   isActive: boolean;
 }
 
-// Database configuration
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db';
-const BLOG_TAGS_COLLECTION_ID = 'blog_tags';
-
 export default function BlogTagsPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
 
-  // State
+  // All hooks must be called unconditionally at the top level
+  // State for Super Admin access control
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(true);
+
+  // Main component state - must be called before any conditional returns
   const [tags, setTags] = useState<BlogTag[]>([]);
+  const [allTags, setAllTags] = useState<BlogTag[]>([]); // Store all tags for pagination
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   // Dialog states
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -86,27 +101,7 @@ export default function BlogTagsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load data on component mount
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user) {
-        router.push('/auth/dashboard');
-        return;
-      }
-
-      try {
-        await loadTags();
-      } catch (error) {
-        console.error('Failed to load data:', error);
-        setError('Failed to load blog tags');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [user, router]);
-
+  // Helper functions - must be defined before useEffect hooks that call them
   const loadTags = async () => {
     try {
       setIsRefreshing(true);
@@ -125,16 +120,96 @@ export default function BlogTagsPage() {
           return new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime();
         });
 
-      setTags(sortedTags);
+      setAllTags(sortedTags);
+      
+      // Apply pagination
+      const paginationParams = createPaginationParams(currentPage, pageSize);
+      const paginatedTags = sortedTags.slice(
+        paginationParams.offset || 0,
+        (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
+      );
+      
+      setTags(paginatedTags);
       setError(null);
     } catch (error) {
       console.error('Failed to load tags:', error);
       setError(t('general_use.error'));
       toast.error(t('general_use.error'));
+      throw error; // Re-throw to be handled by caller
     } finally {
       setIsRefreshing(false);
     }
   };
+
+  // Check Super Admin access - must be called before conditional returns
+  useEffect(() => {
+    const checkSuperAdminAccess = async () => {
+      if (!user) {
+        router.push('/auth/dashboard');
+        return;
+      }
+
+      try {
+        // Get user's teams - this returns teams the current user is a member of
+        const userTeams = await teams.list({});
+        const hasSuperAdminAccess = userTeams.teams?.some((team: any) => team.name === 'Super Admin');
+
+        if (!hasSuperAdminAccess) {
+          // User is not a Super Admin, redirect to dashboard
+          toast.error('Access denied. Super Admin privileges required.');
+          router.push('/auth/dashboard');
+          return;
+        }
+
+        setIsSuperAdmin(true);
+      } catch (error) {
+        console.error('Failed to check Super Admin access:', error);
+        toast.error('Failed to verify access permissions.');
+        router.push('/auth/dashboard');
+        return;
+      } finally {
+        setIsLoadingAccess(false);
+      }
+    };
+
+    checkSuperAdminAccess();
+  }, [user, router]);
+
+  // Load data on component mount - must be called before conditional returns
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user) {
+        router.push('/auth/dashboard');
+        return;
+      }
+
+      try {
+        await loadTags();
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        setError('Failed to load blog tags');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [user, router, currentPage, pageSize]);
+
+  // Show loading while checking access
+  if (isLoadingAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not Super Admin (redirect will happen)
+  if (!isSuperAdmin) {
+    return null;
+  }
+
 
   const handleCreateTag = async () => {
     if (!formData.name.trim()) {
@@ -461,10 +536,14 @@ export default function BlogTagsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            Tags ({tags.length})
+            Tags ({allTags.length})
           </CardTitle>
           <CardDescription>
-            All blog tags in your system
+            All blog tags in your system - {t("general_use.showing_entries_paginated", { 
+              showing: tags.length.toString(),
+              filtered: allTags.length.toString(),
+              total: allTags.length.toString()
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -493,9 +572,7 @@ export default function BlogTagsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-sm">{tag.slug}</TableCell>
                     <TableCell>
-                      <Badge variant={tag.isActive ? "default" : "secondary"}>
-                        {tag.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      <StatusBadge status={tag.isActive ? "active" : "inactive"} type="blog-category" />
                     </TableCell>
                     <TableCell>{tag.postCount}</TableCell>
                     <TableCell>
@@ -530,6 +607,81 @@ export default function BlogTagsPage() {
               )}
             </TableBody>
           </Table>
+          
+          {/* Pagination */}
+          {getTotalPages(allTags.length, pageSize) > 1 && (
+            <div className="border-t p-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage > 1) {
+                          setCurrentPage(currentPage - 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, getTotalPages(allTags.length, pageSize)) }, (_, i) => {
+                    const totalPages = getTotalPages(allTags.length, pageSize);
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(pageNum);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          isActive={currentPage === pageNum}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  {getTotalPages(allTags.length, pageSize) > 5 && currentPage < getTotalPages(allTags.length, pageSize) - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const totalPages = getTotalPages(allTags.length, pageSize);
+                        if (currentPage < totalPages) {
+                          setCurrentPage(currentPage + 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={currentPage >= getTotalPages(allTags.length, pageSize) ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 

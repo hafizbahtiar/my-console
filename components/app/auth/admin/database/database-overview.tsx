@@ -11,8 +11,11 @@ import {
   AlertCircle,
   Download,
   CheckCircle,
+  Database,
+  Power,
 } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
+import { SystemHealthStatusBadge } from "@/components/custom/status-badge";
 
 interface DatabaseOverviewProps {
   recentActivity: Record<string, unknown>[];
@@ -22,9 +25,13 @@ interface DatabaseOverviewProps {
     storage: number;
     connections: string;
   } | null;
+  databaseStats: {
+    status: 'online' | 'offline' | 'maintenance' | 'error';
+    active: boolean;
+  } | null;
 }
 
-export function DatabaseOverview({ recentActivity, systemHealth }: DatabaseOverviewProps) {
+export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }: DatabaseOverviewProps) {
   const { t } = useTranslation();
 
   const getActivityIcon = (action: unknown) => {
@@ -67,8 +74,52 @@ export function DatabaseOverview({ recentActivity, systemHealth }: DatabaseOverv
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'online':
+        return 'text-green-600';
+      case 'offline':
+      case 'error':
+        return 'text-red-600';
+      case 'maintenance':
+        return 'text-yellow-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'online':
+        return t("status.online");
+      case 'offline':
+        return t("status.offline");
+      case 'maintenance':
+        return t("status.warning");
+      case 'error':
+        return t("status.error");
+      default:
+        return t("status.unknown");
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'online':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'offline':
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      case 'maintenance':
+        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -135,6 +186,62 @@ export function DatabaseOverview({ recentActivity, systemHealth }: DatabaseOverv
               <span>{systemHealth?.connections || '0/20'}</span>
             </div>
             <Progress value={systemHealth?.connections ? parseInt(systemHealth.connections.split('/')[0]) / parseInt(systemHealth.connections.split('/')[1]) * 100 : 0} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Database Status Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            {t("general_use.status")}
+          </CardTitle>
+          <CardDescription>{t("database.current_database_state")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <SystemHealthStatusBadge
+                status={
+                  databaseStats?.status === 'online' ? 'healthy' :
+                  databaseStats?.status === 'offline' ? 'critical' :
+                  databaseStats?.status === 'maintenance' ? 'warning' :
+                  'critical'
+                }
+              />
+              <span className="text-sm text-muted-foreground">
+                {databaseStats?.status === 'online' ? t("database.operational") : t("database.check_status")}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Database Active Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Power className="h-5 w-5" />
+            {t("general_use.active")}
+          </CardTitle>
+          <CardDescription>{t("database.database_connectivity_status")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {databaseStats?.active ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              )}
+              <span className={`font-medium ${databaseStats?.active ? 'text-green-600' : 'text-red-600'}`}>
+                {databaseStats?.active ? t("general_use.active") : t("general_use.inactive")}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {databaseStats?.active ? t("database.responsive") : t("database.not_responding")}
+            </div>
           </div>
         </CardContent>
       </Card>

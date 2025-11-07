@@ -14,12 +14,23 @@
 
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id_here
-   NEXT_PUBLIC_APPWRITE_PROJECT_NAME=your_project_name_here
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
    NEXT_PUBLIC_APPWRITE_DATABASE_ID=console-db
+   NEXT_PUBLIC_APPWRITE_BUCKET_ID=default
+   OPENROUTER_API_KEY=your_openrouter_api_key  # Optional, for AI features
    ```
 
    Replace the values with your actual Appwrite project details from your Appwrite console.
+
+   **Note**: All database and collection IDs are centralized in `lib/appwrite.ts`. When using Appwrite in your code, import the constants instead of defining them locally:
+   ```typescript
+   import { 
+     DATABASE_ID, 
+     BLOG_POSTS_COLLECTION_ID,
+     BLOG_CATEGORIES_COLLECTION_ID,
+     // ... other collection IDs
+   } from '@/lib/appwrite'
+   ```
 
 ## Appwrite Project Setup
 
@@ -45,6 +56,11 @@ After creating the database, set up the required collections:
 
 1. **[Audit Logs Collection](APPWRITE_DB_AUDIT_LOG.md)** - Essential for tracking user activities and security events
 2. **[Blog System Collections](BLOG_MANAGEMENT.md)** - Complete blog management with rich text editor
+   - `blog_posts` - Main content storage
+   - `blog_categories` - Content categorization
+   - `blog_tags` - Content tagging system
+   - `blog_views` - Detailed view analytics (see setup guide below)
+   - `blog_likes` - User engagement tracking (see setup guide below)
 3. **User Profiles** (`user_profiles`) - Extended user information (optional)
 4. **System Settings** (`system_settings`) - Application configuration (optional)
 5. **Notifications** (`notifications`) - User notifications and alerts (optional)
@@ -197,7 +213,7 @@ All routes under `/auth/` require authentication and automatically redirect unau
 ## Additional Resources
 
 - [Audit Logs Collection Setup](APPWRITE_DB_AUDIT_LOG.md) - Detailed audit logging configuration
-- [Blog Management System](BLOG_MANAGEMENT.md) - Complete blog CMS with rich text editor
+- [Blog Management System](BLOG_MANAGEMENT.md) - Complete blog CMS with rich text editor and analytics setup
 - [TipTap Components](TIPTAP_COMPONENTS.md) - Rich text editor documentation and API
 - [Nice to Have Features](NICE_TO_HAVE.md) - Future enhancement roadmap and wishlist
 - [Database Administration](DATABASE_ADMIN.md) - Backup and monitoring features

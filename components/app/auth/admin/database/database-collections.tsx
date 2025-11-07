@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DatabaseCollectionStatusBadge } from "@/components/custom/status-badge";
 import {
     Dialog,
     DialogContent,
@@ -186,7 +187,7 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                                 <TableHead>{t("database.documents")}</TableHead>
                                 <TableHead>{t("database.size")}</TableHead>
                                 <TableHead>{t("database.last_modified")}</TableHead>
-                                <TableHead>{t("database.status")}</TableHead>
+                                <TableHead>{t("general_use.status")}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -203,9 +204,7 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                                         <TableCell>{collection.size}</TableCell>
                                         <TableCell>{new Date(collection.lastModified).toLocaleString()}</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline" className="text-green-600 border-green-600">
-                                                {t("database.active")}
-                                            </Badge>
+                                            <DatabaseCollectionStatusBadge status="active" />
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -308,9 +307,9 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                                                     </TableCell>
                                                     <TableCell>
                                                         {column.nullable ? (
-                                                            <Badge variant="secondary">{t("database.yes")}</Badge>
+                                                            <Badge variant="secondary">{t("general_use.yes")}</Badge>
                                                         ) : (
-                                                            <Badge variant="outline">{t("database.no")}</Badge>
+                                                            <Badge variant="outline">{t("general_use.no")}</Badge>
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="text-sm">

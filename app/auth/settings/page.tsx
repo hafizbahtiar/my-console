@@ -314,7 +314,7 @@ export default function SettingsPage() {
                   onCheckedChange={setTwoFactor}
                 />
                 <Badge variant={twoFactor ? "default" : "secondary"}>
-                  {twoFactor ? t("settings.enabled") : t("settings.disabled")}
+                  {twoFactor ? t("general_use.active") : t("general_use.inactive")}
                 </Badge>
               </div>
             </div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { applySecurityHeaders } from '@/middlewares/security-headers'
 import { rateLimitMiddleware, rateLimitConfigs } from '@/middlewares/rate-limit'
-import { tablesDB } from '@/lib/appwrite'
+import { tablesDB, DATABASE_ID, AUDIT_COLLECTION_ID } from '@/lib/appwrite'
 
 interface HealthCheck {
   status: 'healthy' | 'unhealthy' | 'degraded'
@@ -44,8 +44,8 @@ async function checkDatabaseHealth(): Promise<'healthy' | 'unhealthy'> {
   try {
     // Try a simple operation to check connectivity using tablesDB
     await tablesDB.listRows({
-      databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db',
-      tableId: 'audit_logs'
+      databaseId: DATABASE_ID,
+      tableId: AUDIT_COLLECTION_ID
     })
 
     return 'healthy'
@@ -185,8 +185,8 @@ async function getRecentLoginsCount(since: Date): Promise<number> {
   try {
     // Query audit logs for recent login events
     const auditLogs = await tablesDB.listRows({
-      databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db',
-      tableId: 'audit_logs'
+      databaseId: DATABASE_ID,
+      tableId: AUDIT_COLLECTION_ID
     })
 
     const recentLogins = auditLogs.rows?.filter((log: any) => {

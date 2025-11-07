@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AlertTriangle, Shield, AlertCircle, Ban, CheckCircle, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { tablesDB } from "@/lib/appwrite"
+import { tablesDB, DATABASE_ID, SECURITY_EVENTS_COLLECTION_ID, IP_BLOCKLIST_COLLECTION_ID } from "@/lib/appwrite"
 
 interface SecurityEvent {
     id: string
@@ -33,11 +33,6 @@ interface IPBlocklistEntry {
     blockedBy: string
     isActive: boolean
 }
-
-// Database and Collection IDs
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db'
-const SECURITY_EVENTS_COLLECTION_ID = 'security_events'
-const IP_BLOCKLIST_COLLECTION_ID = 'ip_blocklist'
 
 export default function SecurityPage() {
     const { t } = useTranslation()
@@ -259,7 +254,7 @@ export default function SecurityPage() {
                         <Shield className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{t('security.active')}</div>
+                        <div className="text-2xl font-bold text-green-600">{t('general_use.active')}</div>
                         <p className="text-xs text-muted-foreground">
                             {t('security.built_in_security_enabled')}
                         </p>
@@ -318,7 +313,7 @@ export default function SecurityPage() {
                                     <span className="text-sm">{t('security.appwrite_security')}</span>
                                     <Badge variant="default">
                                         <CheckCircle className="h-3 w-3 mr-1" />
-                                        {t('security.active')}
+                                        {t('general_use.active')}
                                     </Badge>
                                 </div>
                                 <div className="flex items-center justify-between">
@@ -400,7 +395,7 @@ export default function SecurityPage() {
                                                             size="sm"
                                                             onClick={() => handleUnblockIP(block.id)}
                                                         >
-                                                            {t('security.unblock')}
+                                                            {t('status.unblock')}
                                                         </Button>
                                                     )}
                                                 </div>

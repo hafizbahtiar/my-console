@@ -8,6 +8,7 @@ A comprehensive admin dashboard built with **Next.js 16**, **Appwrite**, and **B
 |------------|---------|---------|
 | **Next.js** | React Framework with App Router | 16.0.1 |
 | **Appwrite** | Backend-as-a-Service | 21.4.0 |
+| **OpenRouter** | AI API Gateway | Latest |
 | **Bun** | JavaScript Runtime & Package Manager | Latest |
 | **TypeScript** | Type-Safe JavaScript | 5.x |
 | **Tailwind CSS** | Utility-First CSS Framework | 4.x |
@@ -38,12 +39,15 @@ My Console is a full-featured admin dashboard application with:
 
 #### 📝 Blog Management System
 - **Rich Text Editor**: TipTap-powered WYSIWYG editor with advanced formatting, tables, images, and math expressions
-- **Content Analytics**: View tracking, like counts, and automated read time calculation
+- **AI-Powered Content**: OpenRouter API integration for automated excerpt generation and content improvement with multiple AI models
+- **Content Analytics**: View tracking, like counts, and automated read time calculation (blog_views, blog_likes tables)
 - **SEO Optimization**: Meta titles, descriptions, and keyword management for search engines
-- **Content Categorization**: Hierarchical categories and flexible tagging system
-- **Publishing Workflow**: Draft, published, and archived content states
+- **Content Categorization**: Hierarchical categories with bidirectional relationship-based organization and many-to-many tag relationships
+- **Publishing Workflow**: Draft, published, and archived content states with status badges
 - **Featured Content**: Highlight important posts with featured status
 - **Content Preview**: Dynamic view dialogs with full content rendering and metadata display
+- **AI Content Enhancement**: Five AI-powered improvement options (improve, rephrase, shorten, expand, fix grammar)
+- **Comments Display**: Threaded comment system with hierarchical display, author information, engagement metrics, and visual indentation for nested replies
 
 #### 🌍 Internationalization
 - **Multi-language Support**: English and Malay (Bahasa Melayu)
@@ -105,10 +109,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 1. **Appwrite Configuration**: Follow the setup guide in `docs/APPWRITE_SETUP.md`
 2. **Database Administration**: Read `docs/DATABASE_ADMIN.md` for backup and monitoring features
 3. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
-4. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
-5. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
-6. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-7. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+4. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
+5. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
+6. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
+7. **Development Tasks**: Check `TODO.md` for current development priorities and progress
+8. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -126,7 +131,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **/auth/sessions**: Active sessions management
 - **/auth/blog/blog-posts**: Blog post management with CRUD operations
 - **/auth/blog/blog-posts/create**: Create new blog posts with rich text editor
-- **/auth/blog/blog-posts/[id]**: Edit existing blog posts
+- **/auth/blog/blog-posts/[id]**: View blog post with content, comments, and analytics tabs
+- **/auth/blog/blog-posts/[id]/edit**: Edit existing blog posts
 - **/auth/blog/blog-categories**: Blog category management
 - **/auth/blog/blog-tags**: Blog tag management
 
@@ -155,7 +161,9 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 #### Appwrite Integration (`lib/appwrite.ts`)
 - Centralized client configuration
 - Database and account service exports
+- Centralized database and collection ID constants
 - Environment variable management
+- All collection IDs exported for consistent usage across the application
 
 ## 📚 Component Library
 
@@ -206,6 +214,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 | `progress` | Progress indicators | ✅ |
 | `skeleton` | Loading placeholders | ✅ |
 | `spinner` | Loading spinners | ✅ |
+| `status-badge` | Advanced status badges with icons and internationalization (blog, task, database, backup, system health) | ✅ |
 
 ### Feedback Components
 
@@ -284,6 +293,47 @@ export function LoginForm() {
 }
 ```
 
+### Status Badge Component
+
+```tsx
+import { StatusBadge } from "@/components/custom/status-badge"
+
+export function StatusDisplay() {
+  return (
+    <div className="space-y-4">
+      {/* Blog post statuses - automatically localized */}
+      <StatusBadge status="published" type="blog-post" />
+      <StatusBadge status="draft" type="blog-post" />
+      <StatusBadge status="archived" type="blog-post" />
+
+      {/* Blog category statuses */}
+      <StatusBadge status="active" type="blog-category" />
+      <StatusBadge status="inactive" type="blog-category" />
+
+      {/* Task statuses */}
+      <StatusBadge status="completed" type="task" />
+      <StatusBadge status="in-progress" type="task" />
+      <StatusBadge status="pending" type="task" />
+
+      {/* Database collection statuses */}
+      <StatusBadge status="active" type="database-collection" />
+      <StatusBadge status="empty" type="database-collection" />
+
+      {/* Backup statuses */}
+      <StatusBadge status="completed" type="backup" />
+      <StatusBadge status="failed" type="backup" />
+      <StatusBadge status="manual" type="backup" />
+      <StatusBadge status="scheduled" type="backup" />
+
+      {/* System health statuses */}
+      <StatusBadge status="healthy" type="system-health" />
+      <StatusBadge status="warning" type="system-health" />
+      <StatusBadge status="critical" type="system-health" />
+    </div>
+  )
+}
+```
+
 ### Table with Data
 
 ```tsx
@@ -295,33 +345,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { StatusBadge } from "@/components/custom/status-badge"
 
-export function DataTable() {
-  const data = [
-    { id: 1, name: "John Doe", status: "active", role: "Admin" },
-    { id: 2, name: "Jane Smith", status: "inactive", role: "User" },
+export function BlogPostsTable() {
+  const posts = [
+    { id: 1, title: "Getting Started with Next.js", status: "published", author: "John Doe" },
+    { id: 2, title: "Advanced React Patterns", status: "draft", author: "Jane Smith" },
   ]
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
+          <TableHead>Title</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Role</TableHead>
+          <TableHead>Author</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {data.map((item) => (
-          <TableRow key={item.id}>
-            <TableCell>{item.name}</TableCell>
+        {posts.map((post) => (
+          <TableRow key={post.id}>
+            <TableCell>{post.title}</TableCell>
             <TableCell>
-              <Badge variant={item.status === "active" ? "default" : "secondary"}>
-                {item.status}
-              </Badge>
+              <StatusBadge status={post.status} type="blog-post" />
             </TableCell>
-            <TableCell>{item.role}</TableCell>
+            <TableCell>{post.author}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -468,11 +516,17 @@ npx shadcn@latest add toast
 
 ```
 ├── app/                          # Next.js App Router
+│   ├── api/                     # API routes
+│   │   ├── ai/                  # AI-powered features
+│   │   │   ├── generate-excerpt # Excerpt generation API
+│   │   │   └── improve-content  # Content improvement API
+│   │   └── [other-api-routes]   # Other API endpoints
 │   ├── auth/                     # Protected application pages
 │   │   ├── audit/               # Audit log viewer
 │   │   ├── blog/                # Blog management system
 │   │   │   ├── blog-posts/      # Blog post CRUD operations
-│   │   │   │   ├── [id]/        # Edit blog post
+│   │   │   │   ├── [id]/        # View blog post (content, comments, analytics)
+│   │   │   │   │   └── edit/    # Edit blog post
 │   │   │   │   └── create/      # Create blog post
 │   │   │   ├── blog-categories/ # Category management
 │   │   │   └── blog-tags/       # Tag management
@@ -490,9 +544,11 @@ npx shadcn@latest add toast
 │   │   │   ├── dashboard/       # Dashboard components
 │   │   │   └── sidebar-nav.tsx  # Navigation sidebar
 │   │   └── login.tsx            # Login form component
+│   ├── custom/                  # Custom reusable components
+│   │   └── status-badge.tsx     # Advanced status badge component
 │   └── ui/                      # shadcn/ui components (47+)
 ├── lib/                         # Core application logic
-│   ├── appwrite.ts              # Appwrite client configuration
+│   ├── appwrite.ts              # Appwrite client configuration & centralized collection IDs
 │   ├── audit-log.ts             # Audit logging system
 │   ├── auth-context.tsx         # Authentication context
 │   ├── language-context.tsx     # Internationalization context
@@ -505,9 +561,16 @@ npx shadcn@latest add toast
 │   ├── APPWRITE_SETUP.md        # Appwrite configuration guide
 │   ├── DATABASE_ADMIN.md        # Database administration guide
 │   ├── BLOG_MANAGEMENT.md       # Blog CMS documentation
+│   ├── APPWRITE_DB_BLOG_POSTS.md # Blog posts database schema
+│   ├── APPWRITE_DB_BLOG_CATEGORIES.md # Blog categories schema
+│   ├── APPWRITE_DB_BLOG_TAGS.md # Blog tags schema (many-to-many)
+│   ├── APPWRITE_DB_BLOG_COMMENTS.md # Blog comments schema (threaded)
+│   ├── APPWRITE_DB_BLOG_VIEWS.md # Blog views analytics schema
+│   ├── APPWRITE_DB_BLOG_LIKES.md # Blog likes engagement schema
 │   ├── TIPTAP_COMPONENTS.md     # Rich text editor guide
 │   ├── NICE_TO_HAVE.md          # Future enhancements roadmap
 │   ├── APPWRITE_DB_AUDIT_LOG.md # Audit logging setup
+│   ├── ARCHITECTURE.md          # System architecture overview
 │   └── I18N_SETUP.md            # Internationalization setup
 ├── hooks/                       # Custom React hooks
 ├── components.json              # shadcn/ui configuration

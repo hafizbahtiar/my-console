@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BackupStatusBadge } from "@/components/custom/status-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,12 +105,12 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
             <TableHeader>
               <TableRow>
                 <TableHead>{t("database.backup_id")}</TableHead>
-                <TableHead>{t("database.type")}</TableHead>
-                <TableHead>{t("database.status")}</TableHead>
+                <TableHead>{t("general_use.type")}</TableHead>
+                <TableHead>{t("general_use.status")}</TableHead>
                 <TableHead>{t("database.size")}</TableHead>
                 <TableHead>{t("database.collections")}</TableHead>
-                <TableHead>{t("database.created")}</TableHead>
-                <TableHead>{t("database.actions")}</TableHead>
+                <TableHead>{t("general_use.created")}</TableHead>
+                <TableHead>{t("general_use.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -120,14 +121,12 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
                       {backup.id || `backup_${String(index + 1).padStart(3, '0')}`}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {backup.type || 'manual'}
-                      </Badge>
+                      <BackupStatusBadge status={backup.type || 'manual'} />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         {getStatusIcon('completed')}
-                        <span className="capitalize">completed</span>
+                        <span className="capitalize">{t("status.completed")}</span>
                       </div>
                     </TableCell>
                     <TableCell>

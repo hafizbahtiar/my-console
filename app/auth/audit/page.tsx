@@ -67,16 +67,24 @@ export default function AuditPage() {
     try {
       setRefreshing(true)
       const paginationParams = createPaginationParams(currentPage, pageSize)
-      const result = await auditLogger.getRecentLogs(pageSize, user?.$id, paginationParams.offset || 0)
-      setLogs(result.logs as AuditLog[])
-      setTotalLogs(result.total)
       
-      // Load all logs for filtering
+      // Load all logs once (cache will handle subsequent calls)
       const allResult = await auditLogger.getRecentLogs(10000, user?.$id, 0)
-      setAllLogs(allResult.logs as AuditLog[])
+      const allLogsArray = (allResult.logs || []) as AuditLog[]
+      setAllLogs(allLogsArray)
+      setTotalLogs(allResult.total || 0)
+      
+      // Use the same data for paginated view
+      const paginatedLogs = allLogsArray.slice(
+        paginationParams.offset || 0,
+        (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
+      )
+      setLogs(paginatedLogs)
     } catch (error) {
       console.error('Failed to load audit logs:', error)
       toast.error(t('general_use.error'))
+      setLogs([])
+      setAllLogs([])
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -84,7 +92,7 @@ export default function AuditPage() {
   }
 
   // Filter all logs first, then paginate
-  const filteredAllLogs = allLogs.filter(log => {
+  const filteredAllLogs = (Array.isArray(allLogs) ? allLogs : []).filter(log => {
     const matchesSearch = searchTerm === "" ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,8 +137,8 @@ export default function AuditPage() {
   }, [searchTerm, actionFilter, resourceFilter, dateRange, severityFilter])
 
   // Get unique values for filters (use allLogs for complete list)
-  const uniqueActions = [...new Set(allLogs.map(log => log.action))]
-  const uniqueResources = [...new Set(allLogs.map(log => log.resource))]
+  const uniqueActions = [...new Set((Array.isArray(allLogs) ? allLogs : []).map(log => log.action))]
+  const uniqueResources = [...new Set((Array.isArray(allLogs) ? allLogs : []).map(log => log.resource))]
 
   // Export functionality
   const exportLogs = () => {

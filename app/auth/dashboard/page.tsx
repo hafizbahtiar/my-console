@@ -228,9 +228,9 @@ export default function Dashboard() {
                     <h3 className="text-lg font-semibold">{user.name || 'User'}</h3>
                     <p className="text-muted-foreground">{user.email}</p>
                     <div className="flex gap-2">
-                      <Badge variant="secondary">{t('dashboard.active')}</Badge>
+                      <Badge variant="secondary">{t('general_use.active')}</Badge>
                       <Badge variant={user.emailVerification ? "default" : "secondary"}>
-                        {user.emailVerification ? t('dashboard.verified') : t('dashboard.unverified')}
+                        {user.emailVerification ? t('status.verified') : t('status.unverified')}
                       </Badge>
                     </div>
                   </div>

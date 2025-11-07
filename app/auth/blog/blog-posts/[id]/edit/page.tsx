@@ -1014,7 +1014,7 @@ export default function EditBlogPostPage() {
           </div>
 
           {/* Submit Actions - Fixed at bottom */}
-          <div className="sticky z-40 bottom-0 -mx-6 -mb-8 px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+          <div className="sticky z-40 bottom-0 -mb-8 px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 {formData.content && (

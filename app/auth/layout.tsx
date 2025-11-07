@@ -138,7 +138,7 @@ export default function AuthLayout({
                     </div>
                 </header>
 
-                <main className="flex flex-1 flex-col gap-6 p-6">
+                <main className="flex flex-1 flex-col gap-6">
                     {children}
                 </main>
             </SidebarInset>

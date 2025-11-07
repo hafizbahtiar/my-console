@@ -17,6 +17,7 @@ import { useTranslation } from "@/lib/language-context";
 export type StatusType =
   | 'blog-post'
   | 'blog-category'
+  | 'community-post'
   | 'task'
   | 'project'
   | 'user'
@@ -27,8 +28,9 @@ export type StatusType =
 
 export type StatusValue =
   | 'published' | 'draft' | 'archived'  // Blog post statuses
+  | 'pending' | 'approved' | 'rejected' | 'deleted'  // Community post statuses (archived shared with blog)
   | 'active' | 'inactive'              // Active/inactive statuses
-  | 'completed' | 'in-progress' | 'pending' | 'cancelled'  // Task/project statuses
+  | 'completed' | 'in-progress' | 'cancelled'  // Task/project statuses
   | 'online' | 'offline' | 'away'      // User statuses
   | 'healthy' | 'warning' | 'critical' | 'empty'  // System/database statuses
   | 'failed' | 'successful' | 'manual' | 'scheduled'  // Backup statuses
@@ -78,6 +80,40 @@ const statusConfigs = {
       variant: 'secondary' as const,
       colors: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
       icon: Pause,
+    },
+  },
+
+  // Community post statuses
+  'community-post': {
+    pending: {
+      label: 'Pending',
+      variant: 'secondary' as const,
+      colors: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-800',
+      icon: Clock,
+    },
+    approved: {
+      label: 'Approved',
+      variant: 'default' as const,
+      colors: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-800',
+      icon: CheckCircle,
+    },
+    rejected: {
+      label: 'Rejected',
+      variant: 'destructive' as const,
+      colors: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-800',
+      icon: XCircle,
+    },
+    archived: {
+      label: 'Archived',
+      variant: 'outline' as const,
+      colors: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
+      icon: Archive,
+    },
+    deleted: {
+      label: 'Deleted',
+      variant: 'destructive' as const,
+      colors: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-800',
+      icon: XCircle,
     },
   },
 

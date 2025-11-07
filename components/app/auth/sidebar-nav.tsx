@@ -29,6 +29,8 @@ import {
   Key,
   BookOpen,
   Tag,
+  MessageSquare,
+  Users,
 } from "lucide-react"
 
 const navigationItems = [
@@ -99,6 +101,15 @@ const blogItems = [
   },
 ]
 
+const communityItems = [
+  {
+    titleKey: "nav.community_posts",
+    url: "/auth/community/community-posts",
+    icon: MessageSquare,
+    requiresSuperAdmin: false,
+  },
+]
+
 const developerItems = [
   {
     titleKey: "nav.keys",
@@ -137,21 +148,53 @@ export function SidebarNav() {
       isCheckingRef.current = true
 
       try {
-        // Get user's teams - this returns teams the current user is a member of
-        const userTeams = await teams.list()
+        // Use Appwrite SDK directly on client-side
+        // According to https://appwrite.io/docs/products/auth/teams
+        // The SDK handles authentication via cookies automatically in the browser
+        const userTeams = await teams.list({})
+
+        console.log('userTeams', userTeams)
         
         const hasSuperAdminAccess = userTeams.teams?.some((team: any) => team.name === 'Super Admin')
         setIsSuperAdmin(hasSuperAdminAccess || false)
       } catch (error: any) {
         // Handle specific error cases
-        if (error.code === 401 || error.message?.includes('Unauthorized')) {
+        const isScopeError = error.type === 'general_unauthorized_scope' || 
+                            error.message?.includes('missing scopes') ||
+                            error.message?.includes('teams.read')
+        
+        const isCorsError = error.message?.includes('Failed to fetch') || 
+                           error.message?.includes('CORS') || 
+                           error.message?.includes('ERR_FAILED') ||
+                           error.name === 'TypeError' && error.message?.includes('fetch')
+        
+        if (isScopeError) {
+          console.warn('Missing teams.read scope. User may need to re-authenticate or permissions may have changed.')
+          console.warn('Error details:', error)
+          setIsSuperAdmin(false)
+        } else if (isCorsError) {
+          // CORS error - Could be nginx reverse proxy or Appwrite platform configuration
+          if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+            const currentOrigin = window.location.origin
+            console.warn(
+              `⚠️ CORS Error: Requests blocked from ${currentOrigin}\n` +
+              `📋 Possible causes:\n` +
+              `   1. Nginx reverse proxy not forwarding CORS headers properly\n` +
+              `   2. Appwrite platform not configured for localhost\n` +
+              `\n` +
+              `🔧 To fix:\n` +
+              `   A. Check nginx config includes proper proxy headers\n` +
+              `   B. In Appwrite Console > Project > Settings > Platforms:\n` +
+              `      - Ensure platform identifier is: localhost\n` +
+              `      - Or add: ${currentOrigin} to allowed origins\n` +
+              `\n` +
+              `   Note: This error is non-critical. The app will work, but Super Admin features may be hidden.`
+            )
+          }
+          setIsSuperAdmin(false)
+        } else if (error.code === 401 || error.message?.includes('Unauthorized')) {
           // User is not authenticated, don't set as super admin
           setIsSuperAdmin(false)
-        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('CORS')) {
-          // CORS error - this means Appwrite server needs to be configured to allow localhost:3000
-          // Log the error but don't change state to avoid flickering
-          console.warn('CORS error checking Super Admin access. Please configure Appwrite server to allow requests from:', window.location.origin)
-          console.warn('Error details:', error.message)
         } else {
           // Other errors - log and set to false
           console.error('Failed to check Super Admin access:', error)
@@ -182,6 +225,16 @@ export function SidebarNav() {
       return isSuperAdmin
     }
     // Other blog items are available to all authenticated users
+    return true
+  })
+
+  // Filter community items based on Super Admin access
+  const filteredCommunityItems = communityItems.filter(item => {
+    // Community items that require Super Admin access
+    if (item.requiresSuperAdmin) {
+      return isSuperAdmin
+    }
+    // Other community items are available to all authenticated users
     return true
   })
 
@@ -253,6 +306,28 @@ export function SidebarNav() {
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
+                    tooltip={t(item.titleKey)}
+                  >
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{t(item.titleKey)}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{t("nav.community_management")}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filteredCommunityItems.map((item) => (
+                <SidebarMenuItem key={item.titleKey}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url || pathname?.startsWith(item.url)}
                     tooltip={t(item.titleKey)}
                   >
                     <Link href={item.url}>

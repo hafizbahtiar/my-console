@@ -55,10 +55,11 @@ export function AuditActivity() {
     try {
       setLoading(true)
       // Get recent logs (limit to 8 for dashboard)
-      const recentLogs = await auditLogger.getRecentLogs(8)
-      setLogs(recentLogs)
+      const { logs } = await auditLogger.getRecentLogs(8)
+      setLogs(logs || [])
     } catch (error) {
       console.error('Failed to load recent audit logs:', error)
+      setLogs([])
     } finally {
       setLoading(false)
     }

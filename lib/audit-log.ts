@@ -25,8 +25,10 @@ export class AuditLogger {
   private static instance: AuditLogger
   private lastFetchTime: number = 0
   private lastLogTime: number = 0
-  private readonly FETCH_RATE_LIMIT_MS = 1000 // 1 second between fetches
+  private readonly FETCH_RATE_LIMIT_MS = 500 // 0.5 seconds between fetches (reduced from 1s)
   private readonly LOG_RATE_LIMIT_MS = 500 // 0.5 seconds between log writes
+  private cache: { data: any[], timestamp: number } | null = null
+  private readonly CACHE_TTL_MS = 2000 // Cache for 2 seconds
 
   static getInstance(): AuditLogger {
     if (!AuditLogger.instance) {
@@ -38,7 +40,7 @@ export class AuditLogger {
   private checkFetchRateLimit(): boolean {
     const now = Date.now()
     if (now - this.lastFetchTime < this.FETCH_RATE_LIMIT_MS) {
-      console.warn('Rate limit: Audit log fetch too frequent, skipping')
+      // Silently return false instead of warning - this is expected behavior
       return false
     }
     this.lastFetchTime = now
@@ -180,8 +182,36 @@ export class AuditLogger {
   }
 
   async getRecentLogs(limit: number = 100, userId?: string, offset: number = 0): Promise<{ logs: any[], total: number }> {
+    // Check cache first
+    const now = Date.now()
+    if (this.cache && (now - this.cache.timestamp) < this.CACHE_TTL_MS) {
+      // Use cached data
+      let filteredLogs = this.cache.data
+
+      if (userId) {
+        filteredLogs = filteredLogs.filter((log: any) => log.userId === userId)
+      }
+
+      const sortedLogs = filteredLogs
+        .sort((a: any, b: any) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
+
+      const paginatedLogs = sortedLogs.slice(offset, offset + limit)
+
+      return {
+        logs: paginatedLogs,
+        total: sortedLogs.length
+      }
+    }
+
+    // If rate limited, wait and retry once
     if (!this.checkFetchRateLimit()) {
-      return { logs: [], total: 0 }
+      // Wait for the rate limit period, then retry
+      await new Promise(resolve => setTimeout(resolve, this.FETCH_RATE_LIMIT_MS))
+      // Retry once after waiting
+      if (!this.checkFetchRateLimit()) {
+        // If still rate limited, return empty to avoid blocking
+        return { logs: [], total: 0 }
+      }
     }
 
     try {
@@ -191,8 +221,14 @@ export class AuditLogger {
         tableId: AUDIT_COLLECTION_ID
       })
 
+      // Update cache
+      this.cache = {
+        data: response.rows || [],
+        timestamp: Date.now()
+      }
+
       // Filter by user if userId is provided, then sort
-      let filteredLogs = response.rows
+      let filteredLogs = response.rows || []
 
       if (userId) {
         filteredLogs = filteredLogs.filter((log: any) => log.userId === userId)

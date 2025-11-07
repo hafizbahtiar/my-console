@@ -86,7 +86,8 @@ async function getCollectionsData(): Promise<CollectionInfo[]> {
 // Function to get recent audit logs for activity
 async function getRecentActivity(): Promise<Record<string, unknown>[]> {
   try {
-    const logs = await auditLogger.getRecentLogs(10);
+    const result = await auditLogger.getRecentLogs(10);
+    const logs = result.logs || [];
 
     // If no logs found, return sample data for demonstration
     if (logs.length === 0) {

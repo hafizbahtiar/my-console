@@ -53,7 +53,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const userData = await account.get()
       setUser(userData)
-    } catch (error) {
+    } catch (error: any) {
+      // Check for CORS errors
+      const isCorsError = error?.message?.includes('CORS') || 
+                         error?.message?.includes('Failed to fetch') ||
+                         error?.message?.includes('ERR_FAILED') ||
+                         (error?.name === 'TypeError' && error?.message?.includes('fetch'))
+      
+      if (isCorsError && typeof window !== 'undefined') {
+        const currentOrigin = window.location.origin
+        const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com/v1'
+        
+        console.error(
+          `🚫 CORS Error: Requests from ${currentOrigin} are blocked by Appwrite server\n` +
+          `\n` +
+          `📋 To fix this issue:\n` +
+          `   1. Go to your Appwrite Console: ${appwriteEndpoint.replace('/v1', '')}\n` +
+          `   2. Navigate to: Project Settings > Platforms\n` +
+          `   3. Add a new platform with:\n` +
+          `      - Platform Identifier: ${new URL(currentOrigin).hostname}\n` +
+          `      - Allowed Origins: ${currentOrigin}\n` +
+          `\n` +
+          `   Note: If you're using a reverse proxy (Nginx), also ensure it forwards CORS headers properly.\n` +
+          `   This error prevents authentication and API calls from working.`
+        )
+      }
+      
       setUser(null)
     } finally {
       setLoading(false)

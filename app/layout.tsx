@@ -146,7 +146,6 @@ export default function RootLayout({
               applicationCategory: "AdminDashboard",
               operatingSystem: "Web",
               description: "Comprehensive admin dashboard with authentication, audit logging, blog management, community features, and analytics.",
-              url: process.env.NEXT_PUBLIC_APP_URL || "https://console.hafizbahtiar.com",
               author: {
                 "@type": "Person",
                 name: "Hafiz Bahtiar",

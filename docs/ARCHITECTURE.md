@@ -24,32 +24,90 @@ My Console is a comprehensive admin dashboard application built with modern web 
 
 ```
 my-console/
-├── app/                    # Next.js App Router
-│   ├── auth/              # Protected routes (/auth/*)
-│   │   ├── blog/         # Blog management system
-│   │   │   ├── blog-posts/    # Blog post CRUD
-│   │   │   │   ├── [id]/     # Edit post page
-│   │   │   │   └── create/   # Create post page
-│   │   │   ├── blog-categories/ # Category management
-│   │   │   └── blog-tags/    # Tag management
-│   │   ├── admin/        # Admin features
-│   │   └── dashboard/    # Main dashboard
-│   ├── layout.tsx         # Root layout with providers
-│   └── page.tsx           # Public login page
-├── components/            # React components
-│   ├── ui/               # shadcn/ui components (47+)
-│   │   └── tiptap.tsx    # Rich text editor
-│   └── app/              # Application-specific components
-│       └── auth/
-│           └── admin/     # Admin-specific components
-├── lib/                  # Core business logic
-│   ├── appwrite.ts       # Backend client configuration
-│   ├── auth-context.tsx  # Authentication state
-│   ├── audit-log.ts      # Audit logging system
-│   └── language-context.tsx # Internationalization
-├── public/               # Static assets
-│   └── locales/          # Translation files
-└── docs/                 # Documentation
+├── app/                           # Next.js App Router
+│   ├── api/                      # API routes
+│   │   ├── ai/                   # AI-powered features
+│   │   │   ├── generate-excerpt/ # AI excerpt generation
+│   │   │   └── improve-content/  # AI content improvement
+│   │   ├── backup/               # Database backup operations
+│   │   ├── backups/              # Backup management
+│   │   ├── csrf-token/           # CSRF protection
+│   │   ├── health/                # Health check endpoint
+│   │   └── monitoring/           # System monitoring
+│   ├── auth/                     # Protected routes (/auth/*)
+│   │   ├── admin/                # Admin-only features
+│   │   │   ├── database/         # Database administration
+│   │   │   └── security/         # Security management
+│   │   ├── audit/                # Audit log viewer
+│   │   ├── blog/                 # Blog management system
+│   │   │   ├── blog-posts/       # Blog post CRUD
+│   │   │   │   ├── [id]/         # View/Edit post
+│   │   │   │   │   └── edit/     # Edit post page
+│   │   │   │   └── create/       # Create post page
+│   │   │   ├── blog-categories/  # Category management
+│   │   │   └── blog-tags/        # Tag management
+│   │   ├── community/            # Community management system
+│   │   │   ├── community-posts/  # Community posts CRUD
+│   │   │   │   ├── [id]/         # View/Edit post
+│   │   │   │   │   └── edit/     # Edit post page
+│   │   │   │   └── create/       # Create post page
+│   │   │   └── community-topics/ # Topic management (Admin only)
+│   │   ├── dashboard/            # Main dashboard
+│   │   ├── layout.tsx            # Auth layout with sidebar
+│   │   ├── profile/              # User profile management
+│   │   ├── sessions/             # Session management
+│   │   └── settings/             # Application settings
+│   ├── pricing/                  # Public pricing page
+│   ├── layout.tsx                # Root layout with providers
+│   ├── page.tsx                  # Public login page
+│   ├── globals.css               # Global styles & CSS variables
+│   ├── error.tsx                 # Error boundary
+│   └── not-found.tsx             # 404 page
+├── components/                   # React components
+│   ├── ui/                      # shadcn/ui components (47+)
+│   │   └── tiptap.tsx            # Rich text editor
+│   ├── app/                     # Application-specific components
+│   │   ├── auth/
+│   │   │   ├── admin/            # Admin components
+│   │   │   │   └── database/     # Database admin components
+│   │   │   ├── audit/            # Audit log components
+│   │   │   ├── community/        # Community components
+│   │   │   │   └── community-topics/ # Topic management components
+│   │   │   │       ├── access-control.tsx    # Access control wrapper
+│   │   │   │       ├── delete-topic-dialog.tsx # Delete confirmation
+│   │   │   │       ├── icon-picker.tsx        # Visual icon selector
+│   │   │   │       ├── topic-form.tsx         # Create/Edit form
+│   │   │   │       ├── topics-table.tsx       # Topics listing table
+│   │   │   │       ├── types.ts                # TypeScript types
+│   │   │   │       └── utils.ts                # Utility functions
+│   │   │   ├── dashboard/        # Dashboard components
+│   │   │   └── sidebar-nav.tsx  # Navigation sidebar
+│   │   └── login.tsx            # Login form component
+│   ├── custom/                   # Custom reusable components
+│   │   └── status-badge.tsx      # Advanced status badge
+│   ├── error-boundary.tsx        # Error boundary component
+│   ├── form-field.tsx            # Form field wrapper
+│   └── loading.tsx                # Loading component
+├── lib/                          # Core business logic
+│   ├── appwrite.ts               # Appwrite client & collection IDs
+│   ├── auth-context.tsx          # Authentication state
+│   ├── audit-log.ts              # Audit logging system
+│   ├── language-context.tsx      # Internationalization
+│   ├── error-handler.ts          # Global error handling
+│   ├── pagination.ts             # Pagination utilities
+│   ├── validation.ts             # Input validation
+│   └── utils.ts                  # General utilities
+├── middlewares/                  # Request middlewares
+│   ├── csrf.ts                   # CSRF protection
+│   ├── rate-limit.ts             # Rate limiting
+│   └── security-headers.ts        # Security headers
+├── public/                       # Static assets
+│   └── locales/                  # Translation files
+│       ├── en/
+│       │   └── common.json       # English translations
+│       └── ms/
+│           └── common.json       # Malay translations
+└── docs/                         # Documentation
 ```
 
 ## 🔐 Security Architecture
@@ -65,7 +123,7 @@ sequenceDiagram
 
     U->>F: Login Request
     F->>A: Email/Password Auth
-    A->>A: Rate Limit Check (3s)
+    A->>A: Rate Limit Check (10s)
     A->>DB: Validate Credentials
     DB-->>A: User Data
     A-->>F: Session Token
@@ -76,13 +134,16 @@ sequenceDiagram
 ### Security Features
 
 #### Rate Limiting
-- **Authentication**: 3-second cooldown between login attempts
+- **Authentication**: 10-second cooldown between login attempts (client-side)
+- **Server-Side**: 5-minute cooldown when Appwrite rate limit is hit
+- **Auth Checks**: 5-second interval between session validation checks
 - **Audit Logging**: 500ms between writes, 1s between reads
 - **API Protection**: Built-in Appwrite rate limiting
 
 #### Audit Logging
 - **Comprehensive Tracking**: All user actions logged
-- **Security Events**: Failed login attempts monitored
+- **Security Events**: Failed login/registration attempts monitored
+- **Authentication Events**: Login, logout, registration events tracked
 - **Data Integrity**: JSON serialization for complex data
 - **Performance**: Client-side filtering and caching
 
@@ -164,6 +225,11 @@ All collection IDs are exported from `lib/appwrite.ts`:
 - `BLOG_COMMENTS_COLLECTION_ID` - Blog comments collection
 - `BLOG_VIEWS_COLLECTION_ID` - Blog views analytics collection
 - `BLOG_LIKES_COLLECTION_ID` - Blog likes engagement collection
+- `COMMUNITY_POSTS_COLLECTION_ID` - Community posts collection
+- `COMMUNITY_TOPICS_COLLECTION_ID` - Community topics collection
+- `COMMUNITY_REPLIES_COLLECTION_ID` - Community replies collection
+- `COMMUNITY_VOTES_COLLECTION_ID` - Community votes collection
+- `USERS_COLLECTION_ID` - Extended user profiles collection
 - `AUDIT_COLLECTION_ID` - Audit logs collection
 - `SECURITY_EVENTS_COLLECTION_ID` - Security events collection
 - `IP_BLOCKLIST_COLLECTION_ID` - IP blocklist collection
@@ -198,11 +264,77 @@ ThemeProvider          # Dark/light mode
 - **Theme**: System preference + manual override
 - **Audit Data**: Fetched on-demand with caching
 
+## 🔐 Authentication Architecture
+
+### Authentication System
+
+My Console implements a comprehensive authentication system using Appwrite Auth with extended user profiles.
+
+#### Authentication Flow
+
+1. **Login/Registration**: User authenticates via Appwrite Auth
+2. **Session Creation**: Appwrite creates secure session token
+3. **Profile Management**: Extended profile created/updated in `users` collection
+4. **Statistics Tracking**: Login counts and timestamps updated
+5. **Audit Logging**: All authentication events logged
+6. **Route Protection**: Protected routes check authentication status
+
+#### Key Features
+
+- **Email/Password Auth**: Standard email and password authentication
+- **User Registration**: Self-service registration with validation
+- **Rate Limiting**: Client-side (10s) and server-side (5min) protection
+- **Session Management**: Automatic validation and refresh (5s intervals)
+- **User Profiles**: Extended profiles with roles, status, and preferences
+- **Login Statistics**: Automatic tracking of login activity
+- **Audit Trail**: Comprehensive logging of all auth events
+
+See [AUTHENTICATION.md](./AUTHENTICATION.md) for complete authentication documentation.
+
 ## 📝 Blog Management Architecture
 
 ### Content Management System
 
 My Console includes a comprehensive blog management system with rich text editing capabilities, content analytics, and SEO optimization.
+
+## 👥 Community Management Architecture
+
+### Discussion Platform
+
+My Console features a complete community management system for user discussions, Q&A, and knowledge sharing.
+
+#### Community Module Structure
+
+The community module is organized into modular, reusable components:
+
+```
+components/app/auth/community/community-topics/
+├── access-control.tsx        # Access control wrapper (Super Admin/Admin)
+├── delete-topic-dialog.tsx   # Delete confirmation dialog
+├── icon-picker.tsx           # Visual icon selector with search
+├── topic-form.tsx            # Unified create/edit form component
+├── topics-table.tsx          # Topics listing with pagination
+├── types.ts                  # TypeScript interfaces & constants
+└── utils.ts                  # Utility functions (slug, icon helpers)
+```
+
+#### Component Architecture Pattern
+
+The community topics module demonstrates a **modular component architecture**:
+
+1. **Separation of Concerns**: Each component has a single responsibility
+2. **Reusability**: Components can be used across different contexts
+3. **Type Safety**: Centralized types and interfaces
+4. **Utility Functions**: Shared logic extracted to utils
+5. **Access Control**: Dedicated component for authorization
+
+#### Key Features
+
+- **Icon Picker**: Visual icon selection with 50+ Lucide icons, searchable grid, scrollable popover
+- **Topic Form**: Unified form for create/edit operations with AI description generation
+- **Access Control**: Role-based access (Super Admin team or admin label)
+- **Hierarchical Topics**: Support for parent-child topic relationships
+- **Slug Auto-generation**: Automatic URL-friendly slug generation from topic name
 
 #### Blog Content Schema
 ```typescript
@@ -295,9 +427,33 @@ const [formData, setFormData] = useState({
 - **Advanced Components**: Charts, Tables, Forms
 
 #### Application Layer
-- **Auth Components**: Login form, protected layouts
-- **Dashboard Components**: Activity feeds, statistics
-- **Admin Components**: Audit viewers, user management
+- **Auth Components**: Login form, protected layouts, sidebar navigation
+- **Dashboard Components**: Activity feeds, statistics, monitoring
+- **Admin Components**: Audit viewers, database management, security settings
+- **Blog Components**: Post management, category/tag management
+- **Community Components**: Modular, reusable component architecture
+  - **Access Control**: Role-based access wrappers (Super Admin/Admin)
+  - **Form Components**: Unified create/edit forms with AI integration
+  - **Table Components**: Paginated, filterable tables with sorting
+  - **Dialog Components**: Reusable confirmation dialogs
+  - **Picker Components**: Visual selection components (icons with search)
+  - **Utility Functions**: Shared logic (slug generation, validation)
+
+### Component Patterns
+
+#### Modular Architecture (Community Topics Example)
+The community topics module demonstrates best practices for component organization:
+
+1. **Page Component** (`page.tsx`): Orchestrates state and data operations
+2. **Access Control** (`access-control.tsx`): Handles authorization logic
+3. **Form Component** (`topic-form.tsx`): Reusable for create/edit
+4. **Table Component** (`topics-table.tsx`): Displays data with actions
+5. **Dialog Components** (`delete-topic-dialog.tsx`): Specialized dialogs
+6. **Picker Components** (`icon-picker.tsx`): Visual selection UI
+7. **Types** (`types.ts`): Centralized TypeScript definitions
+8. **Utils** (`utils.ts`): Shared utility functions
+
+This pattern reduces code duplication, improves maintainability, and enables component reuse across features.
 
 ### Design System
 
@@ -410,10 +566,27 @@ bun run start        # Start production server
 ### Documentation Structure
 ```
 docs/
-├── README.md              # Main project documentation
-├── ARCHITECTURE.md        # This file - system overview
-├── APPWRITE_SETUP.md      # Backend configuration
-└── I18N_SETUP.md          # Internationalization guide
+├── ARCHITECTURE.md              # System architecture overview
+├── APPWRITE_SETUP.md            # Backend configuration
+├── AUTHENTICATION.md            # Authentication system documentation
+├── I18N_SETUP.md                # Internationalization guide
+├── BLOG_MANAGEMENT.md           # Blog system documentation
+├── COMMUNITY_MANAGEMENT.md      # Community system documentation
+├── APPWRITE_DB_BLOG_POSTS.md    # Blog posts schema
+├── APPWRITE_DB_BLOG_CATEGORIES.md # Blog categories schema
+├── APPWRITE_DB_BLOG_TAGS.md     # Blog tags schema
+├── APPWRITE_DB_BLOG_COMMENTS.md # Blog comments schema
+├── APPWRITE_DB_BLOG_VIEWS.md    # Blog views schema
+├── APPWRITE_DB_BLOG_LIKES.md    # Blog likes schema
+├── APPWRITE_DB_COMMUNITY_POSTS.md    # Community posts schema
+├── APPWRITE_DB_COMMUNITY_TOPICS.md   # Community topics schema
+├── APPWRITE_DB_COMMUNITY_REPLIES.md  # Community replies schema
+├── APPWRITE_DB_COMMUNITY_VOTES.md     # Community votes schema
+├── APPWRITE_DB_USERS.md              # Users collection schema
+├── APPWRITE_DB_AUDIT_LOG.md     # Audit log schema
+├── DATABASE_ADMIN.md            # Database administration guide
+├── TIPTAP_COMPONENTS.md         # Rich text editor documentation
+└── NICE_TO_HAVE.md              # Future enhancements
 ```
 
 ### Documentation Principles

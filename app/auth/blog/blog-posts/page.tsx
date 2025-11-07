@@ -134,32 +134,32 @@ export default function BlogPostsPage() {
                 
                 try {
                     // Try to use Appwrite native pagination with queries
-                    const countResponse = await tablesDB.listRows({
-                        databaseId: DATABASE_ID,
-                        tableId: BLOG_POSTS_COLLECTION_ID,
-                    });
-                    setTotalPosts(countResponse.rows.length);
-                    
-                    const postsData = await tablesDB.listRows({
-                        databaseId: DATABASE_ID,
-                        tableId: BLOG_POSTS_COLLECTION_ID,
-                        queries: [
+                const countResponse = await tablesDB.listRows({
+                    databaseId: DATABASE_ID,
+                    tableId: BLOG_POSTS_COLLECTION_ID,
+                });
+                setTotalPosts(countResponse.rows.length);
+                
+                const postsData = await tablesDB.listRows({
+                    databaseId: DATABASE_ID,
+                    tableId: BLOG_POSTS_COLLECTION_ID,
+                    queries: [
                             `limit(${limit})`,
                             `offset(${offset})`,
-                            `orderDesc("$updatedAt")`
-                        ]
-                    });
-                    
-                    const sortedPosts = postsData.rows
-                        .map((row: any) => ({
-                            ...row,
-                            tags: Array.isArray(row.tags) ? row.tags : [],
-                            seoKeywords: Array.isArray(row.seoKeywords) ? row.seoKeywords : [],
-                            relatedPosts: Array.isArray(row.relatedPosts) ? row.relatedPosts : [],
-                        }));
-                    
-                    setPosts(sortedPosts);
-                    setAllPosts(sortedPosts); // For stats display
+                        `orderDesc("$updatedAt")`
+                    ]
+                });
+                
+                const sortedPosts = postsData.rows
+                    .map((row: any) => ({
+                        ...row,
+                        tags: Array.isArray(row.tags) ? row.tags : [],
+                        seoKeywords: Array.isArray(row.seoKeywords) ? row.seoKeywords : [],
+                        relatedPosts: Array.isArray(row.relatedPosts) ? row.relatedPosts : [],
+                    }));
+                
+                setPosts(sortedPosts);
+                setAllPosts(sortedPosts); // For stats display
                 } catch (queryError: any) {
                     // Fallback: Load all data and paginate client-side if query fails
                     console.warn('Appwrite query failed, falling back to client-side pagination:', queryError);

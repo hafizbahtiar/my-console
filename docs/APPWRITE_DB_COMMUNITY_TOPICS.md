@@ -248,6 +248,255 @@ const webDevTopic = {
 };
 ```
 
+## Standard Topic Examples
+
+Here are some standard topic examples that can be used as a starting point for organizing community discussions:
+
+### Flat Structure (Simple Topics)
+
+```typescript
+// General Discussion
+{
+  name: "General Discussion",
+  slug: "general-discussion",
+  description: "General community discussions and announcements",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 1,
+  color: "#3B82F6",
+  icon: "message-circle",
+  rules: "Be respectful and follow community guidelines."
+}
+
+// Questions & Answers
+{
+  name: "Questions & Answers",
+  slug: "questions-answers",
+  description: "Ask questions and get help from the community",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 2,
+  color: "#10B981",
+  icon: "help-circle",
+  rules: "Search before asking. Provide clear context in your questions."
+}
+
+// Showcase
+{
+  name: "Showcase",
+  slug: "showcase",
+  description: "Share your projects, work, and achievements",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 3,
+  color: "#F59E0B",
+  icon: "award",
+  rules: "Include screenshots or demos. Explain what you built and how."
+}
+
+// Feedback & Suggestions
+{
+  name: "Feedback & Suggestions",
+  slug: "feedback-suggestions",
+  description: "Share feedback and suggest improvements",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 4,
+  color: "#8B5CF6",
+  icon: "message-square",
+  rules: "Be constructive. Explain the problem and your proposed solution."
+}
+
+// Announcements
+{
+  name: "Announcements",
+  slug: "announcements",
+  description: "Official announcements and updates",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 0,
+  color: "#EF4444",
+  icon: "megaphone",
+  rules: "Only moderators can post here. Check regularly for updates."
+}
+```
+
+### Hierarchical Structure (Organized by Category)
+
+```typescript
+// Technology (Parent Topic)
+{
+  name: "Technology",
+  slug: "technology",
+  description: "Technology-related discussions",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 1,
+  color: "#3B82F6",
+  icon: "cpu",
+  parentId: null
+}
+
+// Web Development (Child of Technology)
+{
+  name: "Web Development",
+  slug: "web-development",
+  description: "Frontend, backend, and full-stack development",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 1,
+  color: "#10B981",
+  icon: "code",
+  parentId: "technology-topic-id"
+}
+
+// Mobile Development (Child of Technology)
+{
+  name: "Mobile Development",
+  slug: "mobile-development",
+  description: "iOS, Android, and cross-platform development",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 2,
+  color: "#10B981",
+  icon: "smartphone",
+  parentId: "technology-topic-id"
+}
+
+// Design (Parent Topic)
+{
+  name: "Design",
+  slug: "design",
+  description: "UI/UX design and creative work",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 2,
+  color: "#EC4899",
+  icon: "palette",
+  parentId: null
+}
+
+// UI Design (Child of Design)
+{
+  name: "UI Design",
+  slug: "ui-design",
+  description: "User interface design and mockups",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 1,
+  color: "#EC4899",
+  icon: "layout",
+  parentId: "design-topic-id"
+}
+
+// UX Design (Child of Design)
+{
+  name: "UX Design",
+  slug: "ux-design",
+  description: "User experience research and design",
+  isActive: true,
+  isPublic: true,
+  displayOrder: 2,
+  color: "#EC4899",
+  icon: "users",
+  parentId: "design-topic-id"
+}
+```
+
+### Recommended Color Palette
+
+Use these color codes for consistent theming:
+
+- **Blue** (`#3B82F6`) - General, Technology, Information
+- **Green** (`#10B981`) - Success, Q&A, Development
+- **Amber** (`#F59E0B`) - Showcase, Highlights, Featured
+- **Purple** (`#8B5CF6`) - Feedback, Creative, Community
+- **Red** (`#EF4444`) - Announcements, Important, Urgent
+- **Pink** (`#EC4899`) - Design, Creative, Arts
+- **Indigo** (`#6366F1`) - Professional, Business
+- **Teal** (`#14B8A6`) - Support, Help, Resources
+
+### Recommended Icons (Lucide Icons)
+
+- `message-circle` - General Discussion
+- `help-circle` - Questions & Answers
+- `award` - Showcase, Achievements
+- `message-square` - Feedback, Suggestions
+- `megaphone` - Announcements
+- `cpu` - Technology
+- `code` - Development, Programming
+- `smartphone` - Mobile Development
+- `palette` - Design
+- `layout` - UI Design
+- `users` - UX Design, Community
+- `book` - Documentation, Learning
+- `lightbulb` - Ideas, Tips
+- `bug` - Bug Reports
+- `wrench` - Tools, Utilities
+
+### Complete Example Setup
+
+```typescript
+// Recommended initial topics for a new community
+const standardTopics = [
+  {
+    name: "Announcements",
+    slug: "announcements",
+    description: "Official announcements and updates",
+    isActive: true,
+    isPublic: true,
+    displayOrder: 0,
+    color: "#EF4444",
+    icon: "megaphone",
+    rules: "Only moderators can post here. Check regularly for updates."
+  },
+  {
+    name: "General Discussion",
+    slug: "general-discussion",
+    description: "General community discussions",
+    isActive: true,
+    isPublic: true,
+    displayOrder: 1,
+    color: "#3B82F6",
+    icon: "message-circle",
+    rules: "Be respectful and follow community guidelines."
+  },
+  {
+    name: "Questions & Answers",
+    slug: "questions-answers",
+    description: "Ask questions and get help from the community",
+    isActive: true,
+    isPublic: true,
+    displayOrder: 2,
+    color: "#10B981",
+    icon: "help-circle",
+    rules: "Search before asking. Provide clear context in your questions."
+  },
+  {
+    name: "Showcase",
+    slug: "showcase",
+    description: "Share your projects, work, and achievements",
+    isActive: true,
+    isPublic: true,
+    displayOrder: 3,
+    color: "#F59E0B",
+    icon: "award",
+    rules: "Include screenshots or demos. Explain what you built and how."
+  },
+  {
+    name: "Feedback & Suggestions",
+    slug: "feedback-suggestions",
+    description: "Share feedback and suggest improvements",
+    isActive: true,
+    isPublic: true,
+    displayOrder: 4,
+    color: "#8B5CF6",
+    icon: "message-square",
+    rules: "Be constructive. Explain the problem and your proposed solution."
+  }
+];
+```
+
 ## Future Considerations
 
 - Topic subscriptions/notifications

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
 import { useTranslation } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
@@ -27,6 +27,69 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true)
   const [emailUpdates, setEmailUpdates] = useState(true)
   const [twoFactor, setTwoFactor] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [primaryColor, setPrimaryColor] = useState<string>('default')
+
+  // Color options with their CSS variable values
+  const colorOptions = [
+    { name: 'default', label: 'Default', value: 'oklch(0.205 0 0)', darkValue: 'oklch(0.922 0 0)' },
+    { name: 'blue', label: 'Blue', value: 'oklch(0.5 0.2 250)', darkValue: 'oklch(0.7 0.2 250)' },
+    { name: 'green', label: 'Green', value: 'oklch(0.5 0.2 150)', darkValue: 'oklch(0.7 0.2 150)' },
+    { name: 'purple', label: 'Purple', value: 'oklch(0.5 0.2 300)', darkValue: 'oklch(0.7 0.2 300)' },
+    { name: 'red', label: 'Red', value: 'oklch(0.5 0.2 25)', darkValue: 'oklch(0.7 0.2 25)' },
+    { name: 'orange', label: 'Orange', value: 'oklch(0.6 0.2 70)', darkValue: 'oklch(0.75 0.2 70)' },
+    { name: 'pink', label: 'Pink', value: 'oklch(0.6 0.2 350)', darkValue: 'oklch(0.75 0.2 350)' },
+    { name: 'cyan', label: 'Cyan', value: 'oklch(0.6 0.2 200)', darkValue: 'oklch(0.75 0.2 200)' },
+    { name: 'amber', label: 'Amber', value: 'oklch(0.65 0.2 85)', darkValue: 'oklch(0.8 0.2 85)' },
+  ]
+
+  // Prevent hydration mismatch by only rendering Select after mount
+  useEffect(() => {
+    setMounted(true)
+
+    // Load saved primary color from localStorage
+    const savedColor = localStorage.getItem('primary-color') || 'default'
+    setPrimaryColor(savedColor)
+    applyPrimaryColor(savedColor)
+  }, [])
+
+  // Apply primary color to CSS variables
+  const applyPrimaryColor = (colorName: string) => {
+    if (colorName === 'default') {
+      // Reset to default
+      document.documentElement.style.setProperty('--primary', '')
+      document.documentElement.style.setProperty('--primary-foreground', '')
+      return
+    }
+
+    const color = colorOptions.find(c => c.name === colorName)
+    if (color) {
+      const isDark = document.documentElement.classList.contains('dark')
+      const primaryValue = isDark ? color.darkValue : color.value
+
+      // Calculate appropriate foreground color (white or black based on lightness)
+      const lightness = parseFloat(primaryValue.match(/oklch\(([\d.]+)/)?.[1] || '0.5')
+      const foregroundValue = lightness > 0.6 ? 'oklch(0.145 0 0)' : 'oklch(0.985 0 0)'
+
+      document.documentElement.style.setProperty('--primary', primaryValue)
+      document.documentElement.style.setProperty('--primary-foreground', foregroundValue)
+    }
+  }
+
+  // Handle primary color change
+  const handlePrimaryColorChange = (colorName: string) => {
+    setPrimaryColor(colorName)
+    localStorage.setItem('primary-color', colorName)
+    applyPrimaryColor(colorName)
+    toast.success(t('settings.primary_color_updated'))
+  }
+
+  // Update color when theme changes
+  useEffect(() => {
+    if (mounted && primaryColor) {
+      applyPrimaryColor(primaryColor)
+    }
+  }, [theme, mounted, primaryColor])
 
   // Ping functionality state
   const [pingStatus, setPingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -52,15 +115,9 @@ export default function SettingsPage() {
     confirm: false
   })
 
-  const handleSaveSettings = () => {
-    toast.success(t("settings.save_settings"))
-  }
-
   const handleLanguageChange = async (newLanguage: "en" | "ms") => {
-    const oldLanguage = language
     setLanguage(newLanguage)
-
-    toast.success(t("settings.save_settings"))
+    toast.success(t("settings.language_updated") || "Language updated")
   }
 
   const handlePasswordChange = async () => {
@@ -225,7 +282,7 @@ export default function SettingsPage() {
               {t("settings.appearance_desc")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>{t("settings.theme")}</Label>
@@ -233,7 +290,7 @@ export default function SettingsPage() {
                   {t("settings.choose_theme")}
                 </p>
               </div>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={mounted ? (theme || 'system') : 'system'} onValueChange={setTheme}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -241,6 +298,59 @@ export default function SettingsPage() {
                   <SelectItem value="light">{t("settings.light")}</SelectItem>
                   <SelectItem value="dark">{t("settings.dark")}</SelectItem>
                   <SelectItem value="system">{t("settings.system")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>{t("settings.primary_color")}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t("settings.choose_primary_color")}
+                </p>
+              </div>
+              <Select 
+                value={mounted ? (primaryColor || 'default') : 'default'} 
+                onValueChange={handlePrimaryColorChange}
+              >
+                <SelectTrigger className="w-48">
+                  <div className="flex items-center gap-2">
+                    {mounted && (() => {
+                      const selectedColor = colorOptions.find(c => c.name === primaryColor)
+                      if (!selectedColor) return null
+                      
+                      const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                      const colorValue = isDark ? selectedColor.darkValue : selectedColor.value
+                      
+                      return (
+                        <div 
+                          className="h-4 w-4 rounded border border-border/50 shrink-0"
+                          style={{ backgroundColor: colorValue }}
+                        />
+                      )
+                    })()}
+                    <SelectValue placeholder={t("settings.choose_primary_color")} />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {mounted && colorOptions.map((color) => {
+                    const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                    const colorValue = isDark ? color.darkValue : color.value
+                    
+                    return (
+                      <SelectItem key={color.name} value={color.name}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="h-4 w-4 rounded border border-border/50 shrink-0"
+                            style={{ backgroundColor: colorValue }}
+                          />
+                          <span>{color.label}</span>
+                        </div>
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -328,10 +438,10 @@ export default function SettingsPage() {
               </p>
               <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
                 <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Key className="h-4 w-4 mr-2" />
-                {t("settings.change_password")}
-              </Button>
+                  <Button variant="outline" size="sm">
+                    <Key className="h-4 w-4 mr-2" />
+                    {t("settings.change_password")}
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
@@ -478,13 +588,13 @@ export default function SettingsPage() {
                   {t("settings.choose_language")}
                 </p>
               </div>
-              <Select value={language} onValueChange={handleLanguageChange}>
+              <Select value={mounted ? (language || 'en') : 'en'} onValueChange={handleLanguageChange}>
                 <SelectTrigger className="w-40">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">{t("settings.english")}</SelectItem>
-                  <SelectItem value="ms">{t("settings.malay")}</SelectItem>
+                  <SelectItem value="en">{t("general_use.english")}</SelectItem>
+                  <SelectItem value="ms">{t("general_use.malay")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -525,8 +635,8 @@ export default function SettingsPage() {
                   <Zap className="h-4 w-4 mr-2" />
                 )}
                 {pingStatus === 'loading' ? t("settings.testing") :
-                 pingStatus === 'success' ? t("settings.connected") :
-                 pingStatus === 'error' ? t("settings.failed") : t("settings.test_connection")}
+                  pingStatus === 'success' ? t("settings.connected") :
+                    pingStatus === 'error' ? t("settings.failed") : t("settings.test_connection")}
               </Button>
             </div>
 
@@ -573,16 +683,6 @@ export default function SettingsPage() {
                 </ScrollArea>
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Save Button */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button onClick={handleSaveSettings} className="w-full">
-              <Settings className="h-4 w-4 mr-2" />
-              {t("settings.save_settings")}
-            </Button>
           </CardContent>
         </Card>
       </div>

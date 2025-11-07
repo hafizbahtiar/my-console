@@ -180,13 +180,13 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setBackupToDelete(null)}>
-              {t("database.cancel")}
+              {t("status.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBackup}
               className="bg-red-600 hover:bg-red-700"
             >
-              {t("database.delete")}
+              {t("status.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

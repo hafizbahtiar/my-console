@@ -139,7 +139,7 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
           <div>
         <CardTitle>{t('audit.activity_log')}</CardTitle>
         <CardDescription>
-              {t('audit.showing_entries_paginated', {
+              {t('general_use.showing_entries_paginated', {
                 showing: paginatedLogs.length.toString(),
             filtered: filteredLogs.length.toString(),
             total: totalLogs.toString()

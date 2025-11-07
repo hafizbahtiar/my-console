@@ -55,40 +55,45 @@
 After creating the database, set up the required collections:
 
 1. **[Audit Logs Collection](APPWRITE_DB_AUDIT_LOG.md)** - Essential for tracking user activities and security events
-2. **[Blog System Collections](BLOG_MANAGEMENT.md)** - Complete blog management with rich text editor
+2. **[Users Collection](APPWRITE_DB_USERS.md)** - Extended user profiles, preferences, and activity tracking
+3. **[Blog System Collections](BLOG_MANAGEMENT.md)** - Complete blog management with rich text editor
    - `blog_posts` - Main content storage
    - `blog_categories` - Content categorization
    - `blog_tags` - Content tagging system
    - `blog_views` - Detailed view analytics (see setup guide below)
    - `blog_likes` - User engagement tracking (see setup guide below)
-3. **User Profiles** (`user_profiles`) - Extended user information (optional)
-4. **System Settings** (`system_settings`) - Application configuration (optional)
-5. **Notifications** (`notifications`) - User notifications and alerts (optional)
+4. **[Community System Collections](COMMUNITY_MANAGEMENT.md)** - Community discussion platform
+   - `community_posts` - Discussion posts
+   - `community_topics` - Discussion topics/categories
+   - `community_replies` - Threaded replies
+   - `community_votes` - User votes
 
 ### Optional: Additional Collections
 
 You may also want to create these collections for a complete console setup:
 
-1. **User Profiles** (`user_profiles`)
-   - Extended user information
-   - Preferences and settings
-
-2. **System Settings** (`system_settings`)
+1. **System Settings** (`system_settings`)
    - Application configuration
    - Feature flags
 
-3. **Notifications** (`notifications`)
+2. **Notifications** (`notifications`)
    - User notifications and alerts
 
 ## Current Implementation Status
 
 ### ✅ Authentication System
-- **Login Form**: Complete with rate limiting (3s between attempts)
-- **Session Management**: Automatic session validation and refresh
+- **Login Form**: Complete with rate limiting (10s between attempts)
+- **Registration Form**: User registration with profile creation
+- **Session Management**: Automatic session validation and refresh (5s intervals)
 - **Protected Routes**: Dashboard and admin routes with auth guards
 - **Logout**: Secure session termination with audit logging
+- **User Profiles**: Extended profiles in `users` collection
+- **Login Statistics**: Automatic tracking of login counts and timestamps
 - **Error Handling**: Comprehensive error messages and user feedback
-- **Security Events**: Failed login attempt tracking
+- **Security Events**: Failed login/registration attempt tracking
+- **Rate Limiting**: Client-side (10s) and server-side (5min) protection
+
+See [AUTHENTICATION.md](./AUTHENTICATION.md) for complete authentication documentation.
 
 ### ✅ Audit Logging System
 - **Comprehensive Logging**: All authentication and user actions tracked

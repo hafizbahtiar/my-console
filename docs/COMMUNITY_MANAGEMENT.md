@@ -135,6 +135,65 @@ community_replies (1) ──< (Many) community_replies (self-referencing for thr
 
 ## Implementation Guide
 
+### Component Architecture
+
+The community management module follows a **modular component architecture** pattern for maintainability and reusability.
+
+#### Community Topics Module Structure
+
+The community topics management page (`/auth/community/community-topics`) is organized into separate, focused components:
+
+```
+components/app/auth/community/community-topics/
+├── access-control.tsx        # Access control wrapper
+│   └── Checks Super Admin team membership or admin label
+│   └── Handles loading states and redirects
+├── delete-topic-dialog.tsx   # Delete confirmation dialog
+│   └── Reusable confirmation component
+├── icon-picker.tsx           # Visual icon selector
+│   └── 50+ Lucide icons in searchable grid
+│   └── Scrollable popover (works in dialogs)
+│   └── Clear button in same row
+├── topic-form.tsx            # Unified create/edit form
+│   └── All form fields (name, slug, description, etc.)
+│   └── AI description generation
+│   └── Auto-slug generation
+│   └── Used in both create and edit dialogs
+├── topics-table.tsx          # Topics listing table
+│   └── Pagination support
+│   └── Edit/Delete actions
+│   └── Empty state handling
+├── types.ts                  # TypeScript definitions
+│   └── CommunityTopic interface
+│   └── TopicFormData interface
+│   └── IconOption interface
+│   └── AVAILABLE_ICONS array
+│   └── DEFAULT_FORM_DATA constant
+└── utils.ts                  # Utility functions
+    └── generateSlug()
+    └── generateUniqueSlug()
+    └── getIconComponent()
+    └── getParentTopicName()
+    └── getAvailableParents()
+```
+
+#### Benefits of This Architecture
+
+1. **Maintainability**: Each component is focused and easy to understand
+2. **Reusability**: Components can be used in different contexts
+3. **Testability**: Smaller components are easier to test
+4. **Type Safety**: Centralized types ensure consistency
+5. **Code Organization**: Clear separation of concerns
+
+#### Main Page Structure
+
+The main page (`app/auth/community/community-topics/page.tsx`) orchestrates all components:
+
+- **State Management**: Topics, pagination, dialogs, form data
+- **Data Operations**: Load, create, update, delete topics
+- **Event Handlers**: Form submissions, dialog management
+- **Access Control**: Wrapped in AccessControl component
+
 ### Setting Up Collections
 
 1. **Create Collections** in Appwrite Console:
@@ -343,6 +402,66 @@ const votes = await databases.listDocuments(
   'community_votes',
   [Query.equal('postId', postId)]
 );
+```
+
+## Frontend Implementation
+
+### Pages
+
+#### Community Topics Management (`/auth/community/community-topics`)
+- **Access**: Super Admin team members or users with 'admin' label
+- **Features**:
+  - List all topics with pagination
+  - Create new topics with visual icon picker
+  - Edit existing topics
+  - Delete topics (with confirmation)
+  - Hierarchical topic structure support
+  - Auto-generated slugs from topic names
+  - AI-powered description generation
+
+#### Community Posts Management (`/auth/community/community-posts`)
+- **Access**: Authenticated users
+- **Features**:
+  - List all posts with filtering and search
+  - Create new posts with rich text editor
+  - View post details
+  - Edit existing posts
+  - Delete posts (with confirmation)
+  - Status management (pending, approved, rejected, etc.)
+
+### Component Usage Examples
+
+#### Using Icon Picker
+```typescript
+import { IconPicker } from '@/components/app/auth/community/community-topics/icon-picker'
+
+<IconPicker
+  value={formData.icon}
+  onChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
+  onClear={() => setFormData(prev => ({ ...prev, icon: '' }))}
+/>
+```
+
+#### Using Topic Form
+```typescript
+import { TopicForm } from '@/components/app/auth/community/community-topics/topic-form'
+
+<TopicForm
+  formData={formData}
+  setFormData={setFormData}
+  allTopics={allTopics}
+  selectedTopic={selectedTopic}
+  mode="create" // or "edit"
+/>
+```
+
+#### Using Access Control
+```typescript
+import { AccessControl } from '@/components/app/auth/community/community-topics/access-control'
+
+<AccessControl>
+  {/* Protected content */}
+</AccessControl>
 ```
 
 ## Related Documentation

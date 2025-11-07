@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { account } from "@/lib/appwrite"
+import { updateLoginStats } from "@/lib/user-profile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -56,9 +58,20 @@ export function LoginForm() {
     try {
       await login(email, password)
 
-      // Get current user data for audit logging
-      try {
+      // Get current user data
         const currentUser = await account.get()
+
+      // Create/update user profile and update login stats
+      // This will create the profile if it doesn't exist
+      try {
+        await updateLoginStats(currentUser.$id)
+      } catch (profileError) {
+        console.warn('Failed to create/update user profile:', profileError)
+        // Don't block login if profile creation fails
+      }
+
+      // Log audit event
+      try {
         await auditLogger.logUserLogin(
           currentUser.$id,
           undefined, // sessionId - could be extracted from session
@@ -204,14 +217,13 @@ export function LoginForm() {
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            {"Don't have an account? "}{" "}
-            <a
-              href="#"
+            {t('auth.dont_have_account')}{" "}
+            <Link
+              href="/register"
               className="text-primary hover:underline focus:underline"
-              onClick={(e) => e.preventDefault()}
             >
               {t('auth.sign_up')}
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>

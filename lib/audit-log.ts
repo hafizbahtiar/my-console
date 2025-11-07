@@ -210,7 +210,7 @@ export class AuditLogger {
       // Retry once after waiting
       if (!this.checkFetchRateLimit()) {
         // If still rate limited, return empty to avoid blocking
-        return { logs: [], total: 0 }
+      return { logs: [], total: 0 }
       }
     }
 

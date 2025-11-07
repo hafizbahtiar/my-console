@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
@@ -13,64 +13,75 @@ import { LogOut, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function AuthLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-  const { user, logout, loading } = useAuth()
-  const { theme, setTheme } = useTheme()
-  const { t } = useTranslation()
-  const pathname = usePathname()
-  const router = useRouter()
+    const { user, logout, loading } = useAuth()
+    const { theme, setTheme } = useTheme()
+    const { t } = useTranslation()
+    const pathname = usePathname()
+    const router = useRouter()
+    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/')
-    }
-  }, [loading, user, router])
-
-  // Don't render anything while redirecting
-  if (!loading && !user) {
-    return null
-  }
-
-    // Loading state
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-                <p className="mt-4 text-muted-foreground">{t('general_use.loading')}</p>
-            </div>
-        )
-    }
-
-  const handleLogout = async (e: React.MouseEvent) => {
-    e.preventDefault()
-
-    try {
-      // Log logout event before actually logging out
-      if (user) {
-        try {
-          await auditLogger.logUserLogout(user.$id)
-        } catch (auditError) {
-          console.warn('Failed to log logout audit event:', auditError)
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/')
         }
-      }
+    }, [loading, user, router])
 
-      await logout()
-      toast.success(t('auth.logout_success'))
-
-      // Use setTimeout to avoid router update during render
-      setTimeout(() => {
-        router.push('/')
-      }, 0)
-    } catch (error) {
-      toast.error(t('auth.logout'))
+    // Don't render anything while redirecting
+    if (!loading && !user) {
+        return null
     }
-  }
+
+    // // Loading state
+    // if (loading) {
+    //     return (
+    //         <div className="min-h-screen flex items-center justify-center">
+    //             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+    //             <p className="mt-4 text-muted-foreground">{t('general_use.loading')}</p>
+    //         </div>
+    //     )
+    // }
+
+    const handleLogout = async () => {
+        try {
+            // Log logout event before actually logging out
+            if (user) {
+                try {
+                    await auditLogger.logUserLogout(user.$id)
+                } catch (auditError) {
+                    console.warn('Failed to log logout audit event:', auditError)
+                }
+            }
+
+            await logout()
+            toast.success(t('auth.logout_success'))
+
+            // Use setTimeout to avoid router update during render
+            setTimeout(() => {
+                router.push('/')
+            }, 0)
+        } catch (error) {
+            toast.error(t('auth.logout'))
+        } finally {
+            setLogoutDialogOpen(false)
+        }
+    }
 
     // Generate breadcrumbs from pathname
     const generateBreadcrumbs = () => {
@@ -131,7 +142,7 @@ export default function AuthLayout({
                             <span className="sr-only">Toggle theme</span>
                         </Button>
 
-                        <Button variant="outline" size="sm" onClick={handleLogout}>
+                        <Button variant="outline" size="sm" onClick={() => setLogoutDialogOpen(true)}>
                             <LogOut className="h-4 w-4 mr-2" />
                             {t('auth.logout')}
                         </Button>
@@ -143,6 +154,28 @@ export default function AuthLayout({
                 </main>
             </SidebarInset>
             <div className="data-[sidebar-state=open]:block data-[sidebar-state=closed]:hidden ml-1"></div>
+
+            {/* Logout Confirmation Dialog */}
+            <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('auth.logout_confirmation_title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('auth.logout_confirmation_description')}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('general_use.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={handleLogout} 
+                            className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600/20 dark:focus-visible:ring-red-600/40 dark:bg-red-600/90 dark:hover:bg-red-700/90 transition-colors"
+                        >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            {t('auth.logout')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </SidebarProvider>
     )
 }

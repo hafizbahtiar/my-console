@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { useTranslation } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { teams } from "@/lib/appwrite"
@@ -31,6 +32,9 @@ import {
   Tag,
   MessageSquare,
   Users,
+  FolderTree,
+  ClipboardList,
+  Clock,
 } from "lucide-react"
 
 const navigationItems = [
@@ -56,12 +60,12 @@ const adminItems = [
   {
     titleKey: "nav.audit",
     url: "/auth/audit",
-    icon: Database,
+    icon: ClipboardList,
   },
   {
     titleKey: "nav.sessions",
     url: "/auth/sessions",
-    icon: Shield,
+    icon: Clock,
   },
   {
     titleKey: "nav.security",
@@ -107,6 +111,12 @@ const communityItems = [
     url: "/auth/community/community-posts",
     icon: MessageSquare,
     requiresSuperAdmin: false,
+  },
+  {
+    titleKey: "nav.community_topics",
+    url: "/auth/community/community-topics",
+    icon: FolderTree,
+    requiresSuperAdmin: true,
   },
 ]
 
@@ -242,10 +252,17 @@ export function SidebarNav() {
     <Sidebar variant="inset" className="border-r">
       <SidebarHeader className="border-b px-6 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Home className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-primary/10 dark:bg-primary/20 shrink-0">
+            <Image
+              src="/favicon.svg"
+              alt="My Console Logo"
+              width={32}
+              height={32}
+              className="h-full w-full object-contain p-1"
+              priority
+            />
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
+          <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
             <span className="truncate font-semibold">My Console</span>
             <span className="truncate text-xs text-muted-foreground">Admin Panel</span>
           </div>

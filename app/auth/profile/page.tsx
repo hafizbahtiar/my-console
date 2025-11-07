@@ -5,38 +5,84 @@ import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/language-context"
 import { account, teams } from "@/lib/appwrite"
 import { auditLogger } from "@/lib/audit-log"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { User, Mail, Calendar, Shield, Edit, Loader2, Users } from "lucide-react"
+import { getUserProfileByUserId, updateLastActivity, type UserProfile } from "@/lib/user-profile"
 import { toast } from "sonner"
+import { tablesDB, DATABASE_ID, USERS_COLLECTION_ID } from "@/lib/appwrite"
+import { ProfileOverview } from "@/components/app/auth/profile/profile-overview"
+import { AccountSettingsForm } from "@/components/app/auth/profile/account-settings-form"
+import { AccountStatistics } from "@/components/app/auth/profile/account-statistics"
+import { TeamsSection } from "@/components/app/auth/profile/teams-section"
+import { ProfileFormData } from "@/components/app/auth/profile/types"
+import { DEFAULT_TIMEZONE } from "@/components/app/auth/profile/timezones"
 
 export default function ProfilePage() {
   const { user, loading, logout } = useAuth()
   const { t } = useTranslation()
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [sessions, setSessions] = useState<any[]>([])
   const [userTeams, setUserTeams] = useState<any[]>([])
-  const [formData, setFormData] = useState({
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
-    email: ''
+    email: '',
+    bio: '',
+    location: '',
+    website: '',
+    timezone: DEFAULT_TIMEZONE,
+    language: 'en',
+    theme: 'system',
+    notificationsEnabled: true
   })
 
   // Initialize form data and fetch sessions when user data is available
   useEffect(() => {
     if (user) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         name: user.name || '',
         email: user.email || ''
-      })
+      }))
+      fetchUserProfile()
       fetchUserSessions()
       fetchUserTeams()
+      // Update last activity when profile page is viewed
+      updateLastActivity(user.$id).catch(console.warn)
     }
   }, [user])
+
+  const fetchUserProfile = async () => {
+    if (!user) return
+    
+    setIsLoadingProfile(true)
+    try {
+      const profile = await getUserProfileByUserId(user.$id)
+      setUserProfile(profile)
+      
+      if (profile) {
+        setFormData(prev => ({
+          ...prev,
+          bio: profile.bio || '',
+          location: profile.location || '',
+          website: profile.website || '',
+          timezone: profile.timezone || DEFAULT_TIMEZONE,
+          language: profile.language || 'en',
+          theme: profile.theme || 'system',
+          notificationsEnabled: profile.notificationsEnabled ?? true
+        }))
+      } else {
+        // Set default timezone if no profile exists
+        setFormData(prev => ({
+          ...prev,
+          timezone: DEFAULT_TIMEZONE
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error)
+    } finally {
+      setIsLoadingProfile(false)
+    }
+  }
 
   const fetchUserSessions = async () => {
     try {
@@ -58,7 +104,7 @@ export default function ProfilePage() {
     }
   }
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -76,24 +122,75 @@ export default function ProfilePage() {
       // Get current user data for audit logging
       const currentUser = user
       const oldName = currentUser?.name || ''
+      const oldProfile = userProfile
 
       // Update user name in Appwrite (using object parameter style)
       await account.updateName({ name: formData.name })
+
+      // Update extended profile in users collection
+      if (userProfile) {
+        await tablesDB.updateRow({
+          databaseId: DATABASE_ID,
+          tableId: USERS_COLLECTION_ID,
+          rowId: userProfile.$id,
+          data: {
+            bio: formData.bio || null,
+            location: formData.location || null,
+            website: formData.website || null,
+            timezone: formData.timezone || null,
+            language: formData.language,
+            theme: formData.theme,
+            notificationsEnabled: formData.notificationsEnabled
+          }
+        })
+      } else {
+        // Profile doesn't exist, create it
+        const { createUserProfile } = await import('@/lib/user-profile')
+        await createUserProfile(user.$id)
+        
+        // Then update it with the form data
+        const newProfile = await getUserProfileByUserId(user.$id)
+        if (newProfile) {
+          await tablesDB.updateRow({
+            databaseId: DATABASE_ID,
+            tableId: USERS_COLLECTION_ID,
+            rowId: newProfile.$id,
+            data: {
+              bio: formData.bio || null,
+              location: formData.location || null,
+              website: formData.website || null,
+              timezone: formData.timezone || null,
+              language: formData.language,
+              theme: formData.theme,
+              notificationsEnabled: formData.notificationsEnabled
+            }
+          })
+        }
+      }
 
       // Log the profile update
       try {
         await auditLogger.logProfileUpdate(
           user.$id,
-          { name: oldName },
-          { name: formData.name }
+          { 
+            name: oldName,
+            bio: oldProfile?.bio,
+            location: oldProfile?.location,
+            website: oldProfile?.website
+          },
+          { 
+            name: formData.name,
+            bio: formData.bio,
+            location: formData.location,
+            website: formData.website
+          }
         )
       } catch (auditError) {
         console.warn('Failed to log profile update audit event:', auditError)
       }
 
-      // Update local user state by triggering a re-fetch
-      // This is a simple approach - you might want to implement a more sophisticated state management
-      window.location.reload()
+      // Refresh profile data
+      await fetchUserProfile()
 
       toast.success(t("profile.update_profile"))
     } catch (error: any) {
@@ -104,7 +201,7 @@ export default function ProfilePage() {
     }
   }
 
-  if (loading) {
+  if (loading || isLoadingProfile) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -114,18 +211,6 @@ export default function ProfilePage() {
 
   if (!user) {
     return null
-  }
-
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase()
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
   }
 
   return (
@@ -138,184 +223,19 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Profile Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              {t("profile.user_profile")}
-            </CardTitle>
-            <CardDescription>
-              {t("profile.user_profile_desc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src="" />
-                <AvatarFallback className="text-lg">
-                  {getInitials(user.email)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-1">
-                <h3 className="text-xl font-semibold">{user.name || 'User'}</h3>
-                <p className="text-muted-foreground">{user.email}</p>
-                <Badge variant="secondary">{t("profile.active")}</Badge>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-4">
-              <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{t("profile.email_address")}</p>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{t("profile.member_since")}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(user.$createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">{t("profile.email_verified")}</p>
-                  <Badge variant={user.emailVerification ? "default" : "secondary"}>
-                    {user.emailVerification ? t("profile.verified") : t("profile.unverified")}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5" />
-              {t("profile.account_settings")}
-            </CardTitle>
-            <CardDescription>
-              {t("profile.account_settings_desc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleUpdateProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">{t("profile.display_name")}</Label>
-                <Input
-                  id="name"
-                  placeholder={t("profile.name_placeholder")}
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  disabled={isUpdating}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("profile.email_address")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t("profile.email_placeholder")}
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  disabled={true} // Email cannot be changed
-                />
-                <p className="text-xs text-muted-foreground">
-                  {t("profile.email_change_note")}
-                </p>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={isUpdating}>
-                {isUpdating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t("profile.updating")}
-                  </>
-                ) : (
-                  t("profile.update_profile")
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Account Statistics */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>{t("profile.account_statistics")}</CardTitle>
-            <CardDescription>
-              {t("profile.account_statistics_desc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">{sessions.length}</div>
-                <div className="text-sm text-muted-foreground">{t("profile.sessions")}</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">{userTeams.length}</div>
-                <div className="text-sm text-muted-foreground">{t("database.teams")}</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-primary">0</div>
-                <div className="text-sm text-muted-foreground">{t("profile.api_calls")}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Teams */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              {t("database.teams")}
-            </CardTitle>
-            <CardDescription>
-              Teams you belong to
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {userTeams.length > 0 ? (
-              userTeams.map((team: any) => (
-                <div key={team.$id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Users className="h-4 w-4 text-blue-500" />
-                    <div>
-                      <p className="font-medium">{team.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {team.total} member{team.total !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground">
-                    <p>Created</p>
-                    <p>{formatDate(team.$createdAt)}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-muted-foreground py-6">
-                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No teams found</p>
-                <p className="text-sm">You are not a member of any teams</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ProfileOverview user={user} userProfile={userProfile} />
+        <AccountSettingsForm
+          formData={formData}
+          isUpdating={isUpdating}
+          onInputChange={handleInputChange}
+          onSubmit={handleUpdateProfile}
+        />
+        <AccountStatistics
+          sessionsCount={sessions.length}
+          teamsCount={userTeams.length}
+          userProfile={userProfile}
+        />
+        <TeamsSection teams={userTeams} />
       </div>
     </div>
   )

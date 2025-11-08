@@ -16,17 +16,21 @@ export const securityHeaders = {
   // Referrer policy
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 
-  // Content Security Policy (adjust as needed for your app)
+  // Content Security Policy (configured for Appwrite, OpenRouter, and TipTap)
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for TipTap
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
-    "font-src 'self'",
-    "connect-src 'self'",
-    "media-src 'self'",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' data: https:",
+    `connect-src 'self' ${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com'} https://openrouter.ai https://api.openrouter.ai`,
+    "media-src 'self' blob:",
     "object-src 'none'",
-    "frame-ancestors 'none'"
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests"
   ].join('; '),
 
   // Permissions policy (restrict features)
@@ -45,16 +49,25 @@ export const securityHeaders = {
     'picture-in-picture=()'
   ].join(', '),
 
-  // Strict Transport Security (only enable if you have HTTPS)
-  // 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  // Strict Transport Security (enable in production with HTTPS)
+  ...(process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://')
+    ? {
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+      }
+    : {}),
 
   // Cross-Origin policies
   'Cross-Origin-Embedder-Policy': 'credentialless',
   'Cross-Origin-Opener-Policy': 'same-origin',
-  'Cross-Origin-Resource-Policy': 'same-origin'
+  'Cross-Origin-Resource-Policy': 'same-origin',
+
+  // Additional security headers
+  'X-DNS-Prefetch-Control': 'on',
+  'X-Download-Options': 'noopen',
+  'X-Permitted-Cross-Domain-Policies': 'none',
 }
 
-// Development headers (less restrictive)
+// Development headers (less restrictive for local development)
 export const developmentSecurityHeaders = {
   ...securityHeaders,
   'Content-Security-Policy': [
@@ -62,12 +75,17 @@ export const developmentSecurityHeaders = {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
-    "font-src 'self' data:",
-    "connect-src 'self' ws: wss: https:",
+    "font-src 'self' data: https:",
+    `connect-src 'self' ws: wss: https: ${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com'} https://openrouter.ai https://api.openrouter.ai http://localhost:*`,
     "media-src 'self' blob:",
     "object-src 'none'",
-    "frame-ancestors 'none'"
-  ].join('; ')
+    "frame-src 'none'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'"
+  ].join('; '),
+  // Disable HSTS in development
+  'Strict-Transport-Security': undefined,
 }
 
 // Apply security headers to response
@@ -76,7 +94,10 @@ export function applySecurityHeaders(response: NextResponse, isDevelopment = fal
   const newHeaders = new Headers(response.headers)
 
   Object.entries(headers).forEach(([key, value]) => {
-    newHeaders.set(key, value)
+    // Skip undefined values (e.g., HSTS in development)
+    if (value !== undefined) {
+      newHeaders.set(key, value)
+    }
   })
 
   return new NextResponse(response.body, {

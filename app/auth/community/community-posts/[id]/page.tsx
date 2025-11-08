@@ -36,11 +36,10 @@ import {
   COMMUNITY_TOPICS_COLLECTION_ID
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
+import { SafeHTML } from "@/components/ui/safe-html";
 
 export default function ViewCommunityPostPage() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -75,9 +74,9 @@ export default function ViewCommunityPostPage() {
                            error?.type === 'AppwriteException';
         
         if (isAuthError) {
-          setError(t('community.posts.auth_error'));
+          setError('You do not have permission to access this post');
         } else {
-          setError(t('general_use.error'));
+          setError("Error");
         }
       } finally {
         setIsLoading(false);
@@ -85,7 +84,7 @@ export default function ViewCommunityPostPage() {
     };
 
     loadData();
-  }, [user, postId, router, t]);
+  }, [user, postId, router]);
 
   const loadPost = async () => {
     try {
@@ -125,7 +124,7 @@ export default function ViewCommunityPostPage() {
         return topic?.name || post.communityTopics;
       }
     }
-    return t("general_use.uncategorized", { defaultValue: "Uncategorized" });
+    return "Uncategorized";
   };
 
   if (isLoading) {
@@ -157,16 +156,16 @@ export default function ViewCommunityPostPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">{t("general_use.error")}</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
             <CardDescription>
-              {error || t("community.posts.view.post_not_found", { defaultValue: "Post not found" })}
+              {error || "Post not found"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/auth/community/community-posts">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t("community.posts.view.back_to_posts", { defaultValue: "Back to Posts" })}
+                Back to Posts
               </Link>
             </Button>
           </CardContent>
@@ -184,7 +183,7 @@ export default function ViewCommunityPostPage() {
             <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
               <Link href="/auth/community/community-posts">
                 <ArrowLeft className="h-3 w-3 mr-1" />
-                {t("community.posts.title")}
+                Community Posts
               </Link>
             </Button>
             <span className="text-muted-foreground">/</span>
@@ -220,12 +219,12 @@ export default function ViewCommunityPostPage() {
                 <StatusBadge status={post.status} type="community-post" />
               </div>
               <div className="text-sm text-muted-foreground">
-                {t("general_use.updated")}: {new Date(post.$updatedAt).toLocaleDateString()}
+                Updated: {new Date(post.$updatedAt).toLocaleDateString()}
               </div>
               <Button asChild>
                 <Link href={`/auth/community/community-posts/${postId}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
-                  {t("general_use.edit")}
+                  Edit
                 </Link>
               </Button>
             </div>
@@ -239,50 +238,50 @@ export default function ViewCommunityPostPage() {
           {/* Metadata Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg border">
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.author")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Author</p>
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{post.author || t("community.posts.anonymous")}</span>
+                <span className="font-medium">{post.author || "Anonymous"}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.topic")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Topic</p>
               <p className="font-medium">{getTopicName(post)}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.views")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Views</p>
               <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4" />
                 <span className="font-medium">{post.views}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.upvotes")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Upvotes</p>
               <div className="flex items-center gap-2">
                 <ThumbsUp className="h-4 w-4" />
                 <span className="font-medium">{post.upvotes}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.downvotes")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Downvotes</p>
               <div className="flex items-center gap-2">
                 <ThumbsDown className="h-4 w-4" />
                 <span className="font-medium">{post.downvotes}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.replies")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Replies</p>
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 <span className="font-medium">{post.replyCount}</span>
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.status")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
               <StatusBadge status={post.status} type="community-post" />
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.created")}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Created</p>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span className="font-medium">
@@ -297,7 +296,7 @@ export default function ViewCommunityPostPage() {
             <div className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Tag className="h-4 w-4" />
-                {t("general_use.tags")}
+                Tags
               </h4>
               <div className="flex flex-wrap gap-2">
                 {post.tags.map((tag, index) => (
@@ -311,39 +310,39 @@ export default function ViewCommunityPostPage() {
 
           {/* Content */}
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.content")}</h4>
+            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Content</h4>
             <div className="border rounded-lg p-6 bg-background prose prose-sm max-w-none dark:prose-invert">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+              <SafeHTML html={post.content} />
             </div>
           </div>
 
           {/* Post Flags */}
           <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
-            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.view.flags", { defaultValue: "Post Flags" })}</h4>
+            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Post Flags</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Pin className={`h-4 w-4 ${post.isPinned ? 'text-primary' : 'text-muted-foreground'}`} />
                 <span className={post.isPinned ? 'font-medium' : 'text-muted-foreground'}>
-                  {post.isPinned ? t("community.posts.view.pinned", { defaultValue: "Pinned" }) : t("community.posts.view.not_pinned", { defaultValue: "Not Pinned" })}
+                  {post.isPinned ? "Pinned" : "Not Pinned"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className={`h-4 w-4 ${post.isLocked ? 'text-destructive' : 'text-muted-foreground'}`} />
                 <span className={post.isLocked ? 'font-medium text-destructive' : 'text-muted-foreground'}>
-                  {post.isLocked ? t("community.posts.view.locked", { defaultValue: "Locked" }) : t("community.posts.view.not_locked", { defaultValue: "Not Locked" })}
+                  {post.isLocked ? "Locked" : "Not Locked"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className={`h-4 w-4 ${post.isFeatured ? 'text-yellow-500' : 'text-muted-foreground'}`} />
                 <span className={post.isFeatured ? 'font-medium text-yellow-500' : 'text-muted-foreground'}>
-                  {post.isFeatured ? t("community.posts.view.featured", { defaultValue: "Featured" }) : t("community.posts.view.not_featured", { defaultValue: "Not Featured" })}
+                  {post.isFeatured ? "Featured" : "Not Featured"}
                 </span>
               </div>
               {post.lastReplyAt && (
                 <div className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground text-xs">
-                    {t("community.posts.view.last_reply", { defaultValue: "Last reply" })}: {new Date(post.lastReplyAt).toLocaleDateString()}
+                    Last reply: {new Date(post.lastReplyAt).toLocaleDateString()}
                   </span>
                 </div>
               )}

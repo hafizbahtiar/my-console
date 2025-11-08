@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { applySecurityHeaders } from '@/middlewares/security-headers'
-import { rateLimitMiddleware, rateLimitConfigs } from '@/middlewares/rate-limit'
+import { createProtectedGET } from '@/lib/api-protection'
 
 interface MonitoringData {
   timestamp: string
@@ -18,161 +17,105 @@ interface MonitoringData {
     errorRate: number
     throughput: number
   }
-  alerts: Alert[]
+  alerts: Array<{
+    id: string
+    type: 'info' | 'warning' | 'error'
+    message: string
+    timestamp: string
+    resolved: boolean
+    severity?: 'low' | 'medium' | 'high'
+  }>
 }
 
-interface Alert {
-  id: string
-  type: 'error' | 'warning' | 'info'
-  message: string
-  timestamp: string
-  resolved: boolean
-  severity: 'low' | 'medium' | 'high' | 'critical'
-}
-
-// Generate real-time monitoring data
 function generateMonitoringData(): MonitoringData {
-  const now = new Date()
-
-  // Simulate realistic metrics with some variation
-  const baseActiveUsers = 25 + Math.sin(now.getMinutes() * 0.1) * 15
-  const baseApiCalls = 800 + Math.cos(now.getMinutes() * 0.2) * 200
-
+  // Simulate monitoring data collection
+  // In production, this would query actual metrics from your monitoring system
   const metrics = {
-    activeUsers: Math.max(5, Math.round(baseActiveUsers + (Math.random() - 0.5) * 10)),
-    totalUsers: 450 + Math.round(Math.random() * 50),
-    recentLogins: Math.round(Math.random() * 30) + 5,
-    apiCalls: Math.max(100, Math.round(baseApiCalls + (Math.random() - 0.5) * 100)),
-    storageUsed: Math.round(Math.random() * 40) + 15,
-    cpuUsage: Math.round(Math.random() * 25) + 15,
-    responseTime: Math.round(Math.random() * 50) + 75
+    activeUsers: Math.floor(Math.random() * 100) + 50,
+    totalUsers: Math.floor(Math.random() * 1000) + 500,
+    recentLogins: Math.floor(Math.random() * 20) + 5,
+    apiCalls: Math.floor(Math.random() * 10000) + 5000,
+    storageUsed: Math.floor(Math.random() * 100) + 50, // GB
+    cpuUsage: Math.random() * 50 + 20, // Percentage
+    responseTime: Math.random() * 200 + 50 // ms
   }
 
   const performance = {
-    averageResponseTime: Math.round(metrics.responseTime + (Math.random() - 0.5) * 20),
-    errorRate: Math.round(Math.random() * 5 * 100) / 100, // 0-5%
-    throughput: Math.round(metrics.apiCalls / 60) // requests per second
+    averageResponseTime: metrics.responseTime,
+    errorRate: Math.random() * 2, // Percentage
+    throughput: metrics.apiCalls / 60 // Requests per second
   }
 
-  // Generate alerts based on metrics
   const alerts = generateMonitoringAlerts(metrics, performance)
 
   return {
-    timestamp: now.toISOString(),
+    timestamp: new Date().toISOString(),
     metrics,
     performance,
     alerts
   }
 }
 
-function generateMonitoringAlerts(metrics: any, performance: any): Alert[] {
-  const alerts: Alert[] = []
-  const now = new Date()
+function generateMonitoringAlerts(metrics: any, performance: any): MonitoringData['alerts'] {
+  const alerts: MonitoringData['alerts'] = []
 
-  // CPU usage alerts
+  // CPU usage alert
   if (metrics.cpuUsage > 80) {
     alerts.push({
       id: `cpu-high-${Date.now()}`,
       type: 'warning',
-      message: `High CPU usage detected: ${metrics.cpuUsage}%`,
-      timestamp: now.toISOString(),
+      message: `High CPU usage detected: ${metrics.cpuUsage.toFixed(1)}%`,
+      timestamp: new Date().toISOString(),
       resolved: false,
       severity: 'high'
     })
   }
 
-  // Memory alerts (would check actual memory in real implementation)
-  if (Math.random() < 0.05) { // 5% chance of memory alert
+  // Response time alert
+  if (performance.averageResponseTime > 500) {
     alerts.push({
-      id: `memory-critical-${Date.now()}`,
-      type: 'error',
-      message: 'Critical memory usage detected',
-      timestamp: now.toISOString(),
-      resolved: false,
-      severity: 'critical'
-    })
-  }
-
-  // Response time alerts
-  if (performance.averageResponseTime > 2000) {
-    alerts.push({
-      id: `response-slow-${Date.now()}`,
+      id: `response-time-high-${Date.now()}`,
       type: 'warning',
-      message: `Slow response times: ${performance.averageResponseTime}ms average`,
-      timestamp: now.toISOString(),
+      message: `High response time: ${performance.averageResponseTime.toFixed(0)}ms`,
+      timestamp: new Date().toISOString(),
       resolved: false,
       severity: 'medium'
     })
   }
 
-  // Error rate alerts
-  if (performance.errorRate > 2) {
+  // Error rate alert
+  if (performance.errorRate > 5) {
     alerts.push({
       id: `error-rate-high-${Date.now()}`,
       type: 'error',
-      message: `High error rate: ${performance.errorRate}%`,
-      timestamp: now.toISOString(),
+      message: `High error rate: ${performance.errorRate.toFixed(2)}%`,
+      timestamp: new Date().toISOString(),
       resolved: false,
       severity: 'high'
     })
   }
 
-  // System maintenance alerts (simulated)
-  if (Math.random() < 0.02) { // 2% chance
+  // Storage usage alert
+  if (metrics.storageUsed > 90) {
     alerts.push({
-      id: `maintenance-${Date.now()}`,
-      type: 'info',
-      message: 'Scheduled maintenance completed successfully',
-      timestamp: now.toISOString(),
-      resolved: true,
-      severity: 'low'
+      id: `storage-high-${Date.now()}`,
+      type: 'warning',
+      message: `Storage usage is high: ${metrics.storageUsed}GB`,
+      timestamp: new Date().toISOString(),
+      resolved: false,
+      severity: 'medium'
     })
   }
 
   return alerts
 }
 
-export async function GET(request: NextRequest) {
-  // Apply rate limiting for monitoring data
-  const rateLimitResult = rateLimitMiddleware(request, rateLimitConfigs.api)
-  if (rateLimitResult) {
-    return applySecurityHeaders(rateLimitResult)
-  }
-
-  try {
+export const GET = createProtectedGET(
+  async () => {
     const monitoringData = generateMonitoringData()
-
-    return applySecurityHeaders(NextResponse.json(monitoringData))
-
-  } catch (error) {
-    console.error('Monitoring data fetch failed:', error)
-
-    const errorData: MonitoringData = {
-      timestamp: new Date().toISOString(),
-      metrics: {
-        activeUsers: 0,
-        totalUsers: 0,
-        recentLogins: 0,
-        apiCalls: 0,
-        storageUsed: 0,
-        cpuUsage: 0,
-        responseTime: 0
-      },
-      performance: {
-        averageResponseTime: 0,
-        errorRate: 0,
-        throughput: 0
-      },
-      alerts: [{
-        id: `monitoring-error-${Date.now()}`,
-        type: 'error',
-        message: 'Failed to fetch monitoring data',
-        timestamp: new Date().toISOString(),
-        resolved: false,
-        severity: 'high'
-      }]
-    }
-
-    return applySecurityHeaders(NextResponse.json(errorData, { status: 500 }))
+    return NextResponse.json(monitoringData)
+  },
+  {
+    rateLimit: 'api',
   }
-}
+)

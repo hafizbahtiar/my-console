@@ -22,7 +22,6 @@ import {
     Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslation } from "@/lib/language-context";
 import type { CollectionInfo, ColumnInfo, CollectionSchema } from "@/app/auth/admin/database/types";
 import { tablesDB } from '@/lib/appwrite';
 import { COLLECTION_NAMES } from "@/app/auth/admin/database/types";
@@ -140,7 +139,6 @@ function getValueLength(value: unknown): number | undefined {
 }
 
 export function DatabaseCollections({ collections, onRefresh }: DatabaseCollectionsProps) {
-    const { t } = useTranslation();
     const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState<CollectionSchema | null>(null);
     const [schemaLoading, setSchemaLoading] = useState(false);
@@ -154,7 +152,7 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
             setSelectedCollection(schema);
         } catch (error) {
             console.error('Failed to load collection schema:', error);
-            toast.error(t("database.failed_to_load_schema"));
+            toast.error("Failed to load schema");
             setSchemaDialogOpen(false);
         } finally {
             setSchemaLoading(false);
@@ -173,170 +171,176 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle>{t("database.database_collections")}</CardTitle>
-                    <CardDescription>
-                        {t("database.overview_of_all_collections")}
+                    <CardTitle className="text-base sm:text-lg">Database Collections</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                        Overview of all collections
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>{t("database.collection_id")}</TableHead>
-                                <TableHead>{t("database.name")}</TableHead>
-                                <TableHead>{t("database.documents")}</TableHead>
-                                <TableHead>{t("database.size")}</TableHead>
-                                <TableHead>{t("database.last_modified")}</TableHead>
-                                <TableHead>{t("general_use.status")}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {collections.length > 0 ? (
-                                collections.map((collection) => (
-                                    <TableRow
-                                        key={collection.id}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => handleViewSchema(collection.id)}
-                                    >
-                                        <TableCell className="font-mono text-sm">{collection.id}</TableCell>
-                                        <TableCell className="font-medium">{collection.name}</TableCell>
-                                        <TableCell>{collection.documents.toLocaleString()}</TableCell>
-                                        <TableCell>{collection.size}</TableCell>
-                                        <TableCell>{new Date(collection.lastModified).toLocaleString()}</TableCell>
-                                        <TableCell>
-                                            <DatabaseCollectionStatusBadge status="active" />
+                    <div className="w-full overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="text-xs sm:text-sm">Collection ID</TableHead>
+                                    <TableHead className="text-xs sm:text-sm">Name</TableHead>
+                                    <TableHead className="text-xs sm:text-sm">Documents</TableHead>
+                                    <TableHead className="text-xs sm:text-sm">Size</TableHead>
+                                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Last Modified</TableHead>
+                                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {collections.length > 0 ? (
+                                    collections.map((collection) => (
+                                        <TableRow
+                                            key={collection.id}
+                                            className="cursor-pointer hover:bg-muted/50"
+                                            onClick={() => handleViewSchema(collection.id)}
+                                        >
+                                            <TableCell className="font-mono text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">{collection.id}</TableCell>
+                                            <TableCell className="font-medium text-xs sm:text-sm truncate">{collection.name}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm">{collection.documents.toLocaleString()}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm">{collection.size}</TableCell>
+                                            <TableCell className="text-xs sm:text-sm hidden sm:table-cell">{new Date(collection.lastModified).toLocaleString()}</TableCell>
+                                            <TableCell>
+                                                <DatabaseCollectionStatusBadge status="active" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                            <p className="text-xs sm:text-sm">No collections found</p>
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                        {t("database.no_collections_found")}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
 
             {/* Collection Schema Dialog */}
             <Dialog open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen}>
-                <DialogContent className="sm:max-w-[1200px] max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {selectedCollection ? t("database.collection_schema", { name: selectedCollection.name }) : t("database.collection_schema_title")}
+                <DialogContent className="w-[95vw] sm:w-full sm:max-w-[1200px] max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
+                    <DialogHeader className="px-0 sm:px-0">
+                        <DialogTitle className="text-base sm:text-lg pr-8">
+                            {selectedCollection ? `Collection Schema: ${selectedCollection.name}` : "Collection Schema"}
                         </DialogTitle>
-                        <DialogDescription>
-                            {selectedCollection ? t("database.collection_schema_description", { count: selectedCollection.totalDocuments.toLocaleString() }) : t("database.collection_schema_loading")}
+                        <DialogDescription className="text-xs sm:text-sm mt-1 sm:mt-2">
+                            {selectedCollection ? `Schema for ${selectedCollection.totalDocuments.toLocaleString()} documents` : "Loading schema..."}
                         </DialogDescription>
                     </DialogHeader>
 
-                    {schemaLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin" />
-                            <span className="ml-2">{t("database.loading_schema")}</span>
-                        </div>
-                    ) : selectedCollection ? (
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <Card>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">{t("database.collection_info")}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span className="text-sm text-muted-foreground">{t("database.collection_id")}:</span>
-                                            <span className="font-mono text-sm">{selectedCollection.id}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm text-muted-foreground">{t("database.total_documents")}:</span>
-                                            <span className="text-sm font-medium">{selectedCollection.totalDocuments.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-sm text-muted-foreground">{t("database.total_columns")}:</span>
-                                            <span className="text-sm font-medium">{selectedCollection.columns.length}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                <Card>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">{t("database.schema_summary")}</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        {Object.entries(
-                                            selectedCollection.columns.reduce((acc, col) => {
-                                                acc[col.type] = (acc[col.type] || 0) + 1;
-                                                return acc;
-                                            }, {} as Record<string, number>)
-                                        ).map(([type, count]) => (
-                                            <div key={type} className="flex justify-between">
-                                                <span className="text-sm text-muted-foreground capitalize">{type}:</span>
-                                                <Badge variant="secondary">{count}</Badge>
+                    <div className="overflow-y-auto max-h-[calc(90vh-120px)] sm:max-h-[calc(85vh-120px)] -mx-4 sm:-mx-6 px-4 sm:px-6">
+                        {schemaLoading ? (
+                            <div className="flex items-center justify-center py-8 sm:py-12">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                                <span className="ml-2 text-xs sm:text-sm">Loading schema...</span>
+                            </div>
+                        ) : selectedCollection ? (
+                            <div className="space-y-4 sm:space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <Card className="p-3 sm:p-4">
+                                        <CardHeader className="pb-2 px-0 pt-0">
+                                            <CardTitle className="text-xs sm:text-sm font-semibold">Collection Info</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2.5 sm:space-y-3 px-0 pt-0">
+                                            <div className="flex flex-col gap-1 sm:gap-2">
+                                                <span className="text-xs sm:text-sm text-muted-foreground font-medium">Collection ID</span>
+                                                <span className="font-mono text-xs sm:text-sm break-all bg-muted/50 p-2 rounded-md">{selectedCollection.id}</span>
                                             </div>
-                                        ))}
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 pt-1 border-t">
+                                                <span className="text-xs sm:text-sm text-muted-foreground">Total Documents</span>
+                                                <span className="text-xs sm:text-sm font-semibold">{selectedCollection.totalDocuments.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 pt-1 border-t">
+                                                <span className="text-xs sm:text-sm text-muted-foreground">Total Columns</span>
+                                                <span className="text-xs sm:text-sm font-semibold">{selectedCollection.columns.length}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="p-3 sm:p-4">
+                                        <CardHeader className="pb-2 px-0 pt-0">
+                                            <CardTitle className="text-xs sm:text-sm font-semibold">Schema Summary</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2.5 sm:space-y-3 px-0 pt-0">
+                                            {Object.entries(
+                                                selectedCollection.columns.reduce((acc, col) => {
+                                                    acc[col.type] = (acc[col.type] || 0) + 1;
+                                                    return acc;
+                                                }, {} as Record<string, number>)
+                                            ).map(([type, count], index) => (
+                                                <div key={type} className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 ${index > 0 ? 'pt-1 border-t' : ''}`}>
+                                                    <span className="text-xs sm:text-sm text-muted-foreground capitalize">{type}</span>
+                                                    <Badge variant="secondary" className="text-xs w-fit">{count}</Badge>
+                                                </div>
+                                            ))}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                <Card className="p-3 sm:p-4">
+                                    <CardHeader className="px-0 pt-0 pb-3 sm:pb-4">
+                                        <CardTitle className="text-sm sm:text-base">Column Details</CardTitle>
+                                        <CardDescription className="text-xs sm:text-sm mt-1">Detailed information about each column in the collection</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="px-0 pt-0">
+                                        <div className="w-full overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4">
+                                            <Table className="w-full min-w-[600px]">
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[120px] sm:min-w-[150px]">Column Name</TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[80px] sm:min-w-[100px]">Data Type</TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]">Nullable</TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]">Length</TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[150px] sm:min-w-[200px]">Sample Values</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {selectedCollection.columns.map((column) => (
+                                                        <TableRow key={column.name}>
+                                                            <TableCell className="font-mono text-xs sm:text-sm font-medium break-all max-w-[150px] sm:max-w-none">{column.name}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="outline" className="capitalize text-xs whitespace-nowrap">
+                                                                    {column.type}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {column.nullable ? (
+                                                                    <Badge variant="secondary" className="text-xs whitespace-nowrap">Yes</Badge>
+                                                                ) : (
+                                                                    <Badge variant="outline" className="text-xs whitespace-nowrap">No</Badge>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs sm:text-sm whitespace-nowrap">
+                                                                {column.length !== undefined ? column.length : '-'}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-[150px] sm:max-w-sm">
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {column.sampleValues.slice(0, 2).map((value, index) => (
+                                                                        <Badge key={index} variant="secondary" className="text-xs max-w-[100px] sm:max-w-32 truncate">
+                                                                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                                        </Badge>
+                                                                    ))}
+                                                                    {column.sampleValues.length > 2 && (
+                                                                        <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                                                                            +{column.sampleValues.length - 2}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>{t("database.column_details")}</CardTitle>
-                                    <CardDescription>{t("database.column_details_description")}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table className="w-full">
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="min-w-[150px]">{t("database.column_name")}</TableHead>
-                                                <TableHead className="min-w-[100px]">{t("database.data_type")}</TableHead>
-                                                <TableHead className="min-w-[80px]">{t("database.nullable")}</TableHead>
-                                                <TableHead className="min-w-[80px]">{t("database.length")}</TableHead>
-                                                <TableHead className="min-w-[200px]">{t("database.sample_values")}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {selectedCollection.columns.map((column) => (
-                                                <TableRow key={column.name}>
-                                                    <TableCell className="font-mono text-sm font-medium">{column.name}</TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className="capitalize">
-                                                            {column.type}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {column.nullable ? (
-                                                            <Badge variant="secondary">{t("general_use.yes")}</Badge>
-                                                        ) : (
-                                                            <Badge variant="outline">{t("general_use.no")}</Badge>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-sm">
-                                                        {column.length !== undefined ? column.length : '-'}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-sm">
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {column.sampleValues.slice(0, 2).map((value, index) => (
-                                                                <Badge key={index} variant="secondary" className="text-xs max-w-32 truncate">
-                                                                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                                </Badge>
-                                                            ))}
-                                                            {column.sampleValues.length > 2 && (
-                                                                <Badge variant="secondary" className="text-xs">
-                                                                    +{column.sampleValues.length - 2}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    ) : null}
+                        ) : null}
+                    </div>
                 </DialogContent>
             </Dialog>
         </>

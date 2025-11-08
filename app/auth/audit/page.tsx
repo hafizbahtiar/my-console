@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
@@ -35,7 +34,6 @@ interface AuditLog {
 }
 
 export default function AuditPage() {
-  const { t } = useTranslation()
   const { user } = useAuth()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [allLogs, setAllLogs] = useState<AuditLog[]>([]) // Store all logs for filtering
@@ -82,7 +80,7 @@ export default function AuditPage() {
       setLogs(paginatedLogs)
     } catch (error) {
       console.error('Failed to load audit logs:', error)
-      toast.error(t('general_use.error'))
+      toast.error("Error")
       setLogs([])
       setAllLogs([])
     } finally {
@@ -161,10 +159,7 @@ export default function AuditPage() {
       exportToJSON(dataToExport)
     }
 
-    toast.success(t('audit.export_success', {
-      count: dataToExport.length.toString(),
-      format: exportFormat.toUpperCase()
-    }))
+    toast.success(`Exported ${dataToExport.length} logs as ${exportFormat.toUpperCase()}`)
   }
 
   const exportToCSV = (data: any[]) => {
@@ -218,36 +213,36 @@ export default function AuditPage() {
     a.click()
     window.URL.revokeObjectURL(url)
 
-    toast.success(t('audit.compliance_report_generated'))
+    toast.success("Compliance report generated successfully")
   }
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 p-4 pt-6 md:p-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('audit.title')}</h1>
-          <p className="text-muted-foreground">{t('audit.loading')}</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Audit Logs</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">Loading audit logs...</p>
         </div>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-primary"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('audit.title')}</h1>
-          <p className="text-muted-foreground">
-            {t('audit.subtitle')}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Audit Logs</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            View and manage system audit logs
           </p>
         </div>
-        <Button onClick={loadAuditLogs} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {t('audit.refresh')}
+        <Button onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto">
+          <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="truncate">Refresh</span>
         </Button>
       </div>
 
@@ -291,9 +286,9 @@ export default function AuditPage() {
       
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border-t p-4">
+        <div className="border-t p-4 sm:p-6">
           <Pagination>
-            <PaginationContent>
+            <PaginationContent className="flex-wrap gap-2">
               <PaginationItem>
                 <PaginationPrevious
                   href="#"
@@ -331,6 +326,7 @@ export default function AuditPage() {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
                       isActive={currentPage === pageNum}
+                      className="text-xs sm:text-sm"
                     >
                       {pageNum}
                     </PaginationLink>

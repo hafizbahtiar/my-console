@@ -12,7 +12,6 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTranslation } from "@/lib/language-context";
 
 export type StatusType =
   | 'blog-post'
@@ -297,8 +296,6 @@ export function StatusBadge({
   className,
   size = 'default'
 }: StatusBadgeProps) {
-  const { t } = useTranslation();
-
   // Get the configuration for this type and status
   const typeConfig = statusConfigs[type];
   const statusConfig = typeConfig?.[status as keyof typeof typeConfig] || statusConfigs.generic.default;
@@ -323,7 +320,7 @@ export function StatusBadge({
       )}
     >
       {showIcon && Icon !== null && Icon !== undefined && <Icon className={iconSize} />}
-      {t(`status.${status}`, finalConfig.label)}
+      {finalConfig.label}
     </Badge>
   );
 }

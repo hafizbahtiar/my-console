@@ -28,7 +28,6 @@ import {
 } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
 
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_TAG_LENGTH = 20;
@@ -58,7 +57,6 @@ const getUserAgent = (): string => {
 
 export default function CreateCommunityPostPage() {
     const { user } = useAuth();
-    const { t } = useTranslation();
     const router = useRouter();
 
     // State
@@ -125,7 +123,7 @@ export default function CreateCommunityPostPage() {
             setTopics(activeTopics);
         } catch (error) {
             console.error('Failed to load topics:', error);
-            toast.error('Failed to load topics');
+            toast.error("Failed to load topics");
         }
     };
 
@@ -134,39 +132,42 @@ export default function CreateCommunityPostPage() {
 
         // Validation
         if (!formData.title.trim()) {
-            toast.error(t('errors.item_is_required', { item: t('general_use.title') }));
+            toast.error("Title is required");
             return;
         }
         if (!formData.slug.trim()) {
-            toast.error(t('errors.item_is_required', { item: 'Slug' }));
+            toast.error("Slug is required");
             return;
         }
         if (!formData.content.trim()) {
-            toast.error(t('errors.item_is_required', { item: t('community.posts.create.content_required') }));
+            toast.error("Content is required");
             return;
         }
         if (formData.content.length > MAX_CONTENT_LENGTH) {
-            toast.error(t('community.posts.create.content_max', { max: MAX_CONTENT_LENGTH.toString() }));
+            toast.error(`Content must be less than ${MAX_CONTENT_LENGTH} characters`);
             return;
         }
         if (!formData.authorId) {
-            toast.error(t('errors.item_is_required', { item: 'Author ID' }));
+            toast.error("Author ID is required");
             return;
         }
 
         // Validate tags
         const invalidTags = formData.tags.filter(tag => tag.length > MAX_TAG_LENGTH);
         if (invalidTags.length > 0) {
-            toast.error(t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() }));
+            toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
             return;
         }
 
         setIsSubmitting(true);
         try {
+            // Sanitize HTML content before saving
+            const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
+
             const newPost = {
                 title: formData.title.trim(),
                 slug: formData.slug.trim(),
-                content: formData.content.trim(),
+                content: sanitizeHTMLForStorage(formData.content.trim()), // Sanitize HTML content
                 excerpt: formData.excerpt?.trim() || null,
                 author: formData.author?.trim() || null,
                 authorId: formData.authorId,
@@ -205,7 +206,7 @@ export default function CreateCommunityPostPage() {
                 }
             });
 
-            toast.success(t('general_use.success'));
+            toast.success("Post created successfully");
             router.push('/auth/community/community-posts');
         } catch (error: any) {
             console.error('Failed to create community post:', error);
@@ -218,9 +219,9 @@ export default function CreateCommunityPostPage() {
                 error?.type === 'AppwriteException';
 
             if (isAuthError) {
-                toast.error(t('community.posts.create.auth_error'));
+                toast.error("You do not have permission to create community posts");
             } else {
-                toast.error(t('general_use.error'));
+                toast.error("Error");
             }
         } finally {
             setIsSubmitting(false);
@@ -251,17 +252,17 @@ export default function CreateCommunityPostPage() {
         if (!trimmedTag) return;
 
         if (trimmedTag.length > MAX_TAG_LENGTH) {
-            toast.error(t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() }));
+            toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
             return;
         }
 
         if (formData.tags.includes(trimmedTag)) {
-            toast.error(t('general_use.error'));
+            toast.error("Tag already exists");
             return;
         }
 
         if (formData.tags.length >= 10) {
-            toast.error(t("community.posts.create.tags_help"));
+            toast.error("Maximum 10 tags allowed");
             return;
         }
 
@@ -287,7 +288,7 @@ export default function CreateCommunityPostPage() {
                         <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
                             <Link href="/auth/community/community-posts">
                                 <ArrowLeft className="h-3 w-3 mr-1" />
-                                {t("community.posts.title")}
+                                Community Posts
                             </Link>
                         </Button>
                         <span className="text-muted-foreground">/</span>
@@ -301,9 +302,9 @@ export default function CreateCommunityPostPage() {
                 <div className="container mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">{t("community.posts.create.title")}</h1>
+                            <h1 className="text-2xl font-bold tracking-tight">Create Community Post</h1>
                             <p className="text-sm text-muted-foreground">
-                                {t("community.posts.create.subtitle")}
+                                Create a new discussion post for the community
                             </p>
                         </div>
                     </div>
@@ -319,43 +320,43 @@ export default function CreateCommunityPostPage() {
                             {/* Basic Information */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>{t("community.posts.create.post_info")}</CardTitle>
+                                    <CardTitle>Post Information</CardTitle>
                                     <CardDescription>
-                                        {t("community.posts.create.post_info_desc")}
+                                        Basic information about your post
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
-                                        <Label htmlFor="title">{t("community.posts.create.title_required")}</Label>
+                                        <Label htmlFor="title">Title *</Label>
                                         <Input
                                             id="title"
                                             value={formData.title}
                                             onChange={(e) => handleTitleChange(e.target.value)}
-                                            placeholder={t("community.posts.create.title_placeholder")}
+                                            placeholder="Enter post title"
                                             required
                                             maxLength={200}
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="slug">{t("community.posts.create.slug_required")}</Label>
+                                        <Label htmlFor="slug">Slug *</Label>
                                         <Input
                                             id="slug"
                                             value={formData.slug}
                                             onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                                            placeholder={t("community.posts.create.slug_placeholder")}
+                                            placeholder="url-friendly-slug"
                                             required
                                             maxLength={200}
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="excerpt">{t("community.posts.create.excerpt")}</Label>
+                                        <Label htmlFor="excerpt">Excerpt</Label>
                                         <Textarea
                                             id="excerpt"
                                             value={formData.excerpt || ''}
                                             onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                                            placeholder={t("community.posts.create.excerpt_placeholder")}
+                                            placeholder="Brief description of your post"
                                             rows={3}
                                             maxLength={500}
                                         />
@@ -363,19 +364,19 @@ export default function CreateCommunityPostPage() {
 
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <Label htmlFor="content">{t("community.posts.create.content_required")}</Label>
+                                            <Label htmlFor="content">Content *</Label>
                                             <span className={`text-xs ${contentLength > MAX_CONTENT_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                                {t("community.posts.create.characters_count", { current: contentLength.toString(), max: MAX_CONTENT_LENGTH.toString() })}
+                                                {contentLength} / {MAX_CONTENT_LENGTH} characters
                                             </span>
                                         </div>
                                         <TipTap
                                             value={formData.content}
                                             stickyTop="top-48"
                                             onChange={handleContentChange}
-                                            placeholder={t("community.posts.create.content_placeholder")}
+                                            placeholder="Write your post content here..."
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            {t("community.posts.create.content_max", { max: MAX_CONTENT_LENGTH.toString() })}
+                                            Maximum {MAX_CONTENT_LENGTH} characters
                                         </p>
                                     </div>
                                 </CardContent>
@@ -389,15 +390,15 @@ export default function CreateCommunityPostPage() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <MessageSquare className="h-4 w-4" />
-                                        {t("community.posts.create.topic")}
+                                        Topic
                                     </CardTitle>
                                     <CardDescription>
-                                        {t("community.posts.create.topic_desc")}
+                                        Select a topic for your post
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-2">
-                                        <Label htmlFor="topic">{t("community.posts.create.topic")} ({t("general_use.optional")})</Label>
+                                        <Label htmlFor="topic">Topic (Optional)</Label>
                                         <Select
                                             value={formData.communityTopics?.$id || ''}
                                             onValueChange={(value) => {
@@ -406,7 +407,7 @@ export default function CreateCommunityPostPage() {
                                             }}
                                         >
                                             <SelectTrigger className="w-full">
-                                                <SelectValue placeholder={t("community.posts.create.topic_placeholder")} />
+                                                <SelectValue placeholder="Select a topic" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {topics.map((topic) => (
@@ -418,7 +419,7 @@ export default function CreateCommunityPostPage() {
                                         </Select>
                                         {topics.length === 0 && (
                                             <p className="text-xs text-muted-foreground">
-                                                {t("community.posts.create.no_topics")}
+                                                No topics available
                                             </p>
                                         )}
                                     </div>
@@ -430,18 +431,18 @@ export default function CreateCommunityPostPage() {
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Hash className="h-4 w-4" />
-                                        {t("community.posts.create.tags")}
+                                        Tags
                                     </CardTitle>
                                     <CardDescription>
-                                        {t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() })}
+                                        Add tags (max {MAX_TAG_LENGTH} characters each)
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
                                         <div className="space-y-2">
-                                            <Label>{t("community.posts.create.add_tags")}</Label>
+                                            <Label>Add Tags</Label>
                                             <Input
-                                                placeholder={t("community.posts.create.tags_placeholder", { max: MAX_TAG_LENGTH.toString() })}
+                                                placeholder={`Enter tag (max ${MAX_TAG_LENGTH} chars) and press Enter`}
                                                 maxLength={MAX_TAG_LENGTH}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') {
@@ -455,14 +456,14 @@ export default function CreateCommunityPostPage() {
                                                 }}
                                             />
                                             <p className="text-xs text-muted-foreground">
-                                                {t("community.posts.create.tags_help")}
+                                                Press Enter to add a tag. Maximum 10 tags allowed.
                                             </p>
                                         </div>
 
                                         {/* Display current tags */}
                                         {formData.tags.length > 0 && (
                                             <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">{t("community.posts.create.current_tags")}</Label>
+                                                <Label className="text-sm text-muted-foreground">Current Tags</Label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {formData.tags.map((tag, index) => (
                                                         <Badge
@@ -492,26 +493,26 @@ export default function CreateCommunityPostPage() {
                             {/* Post Info */}
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>{t("community.posts.create.post_info_title")}</CardTitle>
+                                    <CardTitle>Post Settings</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label>{t("community.posts.create.status")}</Label>
+                                        <Label>Status</Label>
                                         <div className="p-3 bg-muted rounded-md">
-                                            <Badge variant="secondary">{t("community.posts.create.pending_review")}</Badge>
+                                            <Badge variant="secondary">Pending Review</Badge>
                                             <p className="text-xs text-muted-foreground mt-2">
-                                                {t("community.posts.create.pending_desc")}
+                                                Your post will be reviewed before being published
                                             </p>
                                         </div>
                                     </div>
 
                                     {formData.author && (
                                         <div className="space-y-2">
-                                            <Label>{t("community.posts.create.author")}</Label>
+                                            <Label>Author</Label>
                                             <Input
                                                 value={formData.author}
                                                 onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                                                placeholder={t("community.posts.create.author_placeholder")}
+                                                placeholder="Author name"
                                                 maxLength={100}
                                             />
                                         </div>
@@ -527,7 +528,7 @@ export default function CreateCommunityPostPage() {
                             <div className="text-sm text-muted-foreground">
                                 {contentLength > 0 && (
                                     <span>
-                                        {t("community.posts.create.characters_count", { current: contentLength.toString(), max: MAX_CONTENT_LENGTH.toString() })}
+                                        {contentLength} / {MAX_CONTENT_LENGTH} characters
                                     </span>
                                 )}
                             </div>
@@ -535,13 +536,13 @@ export default function CreateCommunityPostPage() {
                                 <Button variant="outline" type="button" size="lg" asChild>
                                     <Link href="/auth/community/community-posts">
                                         <ArrowLeft className="h-4 w-4 mr-2" />
-                                        {t("general_use.cancel")}
+                                        Cancel
                                     </Link>
                                 </Button>
                                 <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg">
                                     {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                     <Save className="h-4 w-4 mr-2" />
-                                    {t("community.posts.create.create_post")}
+                                    Create Post
                                 </Button>
                             </div>
                         </div>

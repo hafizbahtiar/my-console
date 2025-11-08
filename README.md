@@ -30,6 +30,7 @@ My Console is a full-featured admin dashboard application with:
 - **📝 Blog Management**: Full-featured CMS with rich text editor, SEO optimization, and content analytics
 - **🔍 SEO Optimized**: Comprehensive metadata, OpenGraph tags, Twitter Cards, and structured data
 - **⚡ Auto-save Settings**: Immediate settings updates without save buttons
+- **⚡ Optimized Pagination**: Smart server-side/client-side pagination for efficient data loading
 
 ### ✨ Key Features
 
@@ -139,9 +140,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 3. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
 4. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
 5. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
-6. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
-7. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-8. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+6. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
+7. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
+8. **Development Tasks**: Check `TODO.md` for current development priorities and progress
+9. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -192,6 +194,13 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - Centralized database and collection ID constants
 - Environment variable management
 - All collection IDs exported for consistent usage across the application
+
+#### Pagination System (`lib/pagination.ts`)
+- Optimized pagination utility with server-side/client-side fallback
+- Smart pagination strategy: server-side when no filters, client-side when filters active
+- Automatic fallback to client-side pagination if Appwrite queries fail
+- Efficient data loading: only loads current page when possible
+- Supports filters, ordering, and data transformation
 
 #### Client-side Initialization (`components/app/`)
 - **PrimaryColorInit**: Loads and applies primary color from localStorage on app startup

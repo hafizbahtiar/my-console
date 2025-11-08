@@ -1,44 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createProtectedPOST } from '@/lib/api-protection';
+import { apiSchemas } from '@/lib/api-schemas';
 import {
   OpenRouterErrorData, OpenRouterResponse, ModelError, FREE_MODELS,
   OPENROUTER_API_URL, getOpenRouterHeaders, getErrorMessage,
   isNonRetryableError, getAllModelsRateLimitedMessage,
 } from '@/lib/openrouter';
 
-interface ImproveContentRequest {
-  content: string;
-  action: 'improve' | 'rephrase' | 'shorten' | 'expand' | 'grammar';
-  title?: string; // Optional context
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const body: ImproveContentRequest = await request.json();
+export const POST = createProtectedPOST(
+  async ({ body }) => {
     const { content, action, title } = body;
 
-    // Validate input
-    if (!content || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Content is required for AI improvement' },
-        { status: 400 }
-      );
-    }
-
-    // Strip HTML tags and check content length
+    // Strip HTML tags for processing
     const plainTextContent = content.replace(/<[^>]*>/g, '').trim();
-    if (plainTextContent.length < 10) {
-      return NextResponse.json(
-        { error: 'Content must be at least 10 characters long' },
-        { status: 400 }
-      );
-    }
-
-    if (plainTextContent.length > 10000) {
-      return NextResponse.json(
-        { error: 'Content must be less than 10,000 characters' },
-        { status: 400 }
-      );
-    }
 
     // Prepare the improvement prompt based on action
     const prompt = createImprovementPrompt(action, plainTextContent, title);
@@ -133,15 +107,12 @@ export async function POST(request: NextRequest) {
       { error: `Failed to improve content: ${errorMessage}` },
       { status: 500 }
     );
-
-  } catch (error) {
-    console.error('Error improving content:', error);
-    return NextResponse.json(
-      { error: 'Failed to improve content. Please try again.' },
-      { status: 500 }
-    );
+  },
+  {
+    rateLimit: 'api',
+    schema: apiSchemas.ai.improveContent,
   }
-}
+);
 
 function createImprovementPrompt(action: string, content: string, title?: string): string {
   const context = title ? `Title: "${title}"\n\n` : '';

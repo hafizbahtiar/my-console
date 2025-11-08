@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
-import { useTranslation } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { account } from "@/lib/appwrite"
 import { auditLogger } from "@/lib/audit-log"
@@ -22,13 +21,21 @@ import { toast } from "sonner"
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
-  const { t, language, setLanguage } = useTranslation()
   const { user } = useAuth()
+
+  // Helper function to get theme label
+  const getThemeLabel = (themeValue: string | undefined) => {
+    if (!themeValue || themeValue === 'system') return "System"
+    if (themeValue === 'light') return "Light"
+    if (themeValue === 'dark') return "Dark"
+    return "System"
+  }
   const [notifications, setNotifications] = useState(true)
   const [emailUpdates, setEmailUpdates] = useState(true)
   const [twoFactor, setTwoFactor] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [primaryColor, setPrimaryColor] = useState<string>('default')
+  const [isClient, setIsClient] = useState(false)
 
   // Color options with their CSS variable values
   const colorOptions = [
@@ -46,6 +53,7 @@ export default function SettingsPage() {
   // Prevent hydration mismatch by only rendering Select after mount
   useEffect(() => {
     setMounted(true)
+    setIsClient(true)
 
     // Load saved primary color from localStorage
     const savedColor = localStorage.getItem('primary-color') || 'default'
@@ -81,7 +89,7 @@ export default function SettingsPage() {
     setPrimaryColor(colorName)
     localStorage.setItem('primary-color', colorName)
     applyPrimaryColor(colorName)
-    toast.success(t('settings.primary_color_updated'))
+    toast.success("Primary color updated successfully")
   }
 
   // Update color when theme changes
@@ -115,32 +123,28 @@ export default function SettingsPage() {
     confirm: false
   })
 
-  const handleLanguageChange = async (newLanguage: "en" | "ms") => {
-    setLanguage(newLanguage)
-    toast.success(t("settings.language_updated") || "Language updated")
-  }
 
   const handlePasswordChange = async () => {
     if (!user) return
 
     // Validate form
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.error(t('general_use.error'))
+      toast.error("Current password is required")
       return
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error(t('general_use.error'))
+      toast.error("Passwords do not match")
       return
     }
 
     if (passwordForm.newPassword.length < 8) {
-      toast.error(t('general_use.error'))
+      toast.error("Password must be between 8 and 265 characters long.")
       return
     }
 
     if (passwordForm.newPassword.length > 265) {
-      toast.error(t('general_use.error'))
+      toast.error("Password must be between 8 and 265 characters long.")
       return
     }
 
@@ -152,13 +156,13 @@ export default function SettingsPage() {
     ]
 
     if (weakPasswords.includes(passwordForm.newPassword.toLowerCase())) {
-      toast.error(t('general_use.error'))
+      toast.error("Password is too weak. Please choose a stronger password that is not commonly used.")
       return
     }
 
     // Check if new password is the same as current password
     if (passwordForm.currentPassword === passwordForm.newPassword) {
-      toast.error(t('general_use.error'))
+      toast.error("New password must be different from your current password.")
       return
     }
 
@@ -181,7 +185,7 @@ export default function SettingsPage() {
         timestamp: new Date().toISOString()
       })
 
-      toast.success(t('general_use.success'))
+      toast.success("Success")
 
       // Reset form and close dialog
       setPasswordForm({
@@ -194,15 +198,15 @@ export default function SettingsPage() {
     } catch (error: any) {
       console.error('Password change failed:', error)
 
-      let errorMessage = "Failed to change password"
+      let errorMessage = "Failed to change password. Please try again."
       if (error?.message?.includes('Invalid credentials')) {
-        errorMessage = "Current password is incorrect"
+        errorMessage = "Current password is incorrect. Please try again."
       } else if (error?.message?.includes('Password must be between 8 and 265')) {
-        errorMessage = "Password must be between 8 and 265 characters long"
+        errorMessage = "Password must be between 8 and 265 characters long."
       } else if (error?.message?.includes('should not be one of the commonly used password')) {
-        errorMessage = "Please choose a stronger password. Avoid commonly used passwords like 'password123' or '123456'"
+        errorMessage = "Password is too weak. Please choose a stronger password that is not commonly used."
       } else if (error?.message?.includes('Invalid `password` param')) {
-        errorMessage = "Invalid password. Please ensure it meets all requirements"
+        errorMessage = "Invalid password format. Please check your password and try again."
       } else if (error?.message) {
         errorMessage = error.message
       }
@@ -244,7 +248,7 @@ export default function SettingsPage() {
       }
       setPingLogs(prev => [log, ...prev])
       setPingStatus('success')
-      toast.success(t("settings.connection_successful"))
+      toast.success("Connection successful!")
     } catch (err) {
       const log = {
         date: new Date(),
@@ -257,16 +261,19 @@ export default function SettingsPage() {
       }
       setPingLogs(prev => [log, ...prev])
       setPingStatus('error')
-      toast.error(t("settings.connection_failed"))
+      toast.error("Connection failed")
     }
   }
+
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("settings.title")}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Settings
+        </h1>
         <p className="text-muted-foreground">
-          {t("settings.subtitle")}
+          Manage your account preferences and application settings
         </p>
       </div>
 
@@ -276,28 +283,28 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              {t("settings.appearance")}
+              Appearance
             </CardTitle>
             <CardDescription>
-              {t("settings.appearance_desc")}
+              Customize the look and feel of your dashboard
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.theme")}</Label>
+                <Label>Theme</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.choose_theme")}
+                  Choose your preferred color scheme
                 </p>
               </div>
               <Select value={mounted ? (theme || 'system') : 'system'} onValueChange={setTheme}>
                 <SelectTrigger className="w-32">
-                  <SelectValue />
+                  <SelectValue placeholder={getThemeLabel(theme)} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">{t("settings.light")}</SelectItem>
-                  <SelectItem value="dark">{t("settings.dark")}</SelectItem>
-                  <SelectItem value="system">{t("settings.system")}</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -306,13 +313,13 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.primary_color")}</Label>
+                <Label>Primary Color</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.choose_primary_color")}
+                  Choose your primary accent color
                 </p>
               </div>
-              <Select 
-                value={mounted ? (primaryColor || 'default') : 'default'} 
+              <Select
+                value={mounted ? (primaryColor || 'default') : 'default'}
                 onValueChange={handlePrimaryColorChange}
               >
                 <SelectTrigger className="w-48">
@@ -320,29 +327,29 @@ export default function SettingsPage() {
                     {mounted && (() => {
                       const selectedColor = colorOptions.find(c => c.name === primaryColor)
                       if (!selectedColor) return null
-                      
+
                       const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
                       const colorValue = isDark ? selectedColor.darkValue : selectedColor.value
-                      
+
                       return (
-                        <div 
+                        <div
                           className="h-4 w-4 rounded border border-border/50 shrink-0"
                           style={{ backgroundColor: colorValue }}
                         />
                       )
                     })()}
-                    <SelectValue placeholder={t("settings.choose_primary_color")} />
+                    <SelectValue placeholder="Choose your primary accent color" />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
                   {mounted && colorOptions.map((color) => {
                     const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
                     const colorValue = isDark ? color.darkValue : color.value
-                    
+
                     return (
                       <SelectItem key={color.name} value={color.name}>
                         <div className="flex items-center gap-2">
-                          <div 
+                          <div
                             className="h-4 w-4 rounded border border-border/50 shrink-0"
                             style={{ backgroundColor: colorValue }}
                           />
@@ -362,18 +369,18 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              {t("settings.notifications")}
+              Notifications
             </CardTitle>
             <CardDescription>
-              {t("settings.notifications_desc")}
+              Configure how you receive notifications
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.push_notifications")}</Label>
+                <Label>Push Notifications</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.receive_notifications")}
+                  Receive notifications in your browser
                 </p>
               </div>
               <Switch
@@ -386,9 +393,9 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.email_updates")}</Label>
+                <Label>Email Updates</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.receive_emails")}
+                  Receive email notifications about updates
                 </p>
               </div>
               <Switch
@@ -404,18 +411,18 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              {t("settings.security")}
+              Security
             </CardTitle>
             <CardDescription>
-              {t("settings.security_desc")}
+              Manage your account security settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.two_factor")}</Label>
+                <Label>Two-Factor Authentication</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.add_security")}
+                  Add an extra layer of security to your account
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -424,7 +431,7 @@ export default function SettingsPage() {
                   onCheckedChange={setTwoFactor}
                 />
                 <Badge variant={twoFactor ? "default" : "secondary"}>
-                  {twoFactor ? t("general_use.active") : t("general_use.inactive")}
+                  {twoFactor ? "Active" : "Inactive"}
                 </Badge>
               </div>
             </div>
@@ -432,7 +439,7 @@ export default function SettingsPage() {
             <Separator />
 
             <div className="space-y-2">
-              <Label>{t("settings.change_password")}</Label>
+              <Label>Change Password</Label>
               <p className="text-sm text-muted-foreground">
                 Update your account password for better security
               </p>
@@ -440,12 +447,12 @@ export default function SettingsPage() {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Key className="h-4 w-4 mr-2" />
-                    {t("settings.change_password")}
+                    Change Password
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px]">
                   <DialogHeader>
-                    <DialogTitle>{t("settings.change_password")}</DialogTitle>
+                    <DialogTitle>Change Password</DialogTitle>
                     <DialogDescription>
                       Enter your current password and choose a new secure password.
                     </DialogDescription>
@@ -569,55 +576,24 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Language & Region */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              {t("settings.language_region")}
-            </CardTitle>
-            <CardDescription>
-              {t("settings.language_region_desc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t("settings.language")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t("settings.choose_language")}
-                </p>
-              </div>
-              <Select value={mounted ? (language || 'en') : 'en'} onValueChange={handleLanguageChange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">{t("general_use.english")}</SelectItem>
-                  <SelectItem value="ms">{t("general_use.malay")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Connection Test */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Server className="h-5 w-5" />
-              {t("settings.connection_test")}
+              Connection Test
             </CardTitle>
             <CardDescription>
-              {t("settings.connection_test_desc")}
+              Test your connection to Appwrite services
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>{t("settings.test_connection")}</Label>
+                <Label>Test Appwrite Connection</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t("settings.test_connection_desc")}
+                  Send a ping to verify your Appwrite setup
                 </p>
               </div>
               <Button
@@ -634,22 +610,22 @@ export default function SettingsPage() {
                 ) : (
                   <Zap className="h-4 w-4 mr-2" />
                 )}
-                {pingStatus === 'loading' ? t("settings.testing") :
-                  pingStatus === 'success' ? t("settings.connected") :
-                    pingStatus === 'error' ? t("settings.failed") : t("settings.test_connection")}
+                {pingStatus === 'loading' ? "Testing..." :
+                  pingStatus === 'success' ? "Connected!" :
+                    pingStatus === 'error' ? "Connection failed" : "Test Appwrite Connection"}
               </Button>
             </div>
 
             {/* Project Info */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">{t("settings.endpoint")}</Label>
+                <Label className="text-xs text-muted-foreground">Endpoint</Label>
                 <p className="text-xs font-mono break-all">
                   {process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}
                 </p>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">{t("settings.project_id")}</Label>
+                <Label className="text-xs text-muted-foreground">Project ID</Label>
                 <p className="text-xs font-mono break-all">
                   {process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}
                 </p>
@@ -659,7 +635,7 @@ export default function SettingsPage() {
             {/* Logs */}
             {pingLogs.length > 0 && (
               <div className="space-y-2">
-                <Label className="text-sm">{t("settings.connection_logs")} ({pingLogs.length})</Label>
+                <Label className="text-sm">Connection Logs ({pingLogs.length})</Label>
                 <ScrollArea className="h-48 w-full rounded-md border">
                   <div className="p-4">
                     {pingLogs.map((log, index) => (

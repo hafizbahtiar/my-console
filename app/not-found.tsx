@@ -6,11 +6,9 @@ import Link from 'next/link'
 import { FileQuestion, Home, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useTranslation } from '@/lib/language-context'
 
 export default function NotFound() {
   const router = useRouter()
-  const { t } = useTranslation()
   const [currentUrl, setCurrentUrl] = useState('')
 
   useEffect(() => {
@@ -29,9 +27,9 @@ export default function NotFound() {
           <div className="mx-auto mb-4 h-12 w-12 text-muted-foreground">
             <FileQuestion className="h-full w-full" />
           </div>
-          <CardTitle className="text-2xl">{t('errors.something_went_wrong')}</CardTitle>
+          <CardTitle className="text-2xl">Page Not Found</CardTitle>
           <CardDescription>
-            {t('errors.try_again')}
+            The page you're looking for doesn't exist.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -42,12 +40,12 @@ export default function NotFound() {
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={handleGoBack}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('general_use.back')}
+              Back
             </Button>
             <Button asChild variant="outline">
               <Link href="/auth/dashboard">
                 <Home className="h-4 w-4 mr-2" />
-                {t('nav.dashboard')}
+                Dashboard
               </Link>
             </Button>
           </div>

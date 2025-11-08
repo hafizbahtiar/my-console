@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslation } from "@/lib/language-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
@@ -56,7 +55,6 @@ interface Alert {
 }
 
 export function MonitoringDashboard() {
-  const { t } = useTranslation()
   const [monitoringData, setMonitoringData] = useState<MonitoringData | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -115,12 +113,12 @@ export function MonitoringDashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">{t('monitoring.title')}</h2>
-            <p className="text-muted-foreground">{t('monitoring.subtitle')}</p>
+            <h2 className="text-2xl font-bold">System Monitoring</h2>
+            <p className="text-muted-foreground">Real-time system metrics and performance</p>
           </div>
           <Button disabled>
             <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            {t('monitoring.loading')}
+            Loading...
           </Button>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -146,19 +144,19 @@ export function MonitoringDashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">{t('monitoring.title')}</h2>
-            <p className="text-muted-foreground">{t('monitoring.subtitle')}</p>
+            <h2 className="text-2xl font-bold">System Monitoring</h2>
+            <p className="text-muted-foreground">Real-time system metrics and performance</p>
           </div>
           <Button onClick={fetchMonitoringData}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            {t('monitoring.retry')}
+            Retry
           </Button>
         </div>
         <Card>
           <CardContent className="flex items-center justify-center h-64">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">{t('monitoring.failed_to_load_monitoring_data')}</p>
+              <p className="text-muted-foreground">Failed to load monitoring data</p>
             </div>
           </CardContent>
         </Card>
@@ -174,17 +172,17 @@ export function MonitoringDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{t('monitoring.title')}</h2>
+          <h2 className="text-2xl font-bold">System Monitoring</h2>
           <p className="text-muted-foreground">
-            {t('monitoring.subtitle')}
+            Real-time system metrics and performance
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            {t('monitoring.last_updated', { time: lastUpdate.toLocaleTimeString() })}
+            Last updated: {lastUpdate.toLocaleTimeString()}
           </p>
         </div>
         <Button onClick={fetchMonitoringData} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
-          {t('monitoring.retry')}
+          Refresh
         </Button>
       </div>
 
@@ -192,20 +190,20 @@ export function MonitoringDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('monitoring.active_users')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{metrics.activeUsers}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics.recentLogins} {t('monitoring.recent_logins')}
+              {metrics.recentLogins} recent logins
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('monitoring.cpu_usage')}</CardTitle>
+            <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
             <Cpu className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -218,7 +216,7 @@ export function MonitoringDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('monitoring.response_time')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Response Time</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -226,20 +224,20 @@ export function MonitoringDashboard() {
               {metrics.responseTime}ms
             </div>
             <p className="text-xs text-muted-foreground">
-              {t('monitoring.avg_response_time', { time: performance.averageResponseTime.toString() })}
+              Avg: {performance.averageResponseTime}ms
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('monitoring.api_throughput')}</CardTitle>
+            <CardTitle className="text-sm font-medium">API Throughput</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{performance.throughput}</div>
             <p className="text-xs text-muted-foreground">
-              {t('monitoring.requests_per_second')}
+              Requests per second
             </p>
           </CardContent>
         </Card>
@@ -252,14 +250,14 @@ export function MonitoringDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Server className="h-5 w-5" />
-              {t('monitoring.system_health')}
+              System Health
             </CardTitle>
-            <CardDescription>{t('monitoring.current_system_resource_usage')}</CardDescription>
+            <CardDescription>Current system resource usage</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{t('monitoring.cpu_usage')}</span>
+                <span>CPU Usage</span>
                 <span className={getStatusColor(metrics.cpuUsage, { warning: 70, critical: 90 })}>
                   {metrics.cpuUsage}%
                 </span>
@@ -269,7 +267,7 @@ export function MonitoringDashboard() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{t('monitoring.memory_usage')}</span>
+                <span>Memory Usage</span>
                 <span className="text-muted-foreground">N/A</span>
               </div>
               <Progress value={0} className="h-2" />
@@ -277,7 +275,7 @@ export function MonitoringDashboard() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>{t('monitoring.storage_used')}</span>
+                <span>Storage Used</span>
                 <span>{metrics.storageUsed} MB</span>
               </div>
               <Progress value={(metrics.storageUsed / 100) * 100} className="h-2" />
@@ -287,11 +285,11 @@ export function MonitoringDashboard() {
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="text-muted-foreground">{t('monitoring.total_users')}</span>
+                <span className="text-muted-foreground">Total Users</span>
                 <div className="font-semibold">{metrics.totalUsers}</div>
               </div>
               <div>
-                <span className="text-muted-foreground">{t('monitoring.error_rate')}</span>
+                <span className="text-muted-foreground">Error Rate</span>
                 <div className={`font-semibold ${getStatusColor(performance.errorRate, { warning: 2, critical: 5 })}`}>
                   {performance.errorRate}%
                 </div>
@@ -305,21 +303,21 @@ export function MonitoringDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              {t('monitoring.active_alerts')}
+              Active Alerts
               {activeAlerts.length > 0 && (
                 <Badge variant="destructive" className="ml-auto">
                   {activeAlerts.length}
                 </Badge>
               )}
             </CardTitle>
-            <CardDescription>{t('monitoring.system_alerts_and_notifications')}</CardDescription>
+            <CardDescription>System alerts and notifications</CardDescription>
           </CardHeader>
           <CardContent>
             {activeAlerts.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-muted-foreground">
                 <div className="text-center">
                   <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                  <p className="text-sm">{t('monitoring.all_systems_operational')}</p>
+                  <p className="text-sm">All systems operational</p>
                 </div>
               </div>
             ) : (
@@ -353,9 +351,9 @@ export function MonitoringDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            {t('monitoring.performance_trends')}
+            Performance Trends
           </CardTitle>
-          <CardDescription>{t('monitoring.real_time_performance_metrics')}</CardDescription>
+          <CardDescription>Real-time performance metrics</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -363,7 +361,7 @@ export function MonitoringDashboard() {
               <div className="text-2xl font-bold text-green-600">
                 {performance.throughput}
               </div>
-              <p className="text-sm text-muted-foreground">{t('monitoring.requests_sec')}</p>
+              <p className="text-sm text-muted-foreground">Requests/sec</p>
               <div className="flex items-center justify-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3 text-green-500" />
                 <span className="text-xs text-green-600">+12%</span>
@@ -374,7 +372,7 @@ export function MonitoringDashboard() {
               <div className="text-2xl font-bold text-blue-600">
                 {performance.averageResponseTime}ms
               </div>
-              <p className="text-sm text-muted-foreground">{t('monitoring.avg_response_time', { time: performance.averageResponseTime.toString() })}</p>
+              <p className="text-sm text-muted-foreground">Avg: {performance.averageResponseTime}ms</p>
               <div className="flex items-center justify-center gap-1 mt-1">
                 <TrendingDown className="h-3 w-3 text-green-500" />
                 <span className="text-xs text-green-600">-5%</span>
@@ -385,7 +383,7 @@ export function MonitoringDashboard() {
               <div className="text-2xl font-bold text-orange-600">
                 {performance.errorRate}%
               </div>
-              <p className="text-sm text-muted-foreground">{t('monitoring.error_rate')}</p>
+              <p className="text-sm text-muted-foreground">Error Rate</p>
               <div className="flex items-center justify-center gap-1 mt-1">
                 <TrendingUp className="h-3 w-3 text-red-500" />
                 <span className="text-xs text-red-600">+2%</span>

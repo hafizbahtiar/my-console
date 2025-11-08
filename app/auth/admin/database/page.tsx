@@ -21,7 +21,6 @@ import { toast } from "sonner";
 import { tablesDB, teams, DATABASE_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
 import {
   DatabaseOverview,
   DatabaseCollections,
@@ -325,7 +324,6 @@ async function getBackupHistory(): Promise<BackupRecord[]> {
 export default function DatabasePage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [hasAccess, setHasAccess] = useState(false);
@@ -360,7 +358,7 @@ export default function DatabasePage() {
         const isSuperAdmin = userTeams.teams?.some((team: any) => team.name === 'Super Admin');
 
         if (!isSuperAdmin) {
-          toast.error(t('database.access_denied_redirecting'));
+          toast.error('Access denied. Redirecting...');
           router.push('/auth/dashboard');
           return;
         }
@@ -368,7 +366,7 @@ export default function DatabasePage() {
         setHasAccess(true);
       } catch (error) {
         console.error('Failed to check access:', error);
-        toast.error(t('database.verifying_access_permissions'));
+        toast.error('Failed to verify access permissions');
         router.push('/auth/dashboard');
       } finally {
         setAccessChecked(true);
@@ -420,8 +418,8 @@ export default function DatabasePage() {
 
     } catch (err) {
       console.error('Failed to load database data:', err);
-      setError(err instanceof Error ? err.message : t('database.failed_to_load_database_information'));
-      toast.error(t('database.loading_database_information'));
+      setError(err instanceof Error ? err.message : 'Failed to load database information');
+      toast.error('Failed to load database information');
     } finally {
       setIsLoading(false);
     }
@@ -431,11 +429,11 @@ export default function DatabasePage() {
     setIsRefreshing(true);
     await loadDatabaseData();
     setIsRefreshing(false);
-    toast.success(t("general_use.refresh"));
+    toast.success("Refreshed");
   };
 
   const handleManualBackup = async () => {
-    toast.info(t("database.starting_manual_backup"));
+    toast.info("Starting manual backup...");
     setIsRefreshing(true);
 
     try {
@@ -458,19 +456,16 @@ export default function DatabasePage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success(t("database.manual_backup_completed", {
-          records: result.data.totalRecords.toString(),
-          collections: result.data.collections.toString()
-        }));
+        toast.success(`Manual backup completed: ${result.data.totalRecords} records across ${result.data.collections} collections`);
 
         // Refresh data after backup to show updated stats
         await loadDatabaseData();
       } else {
-        throw new Error(result.error || t("database.backup_failed"));
+        throw new Error(result.error || "Backup failed");
       }
     } catch (error) {
       console.error('Manual backup failed:', error);
-      toast.error(error instanceof Error ? error.message : t("database.manual_backup_failed"));
+      toast.error(error instanceof Error ? error.message : "Manual backup failed");
     } finally {
       setIsRefreshing(false);
     }
@@ -500,11 +495,11 @@ export default function DatabasePage() {
   // Show loading while checking access
   if (!accessChecked) {
     return (
-      <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">{t("database.verifying_access_permissions")}</p>
+            <p className="text-sm text-muted-foreground">Verifying access permissions...</p>
           </div>
         </div>
       </div>
@@ -514,11 +509,11 @@ export default function DatabasePage() {
   // Redirect handled by useEffect, but show loading state
   if (!hasAccess) {
     return (
-      <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">{t("database.access_denied_redirecting")}</p>
+            <p className="text-sm text-muted-foreground">Access denied. Redirecting...</p>
           </div>
         </div>
       </div>
@@ -527,11 +522,11 @@ export default function DatabasePage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center space-y-4">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-            <p className="text-muted-foreground">{t("database.loading_database_information")}</p>
+            <p className="text-sm text-muted-foreground">Loading database information...</p>
           </div>
         </div>
       </div>
@@ -540,15 +535,19 @@ export default function DatabasePage() {
 
   if (error) {
     return (
-      <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
         <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {t("database.failed_to_load_database_information")}: {error}
-            <Button variant="outline" size="sm" className="ml-4" onClick={loadDatabaseData}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {t("database.retry")}
-            </Button>
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <AlertDescription className="text-xs sm:text-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <span className="flex-1">
+                Failed to load database information: {error}
+              </span>
+              <Button variant="outline" size="sm" onClick={loadDatabaseData} className="w-full sm:w-auto">
+                <RefreshCw className="mr-2 h-4 w-4 shrink-0" />
+                Retry
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>
@@ -556,70 +555,76 @@ export default function DatabasePage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">{t("database.title")}</h2>
-          <p className="text-muted-foreground">
-            {t("database.subtitle")}
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Database Management</h2>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            Monitor and manage your database
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            {t("general_use.refresh")}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing} className="flex-1 sm:flex-initial">
+            <RefreshCw className={`mr-2 h-4 w-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span className="truncate">Refresh</span>
           </Button>
-          <Button size="sm" onClick={handleManualBackup}>
-            <Download className="mr-2 h-4 w-4" />
-            {t("database.manual_backup")}
+          <Button size="sm" onClick={handleManualBackup} className="flex-1 sm:flex-initial">
+            <Download className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">Manual Backup</span>
           </Button>
         </div>
       </div>
 
       {/* Status Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("database.total_collections")}</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Collections</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalCollections || 0}</div>
-            <p className="text-xs text-muted-foreground">{t("database.active_collections")}</p>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalCollections || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active collections</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("database.total_documents")}</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Documents</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDocuments.toLocaleString() || '0'}</div>
-            <p className="text-xs text-muted-foreground">{t("database.across_all_collections")}</p>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalDocuments.toLocaleString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Across all collections</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("database.database_size")}</CardTitle>
-            <HardDrive className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Database Size</CardTitle>
+            <HardDrive className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalSize || '0 B'}</div>
-            <p className="text-xs text-muted-foreground">{t("database.total_storage_used")}</p>
+            <div className="text-xl sm:text-2xl font-bold">{stats?.totalSize || '0 B'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Total storage used</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("database.backup_status")}</CardTitle>
-            {getStatusIcon(stats?.backupStatus || 'unknown')}
+            <CardTitle className="text-xs sm:text-sm font-medium">Backup Status</CardTitle>
+            <div className="shrink-0">{getStatusIcon(stats?.backupStatus || 'unknown')}</div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold capitalize">{t(`database.${stats?.backupStatus}`) || t("database.unknown")}</div>
-            <p className="text-xs text-muted-foreground">
-              {t("database.last_backup")} {stats?.lastBackup ? new Date(stats.lastBackup).toLocaleDateString() : t("database.no_backups")}
+            <div className="text-xl sm:text-2xl font-bold capitalize">
+              {stats?.backupStatus === 'healthy' ? 'Healthy' :
+               stats?.backupStatus === 'warning' ? 'Warning' :
+               stats?.backupStatus === 'critical' ? 'Critical' :
+               stats?.backupStatus === 'no-backups' ? 'No Backups' :
+               'Unknown'}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Last backup: {stats?.lastBackup ? new Date(stats.lastBackup).toLocaleDateString() : 'No backups'}
             </p>
           </CardContent>
         </Card>
@@ -627,23 +632,31 @@ export default function DatabasePage() {
 
       {/* Database Health Alert */}
       <Alert>
-        {getStatusIcon(stats?.backupStatus || 'unknown')}
-        <AlertDescription>
-          {t("database.database_is_running_normally", { uptime: stats?.uptime || '99.9%', collections: collections.length.toString() })}
-          {stats?.backupStatus === 'healthy' && ` ${t("database.backups_are_current")}`}
-          {stats?.backupStatus === 'warning' && ` ${t("database.recent_backups_detected")}`}
-          {stats?.backupStatus === 'critical' && ` ${t("database.backups_are_outdated")}`}
-          {stats?.backupStatus === 'no-backups' && ` ${t("database.no_backups_found")}`}
+        <div className="shrink-0">{getStatusIcon(stats?.backupStatus || 'unknown')}</div>
+        <AlertDescription className="text-xs sm:text-sm">
+          Database is running normally ({stats?.uptime || '99.9%'} uptime, {collections.length} collections).
+          {stats?.backupStatus === 'healthy' && ' Backups are current.'}
+          {stats?.backupStatus === 'warning' && ' Recent backups detected.'}
+          {stats?.backupStatus === 'critical' && ' Backups are outdated.'}
+          {stats?.backupStatus === 'no-backups' && ' No backups found.'}
         </AlertDescription>
       </Alert>
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">{t("database.overview")}</TabsTrigger>
-          <TabsTrigger value="collections">{t("database.collections")}</TabsTrigger>
-          <TabsTrigger value="backups">{t("database.backups")}</TabsTrigger>
-          <TabsTrigger value="performance">{t("database.performance")}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="collections" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Collections
+          </TabsTrigger>
+          <TabsTrigger value="backups" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Backups
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Performance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

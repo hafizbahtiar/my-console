@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { applySecurityHeaders } from '@/middlewares/security-headers'
-import { rateLimitMiddleware, rateLimitConfigs } from '@/middlewares/rate-limit'
+import { createProtectedGET } from '@/lib/api-protection'
 import { tablesDB, DATABASE_ID, AUDIT_COLLECTION_ID } from '@/lib/appwrite'
 
 interface HealthCheck {
@@ -263,13 +262,8 @@ function generateAlerts(): Alert[] {
   return alerts
 }
 
-export async function GET(request: NextRequest) {
-  // Apply rate limiting for health checks
-  const rateLimitResult = rateLimitMiddleware(request, rateLimitConfigs.health)
-  if (rateLimitResult) {
-    return applySecurityHeaders(rateLimitResult)
-  }
-  try {
+export const GET = createProtectedGET(
+  async () => {
     // Run all health checks and metrics collection in parallel
     const [databaseHealth, storageHealth, authHealth, metrics, alerts] = await Promise.all([
       checkDatabaseHealth(),
@@ -310,44 +304,45 @@ export async function GET(request: NextRequest) {
     const httpStatus = overallStatus === 'healthy' ? 200 :
                       overallStatus === 'degraded' ? 200 : 503
 
-    return applySecurityHeaders(NextResponse.json(healthCheck, { status: httpStatus }))
-
-  } catch (error) {
-    console.error('Health check failed:', error)
-
-    const errorHealthCheck: HealthCheck = {
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
-      uptime: Math.floor(process.uptime()),
-      services: {
-        database: 'unhealthy',
-        storage: 'unhealthy',
-        authentication: 'unhealthy'
-      },
-      memory: getMemoryUsage(),
-      environment: process.env.NODE_ENV || 'development',
-      metrics: {
-        activeUsers: 0,
-        totalUsers: 0,
-        recentLogins: 0,
-        apiCalls: 0,
-        storageUsed: 0,
-        cpuUsage: 0,
-        responseTime: 0
-      },
-      alerts: [{
-        id: `error-${Date.now()}`,
-        type: 'error',
-        message: 'Health check failed to complete',
+    return NextResponse.json(healthCheck, { status: httpStatus })
+  },
+  {
+    rateLimit: 'health',
+    onError: (error) => {
+      console.error('Health check failed:', error)
+      const errorHealthCheck: HealthCheck = {
+        status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        resolved: false
-      }]
+        version: process.env.npm_package_version || '1.0.0',
+        uptime: Math.floor(process.uptime()),
+        services: {
+          database: 'unhealthy',
+          storage: 'unhealthy',
+          authentication: 'unhealthy'
+        },
+        memory: getMemoryUsage(),
+        environment: process.env.NODE_ENV || 'development',
+        metrics: {
+          activeUsers: 0,
+          totalUsers: 0,
+          recentLogins: 0,
+          apiCalls: 0,
+          storageUsed: 0,
+          cpuUsage: 0,
+          responseTime: 0
+        },
+        alerts: [{
+          id: `error-${Date.now()}`,
+          type: 'error',
+          message: 'Health check failed to complete',
+          timestamp: new Date().toISOString(),
+          resolved: false
+        }]
+      }
+      return NextResponse.json(errorHealthCheck, { status: 503 })
     }
-
-    return applySecurityHeaders(NextResponse.json(errorHealthCheck, { status: 503 }))
   }
-}
+)
 
 // Also support HEAD requests for load balancer health checks
 export async function HEAD(request: NextRequest) {

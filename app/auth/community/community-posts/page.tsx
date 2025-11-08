@@ -54,8 +54,8 @@ import { toast } from "sonner";
 import { tablesDB, DATABASE_ID, COMMUNITY_POSTS_COLLECTION_ID, COMMUNITY_TOPICS_COLLECTION_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
-import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination";
+import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages, optimizedPagination } from "@/lib/pagination";
+import { SafeHTML } from "@/components/ui/safe-html";
 import {
     Pagination,
     PaginationContent,
@@ -68,7 +68,6 @@ import {
 
 export default function CommunityPostsPage() {
     const { user } = useAuth();
-    const { t } = useTranslation();
     const router = useRouter();
 
     // State
@@ -85,6 +84,7 @@ export default function CommunityPostsPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [totalPosts, setTotalPosts] = useState(0);
+    const [needsClientSideFiltering, setNeedsClientSideFiltering] = useState(false);
 
     // Dialog states
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -109,9 +109,11 @@ export default function CommunityPostsPage() {
         try {
             setIsRefreshing(true);
 
-            const needsAllData = searchTerm || statusFilter !== 'all';
+            // Check if we need client-side filtering (search or status filter active)
+            const hasFilters = searchTerm.trim().length > 0 || statusFilter !== 'all';
+            setNeedsClientSideFiltering(hasFilters);
 
-            if (needsAllData) {
+            if (hasFilters) {
                 const allPostsData = await tablesDB.listRows({
                     databaseId: DATABASE_ID,
                     tableId: COMMUNITY_POSTS_COLLECTION_ID,
@@ -127,60 +129,29 @@ export default function CommunityPostsPage() {
                 setTotalPosts(allSortedPosts.length);
                 setAllPosts(allSortedPosts);
             } else {
-                const paginationParams = createPaginationParams(currentPage, pageSize);
-
-                // Ensure limit and offset are valid numbers
-                const limit = paginationParams.limit || DEFAULT_PAGE_SIZE;
-                const offset = paginationParams.offset || 0;
-
-                try {
-                    // Try to use Appwrite native pagination with queries
-                    const countResponse = await tablesDB.listRows({
+                // When no filters, try optimized server-side pagination
+                const filters: Array<{ field: string; operator: string; value: any }> = [];
+                
+                const result = await optimizedPagination<CommunityPost>(
+                    tablesDB.listRows.bind(tablesDB),
+                    {
                         databaseId: DATABASE_ID,
                         tableId: COMMUNITY_POSTS_COLLECTION_ID,
-                    });
-                    setTotalPosts(countResponse.rows.length);
-
-                    const postsData = await tablesDB.listRows({
-                        databaseId: DATABASE_ID,
-                        tableId: COMMUNITY_POSTS_COLLECTION_ID,
-                        queries: [
-                            `limit(${limit})`,
-                            `offset(${offset})`,
-                            `orderDesc("$updatedAt")`
-                        ]
-                    });
-
-                    const sortedPosts = postsData.rows
-                        .map((row: any) => ({
+                        page: currentPage,
+                        pageSize: pageSize,
+                        orderBy: '$updatedAt',
+                        orderDirection: 'desc',
+                        filters: filters,
+                        transform: (row: any) => ({
                             ...row,
                             tags: Array.isArray(row.tags) ? row.tags : [],
-                        }));
+                        })
+                    }
+                );
 
-                    setPosts(sortedPosts);
-                    setAllPosts(sortedPosts);
-                } catch (queryError: any) {
-                    // Fallback: Load all data and paginate client-side if query fails
-                    console.warn('Query failed, falling back to client-side pagination:', queryError);
-                    const allPostsData = await tablesDB.listRows({
-                        databaseId: DATABASE_ID,
-                        tableId: COMMUNITY_POSTS_COLLECTION_ID,
-                    });
-
-                    const allSortedPosts = allPostsData.rows
-                        .map((row: any) => ({
-                            ...row,
-                            tags: Array.isArray(row.tags) ? row.tags : [],
-                        }))
-                        .sort((a: any, b: any) => new Date(b.$updatedAt || b.$createdAt || 0).getTime() - new Date(a.$updatedAt || a.$createdAt || 0).getTime());
-
-                    setTotalPosts(allSortedPosts.length);
-                    setAllPosts(allSortedPosts);
-
-                    // Apply pagination client-side
-                    const paginatedPosts = allSortedPosts.slice(offset, offset + limit);
-                    setPosts(paginatedPosts);
-                }
+                setPosts(result.data);
+                setTotalPosts(result.total);
+                setAllPosts([]); // Clear allPosts when using server-side pagination
             }
 
             setError(null);
@@ -195,14 +166,12 @@ export default function CommunityPostsPage() {
                 err?.type === 'AppwriteException';
 
             if (isAuthError) {
-                const errorMsg = t('community.posts.auth_error', {
-                    defaultValue: 'You do not have permission to access community posts. Please contact an administrator to set up the required permissions.'
-                });
+                const errorMsg = 'You do not have permission to access community posts. Please contact an administrator to set up the required permissions.';
                 setError(errorMsg);
                 toast.error(errorMsg);
             } else {
-                setError(t('general_use.error'));
-                toast.error(t('general_use.error'));
+                setError("Error");
+                toast.error("Error");
             }
 
             // Set empty arrays to prevent further errors
@@ -250,13 +219,13 @@ export default function CommunityPostsPage() {
                 }
             });
 
-            toast.success(t('general_use.success'));
+            toast.success("Post deleted successfully");
             setDeleteDialogOpen(false);
             setPostToDelete(null);
             await loadPosts();
         } catch (error) {
             console.error('Failed to delete community post:', error);
-            toast.error(t('general_use.error'));
+            toast.error("Error");
         }
     };
 
@@ -265,34 +234,35 @@ export default function CommunityPostsPage() {
         setViewDialogOpen(true);
     };
 
-    // Determine if we need to filter
-    const needsFiltering = searchTerm || statusFilter !== 'all';
-
-    // Filter all posts first, then paginate
-    const filteredAllPosts = needsFiltering ? allPosts.filter(post => {
+    // Determine which posts to display
+    // If filters are active, use client-side filtering and pagination
+    // Otherwise, use server-side paginated posts
+    const filteredAllPosts = needsClientSideFiltering ? allPosts.filter(post => {
         const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (post.author && post.author.toLowerCase().includes(searchTerm.toLowerCase())) ||
             post.slug.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || post.status === statusFilter;
         return matchesSearch && matchesStatus;
-    }) : allPosts;
+    }) : [];
 
-    // Apply pagination to filtered results
+    // Apply pagination to filtered results (only when client-side filtering is active)
     const paginationParams = createPaginationParams(currentPage, pageSize);
-    const filteredPosts = needsFiltering ? filteredAllPosts.slice(
-        paginationParams.offset || 0,
-        (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
-    ) : posts;
+    const filteredPosts = needsClientSideFiltering 
+        ? filteredAllPosts.slice(
+            paginationParams.offset || 0,
+            (paginationParams.offset || 0) + (paginationParams.limit || DEFAULT_PAGE_SIZE)
+          )
+        : posts; // Use server-side paginated posts when no filters
 
-    const totalFilteredPosts = filteredAllPosts.length;
+    const totalFilteredPosts = needsClientSideFiltering ? filteredAllPosts.length : totalPosts;
     const totalPages = getTotalPages(totalFilteredPosts, pageSize);
 
     // Reset to page 1 when filters change
     useEffect(() => {
-        if (currentPage > 1 && needsFiltering) {
+        if (currentPage > 1 && needsClientSideFiltering) {
             setCurrentPage(1);
         }
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, statusFilter, needsClientSideFiltering, currentPage]);
 
     const getTopicName = (post: CommunityPost) => {
         if (post.communityTopics) {
@@ -303,7 +273,7 @@ export default function CommunityPostsPage() {
                 return topic?.name || post.communityTopics;
             }
         }
-        return t("general_use.uncategorized", { defaultValue: "Uncategorized" });
+        return "Uncategorized";
     };
 
     if (isLoading) {
@@ -346,22 +316,22 @@ export default function CommunityPostsPage() {
             {/* Header */}
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
-                    <h1 className="text-3xl font-bold tracking-tight">{t("community.posts.title")}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Community Posts</h1>
                     <p className="text-muted-foreground text-lg">
-                        {t("community.posts.subtitle")}
+                        Manage and moderate community discussions
                     </p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                             <MessageSquare className="h-4 w-4" />
-                            {totalFilteredPosts} {t("community.posts.total_posts")}
+                            {totalFilteredPosts} total posts
                         </span>
                         <span className="flex items-center gap-1">
                             <CheckCircle className="h-4 w-4 text-green-500" />
-                            {allPosts.filter(p => p.status === 'approved').length} {t("community.posts.approved_count")}
+                            {allPosts.filter(p => p.status === 'approved').length} approved
                         </span>
                         <span className="flex items-center gap-1">
                             <AlertCircle className="h-4 w-4 text-yellow-500" />
-                            {allPosts.filter(p => p.status === 'pending').length} {t("community.posts.pending_count")}
+                            {allPosts.filter(p => p.status === 'pending').length} pending
                         </span>
                     </div>
                 </div>
@@ -373,12 +343,12 @@ export default function CommunityPostsPage() {
                         className="shrink-0"
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {t("general_use.refresh")}
+                        Refresh
                     </Button>
                     <Button asChild className="shrink-0">
                         <Link href="/auth/community/community-posts/create">
                             <Plus className="h-4 w-4 mr-2" />
-                            {t("general_use.create")}
+                            Create
                         </Link>
                     </Button>
                 </div>
@@ -389,23 +359,23 @@ export default function CommunityPostsPage() {
                 <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                         <Search className="h-5 w-5 text-muted-foreground" />
-                        {t("community.posts.search_filter")}
+                        Search & Filter
                     </CardTitle>
                     <CardDescription>
-                        {t("community.posts.search_filter_desc")}
+                        Search posts by title, author, or slug and filter by status
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-4 md:flex-row md:items-end">
                         <div className="flex-1 space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">
-                                {t("community.posts.search_posts")}
+                                Search Posts
                             </label>
                             <div className="relative">
                                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     type="text"
-                                    placeholder={t("community.posts.search_placeholder")}
+                                    placeholder="Search by title, author, or slug..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10"
@@ -414,16 +384,16 @@ export default function CommunityPostsPage() {
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-muted-foreground">
-                                {t("community.posts.status_filter")}
+                                Status Filter
                             </label>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger className="w-48">
-                                    <SelectValue placeholder={t("community.posts.filter_by_status")} />
+                                    <SelectValue placeholder="Filter by status" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">
                                         <div className="flex items-center gap-2">
-                                            <span>{t("community.posts.all_status")}</span>
+                                            <span>All Status</span>
                                             <Badge variant="secondary" className="text-xs">
                                                 {allPosts.length}
                                             </Badge>
@@ -432,7 +402,7 @@ export default function CommunityPostsPage() {
                                     <SelectItem value="pending">
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="h-4 w-4 text-yellow-500" />
-                                            <span>{t("status.pending")}</span>
+                                            <span>Pending</span>
                                             <Badge variant="secondary" className="text-xs">
                                                 {allPosts.filter(p => p.status === 'pending').length}
                                             </Badge>
@@ -441,7 +411,7 @@ export default function CommunityPostsPage() {
                                     <SelectItem value="approved">
                                         <div className="flex items-center gap-2">
                                             <CheckCircle className="h-4 w-4 text-green-500" />
-                                            <span>{t("status.approved")}</span>
+                                            <span>Approved</span>
                                             <Badge variant="secondary" className="text-xs">
                                                 {allPosts.filter(p => p.status === 'approved').length}
                                             </Badge>
@@ -450,7 +420,7 @@ export default function CommunityPostsPage() {
                                     <SelectItem value="rejected">
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="h-4 w-4 text-red-500" />
-                                            <span>{t("status.rejected")}</span>
+                                            <span>Rejected</span>
                                             <Badge variant="secondary" className="text-xs">
                                                 {allPosts.filter(p => p.status === 'rejected').length}
                                             </Badge>
@@ -459,7 +429,7 @@ export default function CommunityPostsPage() {
                                     <SelectItem value="archived">
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="h-4 w-4 text-gray-500" />
-                                            <span>{t("status.archived")}</span>
+                                            <span>Archived</span>
                                             <Badge variant="secondary" className="text-xs">
                                                 {allPosts.filter(p => p.status === 'archived').length}
                                             </Badge>
@@ -477,7 +447,7 @@ export default function CommunityPostsPage() {
                                 }}
                                 className="shrink-0"
                             >
-                                {t("community.posts.clear_filters")}
+                                Clear Filters
                             </Button>
                         )}
                     </div>
@@ -488,7 +458,7 @@ export default function CommunityPostsPage() {
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>{t("general_use.error")}</AlertTitle>
+                    <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -498,28 +468,24 @@ export default function CommunityPostsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <MessageSquare className="h-5 w-5" />
-                        {t("community.posts.title")} ({totalFilteredPosts})
+                        Community Posts ({totalFilteredPosts})
                     </CardTitle>
                     <CardDescription>
-                        {t("community.posts.manage_content")} - {t("general_use.showing_entries_paginated", {
-                            showing: filteredPosts.length.toString(),
-                            filtered: totalFilteredPosts.toString(),
-                            total: allPosts.length.toString()
-                        })}
+                        Manage content - Showing {filteredPosts.length} of {totalFilteredPosts} entries (Total: {allPosts.length})
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="border-b bg-muted/30 hover:bg-muted/30">
-                                <TableHead className="font-semibold">{t("general_use.title")}</TableHead>
-                                <TableHead className="font-semibold">{t("general_use.author")}</TableHead>
-                                <TableHead className="font-semibold">{t("community.posts.topic")}</TableHead>
-                                <TableHead className="font-semibold">{t("general_use.status")}</TableHead>
-                                <TableHead className="font-semibold">{t("general_use.views")}</TableHead>
-                                <TableHead className="font-semibold">{t("community.posts.upvotes")}</TableHead>
-                                <TableHead className="font-semibold">{t("community.posts.replies")}</TableHead>
-                                <TableHead className="text-right font-semibold">{t("general_use.actions")}</TableHead>
+                                <TableHead className="font-semibold">Title</TableHead>
+                                <TableHead className="font-semibold">Author</TableHead>
+                                <TableHead className="font-semibold">Topic</TableHead>
+                                <TableHead className="font-semibold">Status</TableHead>
+                                <TableHead className="font-semibold">Views</TableHead>
+                                <TableHead className="font-semibold">Upvotes</TableHead>
+                                <TableHead className="font-semibold">Replies</TableHead>
+                                <TableHead className="text-right font-semibold">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -580,7 +546,7 @@ export default function CommunityPostsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {post.author || t("community.posts.anonymous")}
+                                            {post.author || "Anonymous"}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant="outline" className="text-xs">
@@ -624,7 +590,7 @@ export default function CommunityPostsPage() {
                                                             </Button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{t("general_use.view")}</p>
+                                                            <p>View</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                     <Tooltip>
@@ -642,7 +608,7 @@ export default function CommunityPostsPage() {
                                                             </Button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{t("general_use.edit")}</p>
+                                                            <p>Edit</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                     <Tooltip>
@@ -661,7 +627,7 @@ export default function CommunityPostsPage() {
                                                             </Button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>{t("general_use.delete")}</p>
+                                                            <p>Delete</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </div>
@@ -680,23 +646,23 @@ export default function CommunityPostsPage() {
                             </div>
                             <h3 className="text-xl font-semibold mb-2">
                                 {error && error.includes('permission')
-                                    ? t("community.posts.auth_error_title", { defaultValue: "Permission Denied" })
-                                    : t("community.posts.no_posts_found")
+                                    ? "Permission Denied"
+                                    : "No posts found"
                                 }
                             </h3>
                             <p className="text-muted-foreground text-center max-w-md mb-6">
                                 {error && error.includes('permission')
                                     ? error
                                     : searchTerm || statusFilter !== 'all'
-                                        ? t("community.posts.adjust_filters")
-                                        : t("community.posts.create_first_post")
+                                        ? "Try adjusting your search or filter criteria"
+                                        : "Create your first community post to get started"
                                 }
                             </p>
                             {(!searchTerm && statusFilter === 'all' && !error) && (
                                 <Button asChild>
                                     <Link href="/auth/community/community-posts/create">
                                         <Plus className="h-4 w-4 mr-2" />
-                                        {t("community.posts.create_first_post_button")}
+                                        Create First Post
                                     </Link>
                                 </Button>
                             )}
@@ -801,47 +767,47 @@ export default function CommunityPostsPage() {
                             {/* Metadata Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg border">
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.author")}</p>
-                                    <p className="font-medium">{selectedPost.author || t("community.posts.anonymous")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Author</p>
+                                    <p className="font-medium">{selectedPost.author || "Anonymous"}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.status")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
                                     <StatusBadge status={selectedPost.status} type="community-post" />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.topic")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Topic</p>
                                     <p className="font-medium">{getTopicName(selectedPost)}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.views")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Views</p>
                                     <div className="flex items-center gap-1">
                                         <Eye className="h-4 w-4" />
                                         <span className="font-medium">{selectedPost.views}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.upvotes")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Upvotes</p>
                                     <div className="flex items-center gap-1">
                                         <ThumbsUp className="h-4 w-4" />
                                         <span className="font-medium">{selectedPost.upvotes}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.downvotes")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Downvotes</p>
                                     <div className="flex items-center gap-1">
                                         <ThumbsDown className="h-4 w-4" />
                                         <span className="font-medium">{selectedPost.downvotes}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.replies")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Replies</p>
                                     <div className="flex items-center gap-1">
                                         <MessageCircle className="h-4 w-4" />
                                         <span className="font-medium">{selectedPost.replyCount}</span>
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.created")}</p>
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Created</p>
                                     <p className="font-medium">
                                         {selectedPost.$createdAt ? new Date(selectedPost.$createdAt).toLocaleDateString() : '-'}
                                     </p>
@@ -851,7 +817,7 @@ export default function CommunityPostsPage() {
                             {/* Tags */}
                             {selectedPost.tags && selectedPost.tags.length > 0 && (
                                 <div className="space-y-3">
-                                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.tags")}</h4>
+                                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Tags</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedPost.tags.map((tag, index) => (
                                             <Badge key={index} variant="secondary" className="text-sm">
@@ -866,9 +832,9 @@ export default function CommunityPostsPage() {
 
                             {/* Content */}
                             <div className="space-y-3">
-                                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("community.posts.content")}</h4>
+                                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Content</h4>
                                 <div className="border rounded-lg p-6 bg-background prose prose-sm max-w-none dark:prose-invert">
-                                    <div dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
+                                    <SafeHTML html={selectedPost.content} />
                                 </div>
                             </div>
                         </div>
@@ -877,16 +843,16 @@ export default function CommunityPostsPage() {
                     <DialogFooter className="border-t pt-6">
                         <div className="flex items-center justify-between w-full">
                             <div className="text-sm text-muted-foreground">
-                                {t("general_use.updated")}: {selectedPost?.$updatedAt ? new Date(selectedPost.$updatedAt).toLocaleString() : '-'}
+                                Updated: {selectedPost?.$updatedAt ? new Date(selectedPost.$updatedAt).toLocaleString() : '-'}
                             </div>
                             <div className="flex gap-2">
                                 <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
-                                    {t("general_use.close")}
+                                    Close
                                 </Button>
                                 <Button asChild>
                                     <Link href={`/auth/community/community-posts/${selectedPost?.$id}/edit`}>
                                         <Edit className="h-4 w-4 mr-2" />
-                                        {t("general_use.edit")}
+                                        Edit
                                     </Link>
                                 </Button>
                             </div>
@@ -899,15 +865,15 @@ export default function CommunityPostsPage() {
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{t("community.posts.delete_post")}</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Post</AlertDialogTitle>
                         <AlertDialogDescription>
-                            {t("community.posts.delete_confirmation", { title: postToDelete?.title || '' })}
+                            Are you sure you want to delete "{postToDelete?.title || ''}"? This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>{t("general_use.cancel")}</AlertDialogCancel>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeletePost} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                            {t("general_use.delete")}
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

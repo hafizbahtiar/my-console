@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { applySecurityHeaders, handleCors } from './security-headers'
+import { applySecurityHeaders, handleCors, securityHeaders, developmentSecurityHeaders } from './security-headers'
 
 export function middleware(request: NextRequest) {
   // Handle CORS preflight requests
@@ -8,14 +8,19 @@ export function middleware(request: NextRequest) {
     return applySecurityHeaders(corsResponse, process.env.NODE_ENV === 'development')
   }
 
-  // Apply security headers to all responses
-  // Note: This is a basic implementation. In production, you might want to use
-  // Next.js middleware with a custom response transformer.
+  // Apply security headers to all responses using Next.js response rewriting
+  const response = NextResponse.next()
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  const headers = isDevelopment ? developmentSecurityHeaders : securityHeaders
 
-  // For now, we'll let individual routes handle security headers
-  // since Next.js middleware has limitations with response modification
+  // Apply all security headers (skip undefined values)
+  Object.entries(headers).forEach(([key, value]) => {
+    if (value !== undefined) {
+      response.headers.set(key, value)
+    }
+  })
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {

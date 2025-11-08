@@ -3,10 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlock from "@tiptap/extension-code-block";
-import { TableKit } from "@tiptap/extension-table";
 import Image from "@tiptap/extension-image";
-import Youtube from "@tiptap/extension-youtube";
-import Mathematics from "@tiptap/extension-mathematics";
 import CharacterCount from "@tiptap/extension-character-count";
 import { TextStyle, FontFamily } from "@tiptap/extension-text-style";
 import { Color } from "@tiptap/extension-color";
@@ -15,12 +12,9 @@ import Underline from "@tiptap/extension-underline";
 import { Strike } from "@tiptap/extension-strike";
 import { TextAlign } from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
-import Emoji from "@tiptap/extension-emoji";
-import Mention from "@tiptap/extension-mention";
-import { TableOfContents } from "@tiptap/extension-table-of-contents";
 import HardBreak from "@tiptap/extension-hard-break";
 import Typography from "@tiptap/extension-typography";
-import { DragHandle } from "@tiptap/extension-drag-handle-react";
+// Lazy-loaded extensions - imported dynamically when needed
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -56,7 +50,7 @@ import {
   AlignJustify,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect, useMemo, memo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -89,7 +83,38 @@ interface TipTapProps {
   stickyTop?: string;
 }
 
-export function TipTap({ value, onChange, placeholder, className, readonly = false, stickyTop = "top-0" }: TipTapProps) {
+// DragHandle wrapper component - loaded dynamically
+function DragHandleWrapper({ editor }: { editor: any }) {
+  const [DragHandleComponent, setDragHandleComponent] = useState<any>(null);
+
+  useEffect(() => {
+    import("@tiptap/extension-drag-handle-react").then((module) => {
+      setDragHandleComponent(() => module.DragHandle);
+    });
+  }, []);
+
+  if (!DragHandleComponent) return null;
+
+  return (
+    <DragHandleComponent
+      editor={editor}
+      onNodeChange={({ node, editor, pos }: { node: any; editor: any; pos: number }) => {
+        // Optional: Handle node changes for highlighting or other effects
+        console.log('Node changed:', node?.type.name, pos);
+      }}
+      computePositionConfig={{
+        placement: 'left-start',
+        strategy: 'absolute',
+      }}
+    >
+      <div className="drag-handle">
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+    </DragHandleComponent>
+  );
+}
+
+function TipTapComponent({ value, onChange, placeholder, className, readonly = false, stickyTop = "top-0" }: TipTapProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [colorOpen, setColorOpen] = useState(false);
   const [highlightOpen, setHighlightOpen] = useState(false);
@@ -98,6 +123,11 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
   const [showTableOfContents, setShowTableOfContents] = useState(false);
   const [fontFamilyOpen, setFontFamilyOpen] = useState(false);
   const [tocContent, setTocContent] = useState<any[]>([]);
+  
+  // Track which lazy extensions have been loaded
+  const [loadedExtensions, setLoadedExtensions] = useState<Set<string>>(new Set());
+  const [isLoadingExtension, setIsLoadingExtension] = useState(false);
+  const [dragHandleLoaded, setDragHandleLoaded] = useState(false);
 
   // Predefined color options
   const colorOptions = [
@@ -153,6 +183,143 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     { value: "Comic Sans MS", label: "Comic Sans MS", style: "font-family: 'Comic Sans MS'" },
   ];
 
+  // Memoize placeholder function
+  const placeholderFn = useCallback(({ node }: { node: any }) => {
+    if (node.type.name === 'heading') {
+      return `Heading ${node.attrs.level}`;
+    }
+    return placeholder || "Start writing...";
+  }, [placeholder]);
+
+  // Memoize TOC update handler
+  const tocUpdateHandler = useCallback((content: any[]) => {
+    setTocContent(content);
+  }, []);
+
+  // Memoize editor update handler
+  const handleUpdate = useCallback(({ editor }: { editor: any }) => {
+    onChange(editor.getHTML());
+  }, [onChange]);
+
+  // Lazy loading function for extensions
+  const loadExtension = useCallback(async (extensionName: string, currentEditor: any) => {
+    if (loadedExtensions.has(extensionName) || !currentEditor || isLoadingExtension) {
+      return;
+    }
+
+    setIsLoadingExtension(true);
+    try {
+      let ExtensionClass: any;
+      let config: any = {};
+
+      let extension: any;
+
+      switch (extensionName) {
+        case 'table':
+          const tableModule = await import("@tiptap/extension-table");
+          ExtensionClass = tableModule.TableKit;
+          if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({
+              table: {
+                resizable: true,
+                HTMLAttributes: {
+                  class: "border-collapse table-auto w-full",
+                },
+              },
+            });
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'youtube':
+          const youtubeModule = await import("@tiptap/extension-youtube");
+          ExtensionClass = youtubeModule.default;
+          if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({
+              width: 640,
+              height: 360,
+              controls: true,
+            });
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'mathematics':
+          const mathModule = await import("@tiptap/extension-mathematics");
+          ExtensionClass = mathModule.default;
+          if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({
+              katexOptions: {
+                throwOnError: false,
+              },
+            });
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'tableOfContents':
+          const tocModule = await import("@tiptap/extension-table-of-contents");
+          ExtensionClass = tocModule.TableOfContents;
+          if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({
+              getId: (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              onUpdate: tocUpdateHandler,
+            });
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'emoji':
+          const emojiModule = await import("@tiptap/extension-emoji");
+          ExtensionClass = emojiModule.default;
+          // Emoji extension might not need configure, or might be a function
+          if (typeof ExtensionClass === 'function' && !ExtensionClass.configure) {
+            extension = ExtensionClass();
+          } else if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({});
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'mention':
+          const mentionModule = await import("@tiptap/extension-mention");
+          ExtensionClass = mentionModule.default;
+          if (ExtensionClass && typeof ExtensionClass.configure === 'function') {
+            extension = ExtensionClass.configure({
+              HTMLAttributes: {
+                class: "bg-blue-100 text-blue-800 px-2 py-1 rounded",
+              },
+              suggestion: {
+                // This would need a proper suggestion implementation
+                // For now, we'll keep it simple
+              },
+            });
+          } else {
+            extension = ExtensionClass;
+          }
+          break;
+        case 'dragHandle':
+          const dragHandleModule = await import("@tiptap/extension-drag-handle-react");
+          ExtensionClass = dragHandleModule.DragHandle;
+          // DragHandle is a React component, not an extension - handled separately
+          setDragHandleLoaded(true);
+          return; // Don't add as extension, it's a component
+        default:
+          throw new Error(`Unknown extension: ${extensionName}`);
+      }
+
+      // Add extension to editor - using type assertion as TipTap types may be incomplete
+      if (extension) {
+        (currentEditor.extensionManager as any).addExtension(extension);
+        setLoadedExtensions(prev => new Set([...prev, extensionName]));
+      }
+    } catch (error) {
+      console.error(`Failed to load extension ${extensionName}:`, error);
+    } finally {
+      setIsLoadingExtension(false);
+    }
+  }, [loadedExtensions, isLoadingExtension, tocUpdateHandler]);
+
   // LaTeX math expressions
   const mathExpressions = [
     // Basic operations
@@ -196,88 +363,50 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     { label: "Custom LaTeX...", latex: "custom", description: "Enter custom LaTeX" },
   ];
 
+  // Core extensions - always loaded (lightweight, essential features)
+  const coreExtensions = useMemo(() => [
+    StarterKit.configure({
+      heading: {
+        levels: [1, 2, 3],
+      },
+      codeBlock: false,
+    }),
+    CodeBlock.configure({
+      languageClassPrefix: "language-",
+      HTMLAttributes: {
+        class: "rounded-md bg-muted p-4 font-mono text-sm",
+      },
+    }),
+    Image.configure({
+      HTMLAttributes: {
+        class: "rounded-lg max-w-full h-auto",
+      },
+    }),
+    CharacterCount,
+    TextStyle,
+    FontFamily,
+    Color,
+    Highlight.configure({
+      multicolor: true,
+    }),
+    Underline,
+    Strike,
+    TextAlign.configure({
+      types: ['heading', 'paragraph'],
+      alignments: ['left', 'center', 'right', 'justify'],
+    }),
+    Placeholder.configure({
+      placeholder: placeholderFn,
+    }),
+    HardBreak,
+    Typography,
+  ], [placeholderFn]);
+
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-        codeBlock: false,
-      }),
-      CodeBlock.configure({
-        languageClassPrefix: "language-",
-        HTMLAttributes: {
-          class: "rounded-md bg-muted p-4 font-mono text-sm",
-        },
-      }),
-      TableKit.configure({
-        table: {
-          resizable: true,
-          HTMLAttributes: {
-            class: "border-collapse table-auto w-full",
-          },
-        },
-      }),
-      Image.configure({
-        HTMLAttributes: {
-          class: "rounded-lg max-w-full h-auto",
-        },
-      }),
-      Youtube.configure({
-        width: 640,
-        height: 360,
-        controls: true,
-      }),
-      Mathematics.configure({
-        katexOptions: {
-          throwOnError: false,
-        },
-      }),
-      CharacterCount,
-      TextStyle,
-      FontFamily,
-      Color,
-      Highlight.configure({
-        multicolor: true,
-      }),
-      Underline,
-      Strike,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-        alignments: ['left', 'center', 'right', 'justify'],
-      }),
-      Placeholder.configure({
-        placeholder: ({ node }) => {
-          if (node.type.name === 'heading') {
-            return `Heading ${node.attrs.level}`;
-          }
-          return "Start writing...";
-        },
-      }),
-      Emoji,
-      TableOfContents.configure({
-        getId: (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        onUpdate: (content) => {
-          setTocContent(content);
-        },
-      }),
-      HardBreak,
-      Typography,
-      Mention.configure({
-        HTMLAttributes: {
-          class: "bg-blue-100 text-blue-800 px-2 py-1 rounded",
-        },
-        suggestion: {
-          // This would need a proper suggestion implementation
-          // For now, we'll keep it simple
-        },
-      }),
-    ],
+    extensions: coreExtensions,
     content: value,
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
+    onUpdate: handleUpdate,
     editable: !readonly,
     editorProps: {
       attributes: {
@@ -350,14 +479,21 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     },
   });
 
-  // Initialize table of contents when editor is ready
+  // Load DragHandle extension when editor is ready and not readonly
   useEffect(() => {
-    if (editor) {
+    if (editor && !readonly && !dragHandleLoaded) {
+      loadExtension('dragHandle', editor);
+    }
+  }, [editor, readonly, dragHandleLoaded, loadExtension]);
+
+  // Initialize table of contents when editor is ready and extension is loaded
+  useEffect(() => {
+    if (editor && loadedExtensions.has('tableOfContents')) {
       // Get initial TOC content
       const initialToc = editor.storage.tableOfContents?.content || [];
       setTocContent(initialToc);
     }
-  }, [editor]);
+  }, [editor, loadedExtensions]);
 
   const addImage = useCallback(() => {
     if (fileInputRef.current) {
@@ -376,21 +512,38 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     }
   }, [editor]);
 
-  const addYoutubeVideo = useCallback(() => {
+  const addYoutubeVideo = useCallback(async () => {
+    if (!editor) return;
+    
+    // Load Youtube extension if not already loaded
+    if (!loadedExtensions.has('youtube')) {
+      await loadExtension('youtube', editor);
+    }
+    
     const url = prompt("Enter YouTube URL:");
-    if (url && editor) {
+    if (url) {
       editor.chain().focus().setYoutubeVideo({ src: url }).run();
     }
-  }, [editor]);
+  }, [editor, loadedExtensions, loadExtension]);
 
-  const addTable = useCallback(() => {
-    if (editor) {
-      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-    }
-  }, [editor]);
-
-  const addMathBlock = useCallback((latex?: string) => {
+  const addTable = useCallback(async () => {
     if (!editor) return;
+    
+    // Load TableKit extension if not already loaded
+    if (!loadedExtensions.has('table')) {
+      await loadExtension('table', editor);
+    }
+    
+    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+  }, [editor, loadedExtensions, loadExtension]);
+
+  const addMathBlock = useCallback(async (latex?: string) => {
+    if (!editor) return;
+
+    // Load Mathematics extension if not already loaded
+    if (!loadedExtensions.has('mathematics')) {
+      await loadExtension('mathematics', editor);
+    }
 
     let finalLatex = latex;
 
@@ -406,7 +559,7 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     if (finalLatex) {
       editor.chain().focus().insertContent(`<div data-type="math">${finalLatex}</div>`).run();
     }
-  }, [editor]);
+  }, [editor, loadedExtensions, loadExtension]);
 
   if (!editor) {
     return null;
@@ -417,22 +570,8 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
       "border border-input rounded-lg shadow-sm bg-background relative",
       showTableOfContents && "toc-open-layout"
     )}>
-      {!readonly && (
-        <DragHandle
-          editor={editor}
-          onNodeChange={({ node, editor, pos }: { node: any; editor: any; pos: number }) => {
-            // Optional: Handle node changes for highlighting or other effects
-            console.log('Node changed:', node?.type.name, pos);
-          }}
-          computePositionConfig={{
-            placement: 'left-start',
-            strategy: 'absolute',
-          }}
-        >
-          <div className="drag-handle">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </DragHandle>
+      {!readonly && dragHandleLoaded && (
+        <DragHandleWrapper editor={editor} />
       )}
 
       {!readonly && (
@@ -461,7 +600,13 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowTableOfContents(!showTableOfContents)}
+                onClick={async () => {
+                  // Load TableOfContents extension if not already loaded
+                  if (!loadedExtensions.has('tableOfContents')) {
+                    await loadExtension('tableOfContents', editor);
+                  }
+                  setShowTableOfContents(!showTableOfContents);
+                }}
                 className={cn(
                   "h-6 w-6 p-0 ml-2",
                   showTableOfContents && "bg-accent"
@@ -956,30 +1101,6 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
               )}
 
               <Separator orientation="vertical" className="h-8" />
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => editor.chain().focus().undo().run()}
-                disabled={!editor.can().undo()}
-                className="h-8 w-8 p-0"
-                title="Undo"
-              >
-                <Undo className="h-4 w-4" />
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => editor.chain().focus().redo().run()}
-                disabled={!editor.can().redo()}
-                className="h-8 w-8 p-0"
-                title="Redo"
-              >
-                <Redo className="h-4 w-4" />
-              </Button>
             </div>
           </div>
 
@@ -1057,3 +1178,16 @@ export function TipTap({ value, onChange, placeholder, className, readonly = fal
     </div>
   );
 }
+
+// Memoize component with custom comparison function
+export const TipTap = memo(TipTapComponent, (prevProps, nextProps) => {
+  // Only re-render if these props actually change
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.readonly === nextProps.readonly &&
+    prevProps.stickyTop === nextProps.stickyTop &&
+    prevProps.className === nextProps.className &&
+    prevProps.placeholder === nextProps.placeholder &&
+    prevProps.onChange === nextProps.onChange
+  );
+});

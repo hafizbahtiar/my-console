@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslation } from "@/lib/language-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -35,8 +34,6 @@ interface IPBlocklistEntry {
 }
 
 export default function SecurityPage() {
-    const { t } = useTranslation()
-
     // State for different security sections
     const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([])
     const [ipBlocklist, setIpBlocklist] = useState<IPBlocklistEntry[]>([])
@@ -103,7 +100,7 @@ export default function SecurityPage() {
 
         } catch (error) {
             console.error('Failed to load security data:', error)
-            toast.error(t('security.loading'))
+            toast.error("Failed to load security data")
         } finally {
             setLoading(false)
             setRefreshing(false)
@@ -117,11 +114,11 @@ export default function SecurityPage() {
 
     const handleBlockIP = async () => {
         if (!newIPBlock.trim()) {
-            toast.error(t('item_is_required', { item: 'IP address' }))
+            toast.error("IP address is required")
             return
         }
         if (!blockReason.trim()) {
-            toast.error(t('item_is_required', { item: 'Reason' }))
+            toast.error("Reason is required")
             return
         }
 
@@ -146,14 +143,14 @@ export default function SecurityPage() {
                 await loadSecurityData()
                 setNewIPBlock('')
                 setBlockReason('')
-                toast.success(t('security.ip_blocked'))
+                toast.success("IP address blocked successfully")
             } catch (error) {
                 console.warn('IP blocklist table not found, blocking not saved')
-                toast.error(t('general_use.error'))
+                toast.error("Error")
             }
         } catch (error) {
             console.error('Failed to block IP:', error)
-            toast.error(t('general_use.error'))
+            toast.error("Error")
         }
     }
 
@@ -170,14 +167,14 @@ export default function SecurityPage() {
 
                 // Reload data to reflect changes
                 await loadSecurityData()
-                toast.success(t('security.ip_unblocked'))
+                toast.success("IP address unblocked successfully")
             } catch (error) {
                 console.warn('IP blocklist table not found, unblocking not saved')
-                toast.error(t('general_use.error'))
+                toast.error("Error")
             }
         } catch (error) {
             console.error('Failed to unblock IP:', error)
-            toast.error(t('general_use.error'))
+            toast.error("Error")
         }
     }
 
@@ -205,14 +202,14 @@ export default function SecurityPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{t('security.title')}</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Security Management</h1>
                     <p className="text-muted-foreground">
-                        {t('security.subtitle')}
+                        Monitor and manage security settings
                     </p>
                 </div>
                 <Button onClick={loadSecurityData} disabled={refreshing}>
                     <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                    {t('security.refresh')}
+                    Refresh
                 </Button>
             </div>
 
@@ -220,7 +217,7 @@ export default function SecurityPage() {
             <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{t('security.blocked_ips')}</CardTitle>
+                        <CardTitle className="text-sm font-medium">Blocked IPs</CardTitle>
                         <Ban className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -228,14 +225,14 @@ export default function SecurityPage() {
                             {ipBlocklist.filter(ip => ip.isActive).length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {t('security.blocked_ips_desc')}
+                            Currently blocked IP addresses
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{t('security.events')}</CardTitle>
+                        <CardTitle className="text-sm font-medium">Security Events</CardTitle>
                         <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -243,20 +240,20 @@ export default function SecurityPage() {
                             {securityEvents.length}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            {t('security.custom_security_monitoring')}
+                            Custom security monitoring
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">{t('security.appwrite_status')}</CardTitle>
+                        <CardTitle className="text-sm font-medium">Appwrite Status</CardTitle>
                         <Shield className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{t('general_use.active')}</div>
+                        <div className="text-2xl font-bold text-green-600">Active</div>
                         <p className="text-xs text-muted-foreground">
-                            {t('security.built_in_security_enabled')}
+                            Built-in security enabled
                         </p>
                     </CardContent>
                 </Card>
@@ -265,9 +262,9 @@ export default function SecurityPage() {
             {/* Main Security Dashboard */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="overview">{t('security.overview')}</TabsTrigger>
-                    <TabsTrigger value="ip-control">{t('security.ip_control')}</TabsTrigger>
-                    <TabsTrigger value="events">{t('security.events')}</TabsTrigger>
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="ip-control">IP Control</TabsTrigger>
+                    <TabsTrigger value="events">Events</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
@@ -276,7 +273,7 @@ export default function SecurityPage() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <AlertTriangle className="h-5 w-5 text-orange-500" />
-                                    {t('security.recent_alerts')}
+                                    Recent Alerts
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
@@ -305,29 +302,29 @@ export default function SecurityPage() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Shield className="h-5 w-5 text-green-500" />
-                                    {t('security.security_status')}
+                                    Security Status
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm">{t('security.appwrite_security')}</span>
+                                    <span className="text-sm">Appwrite Security</span>
                                     <Badge variant="default">
                                         <CheckCircle className="h-3 w-3 mr-1" />
-                                        {t('general_use.active')}
+                                        Active
                                     </Badge>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm">{t('security.ip_filtering')}</span>
+                                    <span className="text-sm">IP Filtering</span>
                                     <Badge variant="default">
                                         <CheckCircle className="h-3 w-3 mr-1" />
-                                        {t('security.enabled')}
+                                        Enabled
                                     </Badge>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm">{t('security.custom_security_events')}</span>
+                                    <span className="text-sm">Custom Security Events</span>
                                     <Badge variant="default">
                                         <CheckCircle className="h-3 w-3 mr-1" />
-                                        {t('security.monitoring')}
+                                        Monitoring
                                     </Badge>
                                 </div>
                             </CardContent>
@@ -339,14 +336,14 @@ export default function SecurityPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle>{t('security.block_ip')}</CardTitle>
+                                <CardTitle>Block IP</CardTitle>
                                 <CardDescription>
-                                    {t('security.block_ip_desc')}
+                                    Block an IP address from accessing the system
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="ipAddress">{t('security.ip_address')}</Label>
+                                    <Label htmlFor="ipAddress">IP Address</Label>
                                     <Input
                                         id="ipAddress"
                                         placeholder="192.168.1.100"
@@ -355,7 +352,7 @@ export default function SecurityPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="reason">{t('security.reason')}</Label>
+                                    <Label htmlFor="reason">Reason</Label>
                                     <Input
                                         id="reason"
                                         placeholder="Suspicious activity"
@@ -364,16 +361,16 @@ export default function SecurityPage() {
                                     />
                                 </div>
                                 <Button onClick={handleBlockIP} className="w-full">
-                                    {t('security.block_ip_button')}
+                                    Block IP
                                 </Button>
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>{t('security.blocked_ips')}</CardTitle>
+                                <CardTitle>Blocked IPs</CardTitle>
                                 <CardDescription>
-                                    {t('security.blocked_ips_desc')}
+                                    Currently blocked IP addresses
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -387,7 +384,7 @@ export default function SecurityPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant={block.isActive ? "destructive" : "secondary"}>
-                                                        {block.isActive ? t('security.blocked') : t('security.unblocked')}
+                                                        {block.isActive ? 'Blocked' : 'Unblocked'}
                                                     </Badge>
                                                     {block.isActive && (
                                                         <Button
@@ -395,7 +392,7 @@ export default function SecurityPage() {
                                                             size="sm"
                                                             onClick={() => handleUnblockIP(block.id)}
                                                         >
-                                                            {t('status.unblock')}
+                                                            Unblock
                                                         </Button>
                                                     )}
                                                 </div>
@@ -411,9 +408,9 @@ export default function SecurityPage() {
                 <TabsContent value="events" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{t('security.security_events')}</CardTitle>
+                            <CardTitle>Security Events</CardTitle>
                             <CardDescription>
-                                {t('security.security_events_desc')}
+                                Recent security events and alerts
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -439,7 +436,7 @@ export default function SecurityPage() {
                                             </div>
                                             {event.userId && (
                                                 <p className="text-xs text-muted-foreground">
-                                                    {t('security.user')}: {event.userId}
+                                                    User: {event.userId}
                                                 </p>
                                             )}
                                         </div>

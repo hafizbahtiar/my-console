@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { useTranslation } from "@/lib/language-context"
 import { account, teams } from "@/lib/appwrite"
 import { auditLogger } from "@/lib/audit-log"
 import { getUserProfileByUserId, updateLastActivity, type UserProfile } from "@/lib/user-profile"
@@ -17,7 +16,6 @@ import { DEFAULT_TIMEZONE } from "@/components/app/auth/profile/timezones"
 
 export default function ProfilePage() {
   const { user, loading, logout } = useAuth()
-  const { t } = useTranslation()
   const [isUpdating, setIsUpdating] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [sessions, setSessions] = useState<any[]>([])
@@ -192,10 +190,10 @@ export default function ProfilePage() {
       // Refresh profile data
       await fetchUserProfile()
 
-      toast.success(t("profile.update_profile"))
+      toast.success("Profile updated successfully")
     } catch (error: any) {
       console.error('Profile update error:', error)
-      toast.error(error.message || t('general_use.error'))
+      toast.error(error.message || "Error")
     } finally {
       setIsUpdating(false)
     }
@@ -216,9 +214,9 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("profile.title")}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
         <p className="text-muted-foreground">
-          {t("profile.subtitle")}
+          Manage your account settings and preferences
         </p>
       </div>
 

@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
-import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { account } from "@/lib/appwrite"
 import { updateLoginStats } from "@/lib/user-profile"
@@ -12,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Mail, Lock, User, Sun, Moon, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, User, Sun, Moon } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 
@@ -27,7 +26,6 @@ export function RegisterForm() {
   const [error, setError] = useState("")
   const { theme, setTheme } = useTheme()
   const { register, user } = useAuth()
-  const { t } = useTranslation()
 
   // If user is already logged in, show dashboard or redirect
   if (user) {
@@ -35,9 +33,11 @@ export function RegisterForm() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">{t('auth.welcome_back')}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              Welcome back
+            </CardTitle>
             <CardDescription className="text-center">
-              {t('auth.already_logged_in', { email: user.email })}
+              You are already logged in as {user.email}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -45,7 +45,7 @@ export function RegisterForm() {
               onClick={() => window.location.href = '/auth/dashboard'}
               className="w-full"
             >
-              {t('auth.go_to_dashboard')}
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -60,13 +60,13 @@ export function RegisterForm() {
 
     // Validation
     if (password.length < 8) {
-      setError(t('auth.password_too_short'))
+      setError("Password must be at least 8 characters long")
       setIsLoading(false)
       return
     }
 
     if (password !== confirmPassword) {
-      setError(t('auth.passwords_dont_match'))
+      setError("Passwords do not match")
       setIsLoading(false)
       return
     }
@@ -106,7 +106,7 @@ export function RegisterForm() {
         console.warn('Failed to log registration audit event:', auditError)
       }
 
-      toast.success(t('auth.registration_successful'))
+      toast.success("Registration successful!")
 
       // Redirect to dashboard
       window.location.href = '/auth/dashboard'
@@ -127,8 +127,8 @@ export function RegisterForm() {
         console.warn('Failed to log failed registration audit event:', auditError)
       }
 
-      setError(err.message || t('auth.registration_failed'))
-      toast.error(t('auth.registration_failed'))
+      setError(err.message || "Registration failed")
+      toast.error("Registration failed")
     } finally {
       setIsLoading(false)
     }
@@ -150,9 +150,11 @@ export function RegisterForm() {
               <span className="sr-only">Toggle theme</span>
             </Button>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">{t('auth.create_account')}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Create Account
+          </CardTitle>
           <CardDescription className="text-center">
-            {t('auth.register_prompt')}
+            Create a new account to get started
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -165,14 +167,14 @@ export function RegisterForm() {
 
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">
-                {t('auth.name')} <span className="text-muted-foreground">({t('general_use.optional')})</span>
+                Name <span className="text-muted-foreground">(Optional)</span>
               </Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
                   type="text"
-                  placeholder={t('auth.name_placeholder')}
+                  placeholder="Enter your name (optional)"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10"
@@ -183,14 +185,14 @@ export function RegisterForm() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                {t('auth.email')}
+                Email
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder={t('profile.email_placeholder')}
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -202,14 +204,14 @@ export function RegisterForm() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                {t('auth.password')}
+                Password
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={t('auth.password_placeholder')}
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10"
@@ -231,20 +233,20 @@ export function RegisterForm() {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {t('auth.password_requirements')}
+                Must be at least 8 characters long
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                {t('auth.confirm_password')}
+                Confirm Password
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder={t('auth.confirm_password_placeholder')}
+                  placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10 pr-10"
@@ -272,17 +274,17 @@ export function RegisterForm() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? t('general_use.loading') : t('auth.create_account')}
+              {isLoading ? "Loading..." : "Create Account"}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            {t('auth.already_have_account')}{" "}
+            Already have an account?{" "}
             <Link
               href="/"
               className="text-primary hover:underline focus:underline"
             >
-              {t('auth.sign_in')}
+              Sign in
             </Link>
           </div>
         </CardContent>
@@ -290,4 +292,3 @@ export function RegisterForm() {
     </div>
   )
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { BlogPost, BlogPostFormData, BlogTag } from "../../types";
@@ -13,6 +13,7 @@ import { TipTap } from "@/components/ui/tiptap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Loader2,
@@ -32,7 +33,6 @@ import {
 } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
 
 // Utility functions
 const calculateReadTime = (content: string): string => {
@@ -68,8 +68,7 @@ const isValidUrl = (url: string): boolean => {
 
 
 export default function EditBlogPostPage() {
-  const { user } = useAuth();
-  const { t } = useTranslation();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -83,6 +82,8 @@ export default function EditBlogPostPage() {
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tagInputValue, setTagInputValue] = useState('');
+  const [isTagInputFocused, setIsTagInputFocused] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState<BlogPostFormData>({
@@ -110,18 +111,28 @@ export default function EditBlogPostPage() {
     relatedPosts: [],
   });
 
+  // Memoize content change handler to prevent unnecessary TipTap re-renders
+  const handleContentChange = useCallback((value: string) => {
+    const readTime = calculateReadTime(value);
+    setFormData(prev => ({
+      ...prev,
+      content: value,
+      readTime: readTime
+    }));
+  }, []); // Empty deps - calculateReadTime is a pure function, setFormData is stable
+
   // AI Excerpt Generation
   const generateExcerptWithAI = async () => {
     // Validate that both title and content are provided
     if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Both title and content are required for AI generation');
+      toast.error('Title and content are required');
       return;
     }
 
     // Check if title has more than 1 word
     const titleWords = formData.title.trim().split(/\s+/).length;
     if (titleWords <= 1) {
-      toast.error('Title must have more than 1 word for AI generation');
+      toast.error('Title must have more than one word');
       return;
     }
 
@@ -150,11 +161,11 @@ export default function EditBlogPostPage() {
         excerpt: data.excerpt
       }));
 
-      toast.success('Excerpt generated successfully!');
+      toast.success('Excerpt generated successfully');
 
     } catch (error) {
       console.error('AI generation error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate excerpt. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate excerpt';
       toast.error(errorMessage);
     } finally {
       setIsGeneratingExcerpt(false);
@@ -165,14 +176,14 @@ export default function EditBlogPostPage() {
   const improveContentWithAI = async (action: 'improve' | 'rephrase' | 'shorten' | 'expand' | 'grammar') => {
     // Validate that content is provided
     if (!formData.content.trim()) {
-      toast.error('Content is required for AI improvement');
+      toast.error('Content is required');
       return;
     }
 
     // Check content length
     const plainTextContent = formData.content.replace(/<[^>]*>/g, '').trim();
     if (plainTextContent.length < 10) {
-      toast.error('Content must be at least 10 characters long for AI improvement');
+      toast.error('Content must be at least 10 characters long');
       return;
     }
 
@@ -202,28 +213,34 @@ export default function EditBlogPostPage() {
         content: data.improvedContent
       }));
 
-      const messageKeys = {
-        improve: 'ai.messages.improved',
-        rephrase: 'ai.messages.rephrased',
-        shorten: 'ai.messages.shortened',
-        expand: 'ai.messages.expanded',
-        grammar: 'ai.messages.corrected'
+      const messages = {
+        improve: 'Content improved successfully',
+        rephrase: 'Content rephrased successfully',
+        shorten: 'Content shortened successfully',
+        expand: 'Content expanded successfully',
+        grammar: 'Grammar corrected successfully'
       };
 
-      toast.success(t(messageKeys[action]));
+      toast.success(messages[action]);
 
     } catch (error) {
       console.error('AI improvement error:', error);
-      const errorMessage = error instanceof Error ? error.message : t('ai.messages.error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to improve content';
       toast.error(errorMessage);
     } finally {
       setIsImprovingContent(false);
     }
   };
 
-  // Load data on component mount
+  // Load data on component mount - must be called before conditional returns
   useEffect(() => {
     const loadData = async () => {
+      // Wait for auth to finish loading before proceeding
+      if (authLoading) {
+        return;
+      }
+
+      // If auth finished loading and no user, redirect
       if (!user || !postId) {
         router.push('/auth/dashboard');
         return;
@@ -233,14 +250,14 @@ export default function EditBlogPostPage() {
         await Promise.all([loadPost(), loadCategories(), loadTags()]);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setError('Failed to load blog post data');
+        setError('An error occurred');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [user, postId, router]);
+  }, [user, authLoading, postId, router]);
 
   const loadPost = async () => {
     try {
@@ -390,46 +407,50 @@ export default function EditBlogPostPage() {
     e.preventDefault();
 
     if (!formData.title.trim()) {
-      toast.error(t('item_is_required', { item: 'Title' }));
+      toast.error('Title is required');
       return;
     }
     if (!formData.slug.trim()) {
-      toast.error(t('item_is_required', { item: 'Slug' }));
+      toast.error('Slug is required');
       return;
     }
     if (!formData.excerpt.trim()) {
-      toast.error(t('item_is_required', { item: 'Excerpt' }));
+      toast.error('Excerpt is required');
       return;
     }
     if (!formData.content.trim()) {
-      toast.error(t('item_is_required', { item: 'Content' }));
+      toast.error('Content is required');
       return;
     }
     if (!formData.author.trim()) {
-      toast.error(t('item_is_required', { item: 'Author' }));
+      toast.error('Author is required');
       return;
     }
     if (!formData.blogCategories) {
-      toast.error(t('item_is_required', { item: 'Category' }));
+      toast.error('Category is required');
       return;
     }
     if (!formData.status.trim()) {
-      toast.error(t('item_is_required', { item: 'Status' }));
+      toast.error('Status is required');
       return;
     }
 
     // Validate featured image URL if provided
     if (formData.featuredImage && formData.featuredImage.trim() !== '') {
       if (!isValidUrl(formData.featuredImage)) {
-        toast.error('Featured image must be a valid URL (e.g., https://example.com/image.jpg)');
+        toast.error('Invalid image URL');
         return;
       }
     }
 
     setIsSubmitting(true);
     try {
+      // Sanitize HTML content before saving
+      const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
+      
       const updatedPost = {
         ...formData,
+        content: sanitizeHTMLForStorage(formData.content), // Sanitize HTML content
         publishedAt: formData.status === 'published' && !post?.publishedAt
           ? new Date().toISOString()
           : formData.publishedAt || post?.publishedAt,
@@ -462,11 +483,11 @@ export default function EditBlogPostPage() {
         }
       });
 
-      toast.success(t('general_use.success'));
+      toast.success('Post updated successfully');
       router.push(`/auth/blog/blog-posts/${postId}`);
     } catch (error) {
       console.error('Failed to update blog post:', error);
-      toast.error(t('general_use.error'));
+      toast.error('Failed to update post');
     } finally {
       setIsSubmitting(false);
     }
@@ -480,10 +501,11 @@ export default function EditBlogPostPage() {
     }));
   };
 
-  if (isLoading) {
+  // Show loading while auth is loading or data is loading
+  if (isLoading || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -494,14 +516,14 @@ export default function EditBlogPostPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">{t("general_use.error")}</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
             <CardDescription>
-              {error || t("blog.view.post_not_found")}
+              {error || "Blog post not found"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/auth/blog/blog-posts">{t("blog.posts.back_to_posts")}</Link>
+              <Link href="/auth/blog/blog-posts">Back to Posts</Link>
             </Button>
           </CardContent>
         </Card>
@@ -515,42 +537,42 @@ export default function EditBlogPostPage() {
       <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 py-3">
           <nav className="flex items-center space-x-2 text-sm">
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
+            <Button variant="ghost" size="sm" className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0" asChild>
               <Link href="/auth/blog/blog-posts">
-                <ArrowLeft className="h-3 w-3 mr-1" />
-                {t("blog.posts.title")}
+                <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
+                <span className="truncate">Blog Posts</span>
               </Link>
             </Button>
-            <span className="text-muted-foreground">/</span>
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <Button variant="ghost" size="sm" className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0" asChild>
               <Link href={`/auth/blog/blog-posts/${postId}`}>
-                {post ? post.title : t("general_use.unknown", { item: "Post" })}
+                <span className="truncate">{post ? post.title : "Unknown Post"}</span>
               </Link>
             </Button>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">{t("general_use.edit")}</span>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="text-foreground font-medium truncate">Edit</span>
           </nav>
         </div>
       </div>
 
       {/* Header */}
-      <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="sticky top-[80px] z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t("blog.edit.title")}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Edit Blog Post</h1>
               <p className="text-sm text-muted-foreground">
-                {t("blog.edit.subtitle")}
+                Update your blog post content and settings
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className={`w-2 h-2 rounded-full ${formData.status === 'published' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                {formData.status === 'published' ? t("blog.posts.published") : t("blog.posts.draft")}
+                {formData.status === 'published' ? "Published" : "Draft"}
               </div>
               {post && (
                 <div className="text-sm text-muted-foreground">
-                  {t("general_use.updated")}: {new Date(post.$updatedAt).toLocaleDateString()}
+                  Updated: {new Date(post.$updatedAt).toLocaleDateString()}
                 </div>
               )}
             </div>
@@ -559,27 +581,27 @@ export default function EditBlogPostPage() {
       </div>
 
       {/* Progress Indicator */}
-      <div className="sticky top-48 z-20 border-b bg-background/95">
+      <div className="sticky top-[155px] z-20 border-b bg-background/95">
         <div className="container mx-auto px-6 py-3">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${formData.title ? 'bg-green-500' : 'bg-muted-foreground'}`}></div>
-              <span className={formData.title ? 'text-foreground' : 'text-muted-foreground'}>{t("general_use.title")}</span>
+              <span className={formData.title ? 'text-foreground' : 'text-muted-foreground'}>Title</span>
             </div>
             <div className="w-4 h-px bg-border"></div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${formData.content ? 'bg-green-500' : 'bg-muted-foreground'}`}></div>
-              <span className={formData.content ? 'text-foreground' : 'text-muted-foreground'}>{t("blog.edit.content_required")}</span>
+              <span className={formData.content ? 'text-foreground' : 'text-muted-foreground'}>Content</span>
             </div>
             <div className="w-4 h-px bg-border"></div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${formData.blogCategories ? 'bg-green-500' : 'bg-muted-foreground'}`}></div>
-              <span className={formData.blogCategories ? 'text-foreground' : 'text-muted-foreground'}>{t("general_use.category")}</span>
+              <span className={formData.blogCategories ? 'text-foreground' : 'text-muted-foreground'}>Category</span>
             </div>
             <div className="w-4 h-px bg-border"></div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${formData.status ? 'bg-green-500' : 'bg-muted-foreground'}`}></div>
-              <span className={formData.status ? 'text-foreground' : 'text-muted-foreground'}>{t("general_use.status")}</span>
+              <span className={formData.status ? 'text-foreground' : 'text-muted-foreground'}>Status</span>
             </div>
           </div>
         </div>
@@ -594,14 +616,14 @@ export default function EditBlogPostPage() {
               {/* Basic Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("blog.edit.basic_info")}</CardTitle>
+                  <CardTitle>Basic Information</CardTitle>
                   <CardDescription>
-                    {t("blog.edit.basic_info_desc")}
+                    Essential information about your blog post
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="title">{t("blog.edit.title_required")}</Label>
+                    <Label htmlFor="title">Title *</Label>
                     <Input
                       id="title"
                       value={formData.title}
@@ -612,7 +634,7 @@ export default function EditBlogPostPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="slug">{t("blog.edit.slug_required")}</Label>
+                    <Label htmlFor="slug">Slug *</Label>
                     <Input
                       id="slug"
                       value={formData.slug}
@@ -624,7 +646,7 @@ export default function EditBlogPostPage() {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="excerpt">{t("blog.edit.excerpt_required")}</Label>
+                      <Label htmlFor="excerpt">Excerpt *</Label>
                       <Button
                         type="button"
                         variant="outline"
@@ -638,25 +660,25 @@ export default function EditBlogPostPage() {
                         ) : (
                           <Sparkles className="h-4 w-4" />
                         )}
-                        {isGeneratingExcerpt ? t('ai.generating') : t('ai.generate_with_ai')}
+                        {isGeneratingExcerpt ? 'Generating...' : 'Generate with AI'}
                       </Button>
                     </div>
                     <Textarea
                       id="excerpt"
                       value={formData.excerpt}
                       onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                      placeholder={t("blog.edit.excerpt_placeholder")}
+                      placeholder="Brief description of your post"
                       rows={3}
                       required
                     />
                     <p className="text-xs text-muted-foreground">
-                      {t("blog.edit.excerpt_ai_help")}
+                      A brief summary of your post. Use AI to generate automatically.
                     </p>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="content">{t("blog.edit.content_required")}</Label>
+                      <Label htmlFor="content">Content *</Label>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -671,25 +693,25 @@ export default function EditBlogPostPage() {
                             ) : (
                               <Wand2 className="h-4 w-4" />
                             )}
-                            {isImprovingContent ? t('ai.improving') : t('ai.improve_content')}
+                            {isImprovingContent ? 'Improving...' : 'Improve Content'}
                             <ChevronDown className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => improveContentWithAI('improve')}>
-                            {t('ai.actions.improve')}
+                            Improve
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => improveContentWithAI('rephrase')}>
-                            {t('ai.actions.rephrase')}
+                            Rephrase
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => improveContentWithAI('grammar')}>
-                            {t('ai.actions.grammar')}
+                            Fix Grammar
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => improveContentWithAI('shorten')}>
-                            {t('ai.actions.shorten')}
+                            Shorten
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => improveContentWithAI('expand')}>
-                            {t('ai.actions.expand')}
+                            Expand
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -697,19 +719,12 @@ export default function EditBlogPostPage() {
                     <TipTap
                       value={formData.content}
                       stickyTop="top-59"
-                      onChange={(value) => {
-                        const readTime = calculateReadTime(value);
-                        setFormData(prev => ({
-                          ...prev,
-                          content: value,
-                          readTime: readTime
-                        }));
-                      }}
+                      onChange={handleContentChange}
                     />
                     <p className="text-xs text-muted-foreground">
-                      {t('ai.improve_help')}
+                      Use AI to improve, rephrase, fix grammar, shorten, or expand your content.
                       <br />
-                      <strong>{t('general_use.note')}:</strong> {t('ai.improve_note')}
+                      <strong>Note:</strong> AI improvements are suggestions and should be reviewed.
                     </p>
                   </div>
                 </CardContent>
@@ -721,22 +736,22 @@ export default function EditBlogPostPage() {
               {/* Publishing Settings */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("blog.edit.publishing")}</CardTitle>
+                  <CardTitle>Publishing</CardTitle>
                   <CardDescription>
-                    {t("blog.edit.publishing_desc")}
+                    Control when and how your post is published
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="status">{t("blog.edit.status_required")}</Label>
+                    <Label htmlFor="status">Status *</Label>
                     <Select value={formData.status} onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}>
                       <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="draft">{t("blog.posts.draft")}</SelectItem>
-                        <SelectItem value="published">{t("blog.posts.published")}</SelectItem>
-                        <SelectItem value="archived">{t("blog.posts.archived")}</SelectItem>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -747,7 +762,7 @@ export default function EditBlogPostPage() {
                       checked={formData.isFeatured}
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked as boolean }))}
                     />
-                    <Label htmlFor="featured">{t("blog.edit.featured_post")}</Label>
+                    <Label htmlFor="featured">Featured Post</Label>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -756,7 +771,7 @@ export default function EditBlogPostPage() {
                       checked={formData.allowComments}
                       onCheckedChange={(checked) => setFormData(prev => ({ ...prev, allowComments: checked as boolean }))}
                     />
-                    <Label htmlFor="comments">{t("blog.edit.allow_comments")}</Label>
+                    <Label htmlFor="comments">Allow Comments</Label>
                   </div>
                 </CardContent>
               </Card>
@@ -764,14 +779,14 @@ export default function EditBlogPostPage() {
               {/* Author & Category */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("blog.edit.details")}</CardTitle>
+                  <CardTitle>Details</CardTitle>
                   <CardDescription>
-                    {t("blog.edit.details_desc")}
+                    Additional information about your post
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="author">{t("blog.edit.author_required")}</Label>
+                    <Label htmlFor="author">Author *</Label>
                     <Input
                       id="author"
                       value={formData.author}
@@ -782,7 +797,7 @@ export default function EditBlogPostPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="readTime">{t("blog.view.read_time")}</Label>
+                    <Label htmlFor="readTime">Read Time</Label>
                     <div className="relative">
                       <Input
                         id="readTime"
@@ -792,16 +807,16 @@ export default function EditBlogPostPage() {
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        {t("blog.edit.auto_calculated")}
+                        Auto-calculated
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {t("blog.edit.read_time_help")}
+                      Automatically calculated based on content length
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">{t("blog.edit.category_required")}</Label>
+                    <Label htmlFor="category">Category *</Label>
                     <Select
                       value={formData.blogCategories?.$id || ''}
                       onValueChange={(value) => {
@@ -810,7 +825,7 @@ export default function EditBlogPostPage() {
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t("general_use.category")} />
+                        <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
@@ -823,25 +838,25 @@ export default function EditBlogPostPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="featuredImage">{t("blog.edit.featured_image_url")}</Label>
+                    <Label htmlFor="featuredImage">Featured Image URL</Label>
                     <Input
                       id="featuredImage"
                       value={formData.featuredImage}
                       onChange={(e) => setFormData(prev => ({ ...prev, featuredImage: e.target.value }))}
-                      placeholder={t("blog.edit.featured_image_placeholder")}
+                      placeholder="https://example.com/image.jpg"
                     />
                     <p className="text-xs text-muted-foreground">
-                      {t("blog.edit.featured_image_help")}
+                      URL to the featured image for this post
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="featuredImageAlt">{t("blog.edit.featured_image_alt")}</Label>
+                    <Label htmlFor="featuredImageAlt">Featured Image Alt Text</Label>
                     <Input
                       id="featuredImageAlt"
                       value={formData.featuredImageAlt}
                       onChange={(e) => setFormData(prev => ({ ...prev, featuredImageAlt: e.target.value }))}
-                      placeholder={t("blog.edit.featured_image_alt_placeholder")}
+                      placeholder="Description of the image"
                     />
                   </div>
                 </CardContent>
@@ -850,44 +865,60 @@ export default function EditBlogPostPage() {
               {/* Tags */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("blog.view.tags")}</CardTitle>
+                  <CardTitle>Tags</CardTitle>
                   <CardDescription>
-                    {t("blog.edit.tags_desc")}
+                    Add tags to categorize your post
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label>{t("blog.edit.add_tags")}</Label>
+                      <Label>Add Tags</Label>
                       <div className="relative">
                         <Input
-                          placeholder={t("blog.edit.tags_placeholder")}
+                          placeholder="Type and press Enter"
+                          className="w-full"
+                          value={tagInputValue}
+                          onChange={(e) => setTagInputValue(e.target.value)}
+                          onFocus={() => setIsTagInputFocused(true)}
+                          onBlur={() => {
+                            // Delay to allow click on suggestion
+                            setTimeout(() => setIsTagInputFocused(false), 200);
+                          }}
                           onKeyDown={async (e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const value = (e.target as HTMLInputElement).value.trim();
+                              const value = tagInputValue.trim();
                               if (value) {
                                 await addTag(value);
-                                (e.target as HTMLInputElement).value = '';
+                                setTagInputValue('');
+                                setIsTagInputFocused(false);
                               }
                             }
                           }}
                         />
-                        {/* Tag suggestions */}
-                        {availableTags.length > 0 && (
+                        {/* Tag suggestions - show when focused */}
+                        {isTagInputFocused && availableTags.length > 0 && (
                           <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto z-10">
                             {availableTags
-                              .filter(tag =>
-                                !formData.blogTags.some((selectedTag: any) => selectedTag.$id === tag.$id) &&
-                                tag.isActive
-                              )
-                              .slice(0, 5)
+                              .filter(tag => {
+                                const isNotSelected = !formData.blogTags.some((selectedTag: any) => selectedTag.$id === tag.$id);
+                                const isActive = tag.isActive;
+                                const matchesInput = !tagInputValue.trim() || tag.name.toLowerCase().includes(tagInputValue.toLowerCase());
+                                return isNotSelected && isActive && matchesInput;
+                              })
+                              .slice(0, 10)
                               .map((tag) => (
                                 <button
                                   key={tag.$id}
                                   type="button"
-                                  onClick={() => addTag(tag.name)}
-                                  className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent input blur
+                                    addTag(tag.name);
+                                    setTagInputValue('');
+                                    setIsTagInputFocused(false);
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-xs sm:text-sm"
                                 >
                                   {tag.name}
                                 </button>
@@ -896,31 +927,33 @@ export default function EditBlogPostPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Press Enter to add a tag. If it doesn't exist, a new tag will be created.
+                        Type a tag name and press Enter to add it
                       </p>
                     </div>
 
                     {/* Display current tags */}
                     {formData.blogTags.length > 0 && (
                       <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">{t("blog.edit.current_tags")}</Label>
+                        <Label className="text-xs sm:text-sm text-muted-foreground">Current Tags</Label>
                         <div className="flex flex-wrap gap-2">
                           {formData.blogTags.map((tag: any) => (
-                            <div
+                            <Badge
                               key={tag.$id}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-sm rounded-md border"
+                              variant="secondary"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs sm:text-sm"
                             >
                               <span>{tag.name}</span>
                               <button
                                 type="button"
                                 onClick={() => removeTag(tag.$id)}
-                                className="text-primary hover:text-primary/70 ml-1"
+                                className="ml-1 hover:opacity-70"
+                                aria-label="Remove tag"
                               >
                                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                               </button>
-                            </div>
+                            </Badge>
                           ))}
                         </div>
                       </div>
@@ -932,38 +965,38 @@ export default function EditBlogPostPage() {
               {/* SEO Settings */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("blog.edit.seo_settings")}</CardTitle>
+                  <CardTitle>SEO Settings</CardTitle>
                   <CardDescription>
-                    {t("blog.edit.seo_settings_desc")}
+                    Optimize your post for search engines
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="seoTitle">{t("blog.edit.seo_title")}</Label>
+                    <Label htmlFor="seoTitle">SEO Title</Label>
                     <Input
                       id="seoTitle"
                       value={formData.seoTitle}
                       onChange={(e) => setFormData(prev => ({ ...prev, seoTitle: e.target.value }))}
-                      placeholder={t("blog.edit.seo_title_placeholder")}
+                      placeholder="SEO optimized title"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="seoDescription">{t("blog.edit.seo_description")}</Label>
+                    <Label htmlFor="seoDescription">SEO Description</Label>
                     <Textarea
                       id="seoDescription"
                       value={formData.seoDescription}
                       onChange={(e) => setFormData(prev => ({ ...prev, seoDescription: e.target.value }))}
-                      placeholder={t("blog.edit.seo_description_placeholder")}
+                      placeholder="Meta description for search engines"
                       rows={2}
                     />
                   </div>
 
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label>{t("blog.edit.add_seo_keywords")}</Label>
+                      <Label>Add SEO Keywords</Label>
                       <Input
-                        placeholder={t("blog.edit.seo_keywords_placeholder")}
+                        placeholder="Type keyword and press Enter"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -980,7 +1013,7 @@ export default function EditBlogPostPage() {
                     {/* Display current SEO keywords */}
                     {formData.seoKeywords.length > 0 && (
                       <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">{t("blog.edit.current_keywords")}</Label>
+                        <Label className="text-sm text-muted-foreground">Current Keywords</Label>
                         <div className="flex flex-wrap gap-2">
                           {formData.seoKeywords.map((keyword, index) => (
                             <div
@@ -1019,7 +1052,7 @@ export default function EditBlogPostPage() {
               <div className="text-sm text-muted-foreground">
                 {formData.content && (
                   <span>
-                    {t("blog.edit.words_count", { count: countWords(formData.content).toString() })}
+                    {countWords(formData.content)} words
                   </span>
                 )}
               </div>
@@ -1027,13 +1060,13 @@ export default function EditBlogPostPage() {
                 <Button variant="outline" type="button" size="lg" asChild>
                   <Link href={`/auth/blog/blog-posts/${postId}`}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    {t("general_use.cancel")}
+                    Cancel
                   </Link>
                 </Button>
                 <Button type="submit" disabled={isSubmitting} size="lg">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   <Save className="h-4 w-4 mr-2" />
-                  {t("blog.edit.update_post")}
+                  Update Post
                 </Button>
               </div>
             </div>

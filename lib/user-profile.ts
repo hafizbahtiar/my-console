@@ -30,54 +30,31 @@ export interface UserProfile {
  */
 export async function getUserProfileByUserId(userId: string): Promise<UserProfile | null> {
   try {
-    // Try with query first
-    try {
-      const response = await tablesDB.listRows({
-        databaseId: DATABASE_ID,
-        tableId: USERS_COLLECTION_ID,
-        queries: [
-          `equal("userId", "${userId}")`,
-          'limit(1)'
-        ]
-      })
+    // Note: Appwrite tablesDB API doesn't support equal() queries reliably
+    // So we load all rows and filter client-side (similar to audit-log.ts pattern)
+    const allResponse = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: USERS_COLLECTION_ID
+    })
 
-      if (response.rows && response.rows.length > 0) {
-        return response.rows[0] as unknown as UserProfile
-      }
-    } catch (queryError: any) {
-      // If query fails (table might not exist or query syntax issue), fallback to client-side filtering
-      // Check if table doesn't exist
-      if (queryError.code === 404 || queryError.message?.includes('not found') || queryError.message?.includes('does not exist')) {
-        console.warn('Users table does not exist yet. Profile will be created when table is set up.')
-        return null
-      }
-      
-      // For other query errors, try loading all and filtering client-side
-      try {
-        const allResponse = await tablesDB.listRows({
-          databaseId: DATABASE_ID,
-          tableId: USERS_COLLECTION_ID
-        })
-
-        if (allResponse.rows && allResponse.rows.length > 0) {
-          const profile = allResponse.rows.find((row: any) => row.userId === userId)
-          if (profile) {
-            return profile as unknown as UserProfile
-          }
-        }
-      } catch (fallbackError: any) {
-        // Table doesn't exist or other error
-        if (fallbackError.code === 404 || fallbackError.message?.includes('not found')) {
-          console.warn('Users table does not exist yet.')
-          return null
-        }
-        throw fallbackError
+    if (allResponse.rows && allResponse.rows.length > 0) {
+      const profile = allResponse.rows.find((row: any) => row.userId === userId)
+      if (profile) {
+        return profile as unknown as UserProfile
       }
     }
 
+    // No profile found
     return null
-  } catch (error) {
-    console.error('Failed to get user profile:', error)
+  } catch (error: any) {
+    // Check if table doesn't exist
+    if (error.code === 404 || error.message?.includes('not found') || error.message?.includes('does not exist')) {
+      console.warn('Users table does not exist yet. Profile will be created when table is set up.')
+      return null
+    }
+
+    // Silently return null for other errors to prevent breaking the app
+    console.warn('Failed to get user profile:', error?.message || error)
     return null
   }
 }

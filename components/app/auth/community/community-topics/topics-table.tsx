@@ -6,7 +6,6 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { Edit, Trash2, FolderTree, MessageSquare } from "lucide-react";
 import { CommunityTopic } from "./types";
 import { getParentTopicName } from "./utils";
-import { useTranslation } from "@/lib/language-context";
 import {
     Pagination,
     PaginationContent,
@@ -37,7 +36,6 @@ export function TopicsTable({
     onEdit,
     onDelete,
 }: TopicsTableProps) {
-    const { t } = useTranslation();
     const totalPages = getTotalPages(allTopics.length, pageSize);
 
     return (
@@ -45,13 +43,13 @@ export function TopicsTable({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>{t("general_use.name")}</TableHead>
-                        <TableHead>{t("community.topics.slug")}</TableHead>
-                        <TableHead>{t("community.topics.parent")}</TableHead>
-                        <TableHead>{t("general_use.status")}</TableHead>
-                        <TableHead>{t("community.topics.posts")}</TableHead>
-                        <TableHead>{t("community.topics.replies")}</TableHead>
-                        <TableHead>{t("general_use.actions")}</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Slug</TableHead>
+                        <TableHead>Parent</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Posts</TableHead>
+                        <TableHead>Replies</TableHead>
+                        <TableHead>Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -80,7 +78,7 @@ export function TopicsTable({
                                     <div className="flex flex-col gap-1">
                                         <StatusBadge status={topic.isActive ? "active" : "inactive"} type="blog-category" />
                                         {!topic.isPublic && (
-                                            <span className="text-xs text-muted-foreground">{t("community.topics.private")}</span>
+                                            <span className="text-xs text-muted-foreground">Private</span>
                                         )}
                                     </div>
                                 </TableCell>
@@ -111,8 +109,8 @@ export function TopicsTable({
                         <TableRow>
                             <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                 <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p>{t("community.topics.no_topics_found")}</p>
-                                <p className="text-sm">{t("community.topics.create_first_topic")}</p>
+                                <p>No topics found</p>
+                                <p className="text-sm">Create your first topic to get started</p>
                             </TableCell>
                         </TableRow>
                     )}

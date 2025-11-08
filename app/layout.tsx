@@ -3,10 +3,11 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { PrimaryColorInit } from "@/components/app/primary-color-init";
 import { ErrorHandlerInit } from "@/components/app/error-handler-init";
+import { ServiceWorkerInit } from "@/components/app/service-worker-init";
+import { SessionManagerInit } from "@/components/app/session-manager-init";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -169,16 +170,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <LanguageProvider>
             <AuthProvider>
               <ErrorBoundary>
                 <ErrorHandlerInit />
                 <PrimaryColorInit />
+                <ServiceWorkerInit />
+                <SessionManagerInit />
                 {children}
               </ErrorBoundary>
               <Toaster />
             </AuthProvider>
-          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -14,7 +14,6 @@ import {
   Database,
   Power,
 } from "lucide-react";
-import { useTranslation } from "@/lib/language-context";
 import { SystemHealthStatusBadge } from "@/components/custom/status-badge";
 
 interface DatabaseOverviewProps {
@@ -32,8 +31,6 @@ interface DatabaseOverviewProps {
 }
 
 export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }: DatabaseOverviewProps) {
-  const { t } = useTranslation();
-
   const getActivityIcon = (action: unknown) => {
     const actionStr = String(action);
     switch (actionStr) {
@@ -58,17 +55,17 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
     const actionStr = String(action);
     switch (actionStr) {
       case 'USER_LOGIN':
-        return t("database.user_login");
+        return "User login";
       case 'USER_LOGOUT':
-        return t("database.user_logout");
+        return "User logout";
       case 'PROFILE_UPDATE':
-        return t("database.profile_update");
+        return "Profile update";
       case 'SECURITY_EVENT':
-        return t("database.security_event");
+        return "Security event";
       case 'BACKUP_STARTED':
-        return t("database.database_backup_started");
+        return "Database backup started";
       case 'BACKUP_COMPLETED':
-        return t("database.database_backup_completed");
+        return "Database backup completed";
       default:
         return `${actionStr.toLowerCase().replace('_', ' ')}`;
     }
@@ -91,15 +88,15 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
   const getStatusText = (status: string) => {
     switch (status) {
       case 'online':
-        return t("status.online");
+        return "Online";
       case 'offline':
-        return t("status.offline");
+        return "Offline";
       case 'maintenance':
-        return t("status.warning");
+        return "Warning";
       case 'error':
-        return t("status.error");
+        return "Error";
       default:
-        return t("status.unknown");
+        return "Unknown";
     }
   };
 
@@ -119,32 +116,32 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            {t("database.recent_activity")}
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Activity className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            Recent Activity
           </CardTitle>
-          <CardDescription>{t("database.latest_database_operations")}</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Latest database operations</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
           {recentActivity.length > 0 ? (
             recentActivity.slice(0, 5).map((activity: Record<string, unknown>, index: number) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {getActivityIcon(activity.action)}
-                  <span className="text-sm">{getActivityText(activity.action)}</span>
+              <div key={index} className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2 pb-2 sm:pb-0 border-b sm:border-0 last:border-0">
+                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                  <div className="shrink-0">{getActivityIcon(activity.action)}</div>
+                  <span className="text-xs sm:text-sm truncate">{getActivityText(activity.action)}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {activity.$createdAt ? new Date(String(activity.$createdAt)).toLocaleString() : 'Unknown time'}
+                <span className="text-xs text-muted-foreground shrink-0 pl-6 sm:pl-0">
+                  {activity.$createdAt ? new Date(String(activity.$createdAt)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Unknown time'}
                 </span>
               </div>
             ))
           ) : (
-            <div className="text-center text-muted-foreground py-4">
+            <div className="text-center text-muted-foreground py-6 sm:py-8">
               <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>{t("database.no_recent_activity")}</p>
+              <p className="text-xs sm:text-sm">No recent activity</p>
             </div>
           )}
         </CardContent>
@@ -152,38 +149,38 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Server className="h-5 w-5" />
-            {t("database.system_health")}
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Server className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            System Health
           </CardTitle>
-          <CardDescription>{t("database.database_system_status")}</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Database system status</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{t("database.cpu_usage")}</span>
-              <span>{systemHealth?.cpu || 0}%</span>
+        <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
+              <span className="truncate flex-1">CPU Usage</span>
+              <span className="shrink-0 font-semibold">{systemHealth?.cpu || 0}%</span>
             </div>
             <Progress value={systemHealth?.cpu || 0} className="h-2" />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{t("database.memory_usage")}</span>
-              <span>{systemHealth?.memory || 0}%</span>
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
+              <span className="truncate flex-1">Memory Usage</span>
+              <span className="shrink-0 font-semibold">{systemHealth?.memory || 0}%</span>
             </div>
             <Progress value={systemHealth?.memory || 0} className="h-2" />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{t("database.storage_usage")}</span>
-              <span>{systemHealth?.storage || 0}%</span>
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
+              <span className="truncate flex-1">Storage Usage</span>
+              <span className="shrink-0 font-semibold">{systemHealth?.storage || 0}%</span>
             </div>
             <Progress value={systemHealth?.storage || 0} className="h-2" />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>{t("database.connection_pool")}</span>
-              <span>{systemHealth?.connections || '0/20'}</span>
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
+              <span className="truncate flex-1">Connection Pool</span>
+              <span className="shrink-0 font-semibold">{systemHealth?.connections || '0/20'}</span>
             </div>
             <Progress value={systemHealth?.connections ? parseInt(systemHealth.connections.split('/')[0]) / parseInt(systemHealth.connections.split('/')[1]) * 100 : 0} className="h-2" />
           </div>
@@ -193,25 +190,25 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
       {/* Database Status Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            {t("general_use.status")}
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Database className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            Status
           </CardTitle>
-          <CardDescription>{t("database.current_database_state")}</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Current database state</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <SystemHealthStatusBadge
                 status={
                   databaseStats?.status === 'online' ? 'healthy' :
-                  databaseStats?.status === 'offline' ? 'critical' :
-                  databaseStats?.status === 'maintenance' ? 'warning' :
-                  'critical'
+                    databaseStats?.status === 'offline' ? 'critical' :
+                      databaseStats?.status === 'maintenance' ? 'warning' :
+                        'critical'
                 }
               />
-              <span className="text-sm text-muted-foreground">
-                {databaseStats?.status === 'online' ? t("database.operational") : t("database.check_status")}
+              <span className="text-xs sm:text-sm text-muted-foreground truncate">
+                {databaseStats?.status === 'online' ? "Operational" : "Check status"}
               </span>
             </div>
           </div>
@@ -221,26 +218,28 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
       {/* Database Active Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Power className="h-5 w-5" />
-            {t("general_use.active")}
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Power className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            Active
           </CardTitle>
-          <CardDescription>{t("database.database_connectivity_status")}</CardDescription>
+          <CardDescription className="text-xs sm:text-sm">Database connectivity status</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {databaseStats?.active ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              )}
-              <span className={`font-medium ${databaseStats?.active ? 'text-green-600' : 'text-red-600'}`}>
-                {databaseStats?.active ? t("general_use.active") : t("general_use.inactive")}
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="shrink-0">
+                {databaseStats?.active ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                )}
+              </div>
+              <span className={`text-xs sm:text-sm font-medium truncate ${databaseStats?.active ? 'text-green-600' : 'text-red-600'}`}>
+                {databaseStats?.active ? "Active" : "Inactive"}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">
-              {databaseStats?.active ? t("database.responsive") : t("database.not_responding")}
+            <div className="text-xs text-muted-foreground shrink-0 pl-6 sm:pl-0">
+              {databaseStats?.active ? "Responsive" : "Not responding"}
             </div>
           </div>
         </CardContent>

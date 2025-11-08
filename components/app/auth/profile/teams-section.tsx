@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslation } from "@/lib/language-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users } from "lucide-react"
 import { formatDate } from "./utils"
@@ -10,14 +9,12 @@ interface TeamsSectionProps {
 }
 
 export function TeamsSection({ teams }: TeamsSectionProps) {
-  const { t } = useTranslation()
-
   return (
     <Card className="md:col-span-2">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          {t("database.teams")}
+          Teams
         </CardTitle>
         <CardDescription>
           Teams you belong to

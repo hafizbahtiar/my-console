@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
-import { useTranslation } from "@/lib/language-context"
 import { AuditActivity } from "@/components/app/auth/dashboard/audit-activity"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,7 +38,7 @@ interface DashboardStats {
   totalBlogPosts: number
   totalCommunityPosts: number
   totalUsers: number
-    activeUsers: number
+  activeUsers: number
   myBlogPosts: number
   myCommunityPosts: number
 }
@@ -61,7 +60,6 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export default function Dashboard() {
   const { user, loading } = useAuth()
-  const { t } = useTranslation()
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoadingAccess, setIsLoadingAccess] = useState(true)
@@ -105,12 +103,12 @@ export default function Dashboard() {
 
         setIsSuperAdmin(hasSuperAdminAccess)
         setIsAdmin(hasAdminLabel)
-    } catch (error) {
+      } catch (error) {
         console.error('Failed to check access:', error)
       } finally {
         setIsLoadingAccess(false)
+      }
     }
-  }
 
     checkAccess()
   }, [user])
@@ -148,7 +146,7 @@ export default function Dashboard() {
         const myBlogPosts = isSuperAdmin || isAdmin
           ? blogPosts
           : blogPosts.filter((post: any) => post.authorId === user.$id)
-        
+
         const myCommunityPosts = isSuperAdmin || isAdmin
           ? communityPosts
           : communityPosts.filter((post: any) => post.authorId === user.$id)
@@ -175,12 +173,12 @@ export default function Dashboard() {
         // Generate chart data (last 7 days)
         const chartDataArray: ChartData[] = []
         const now = new Date()
-        
+
         for (let i = 6; i >= 0; i--) {
           const date = new Date(now)
           date.setDate(date.getDate() - i)
           const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          
+
           const dayStart = new Date(date)
           dayStart.setHours(0, 0, 0, 0)
           const dayEnd = new Date(date)
@@ -279,20 +277,20 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
       {/* Welcome Header */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{t("dashboard.title")}</h1>
-            <p className="text-muted-foreground">
-              {t("dashboard.welcome_back", { name: user.name || user.email })}
+      <div className="flex flex-col gap-2 sm:gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+            <p className="text-sm text-muted-foreground sm:text-base">
+              Welcome back, {user.name || user.email}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
               <CheckCircle className="h-3 w-3 mr-1" />
-              {t("status.online")}
+              Online
             </Badge>
             {(isSuperAdmin || isAdmin) && (
               <Badge variant="default">
@@ -305,30 +303,30 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {(isSuperAdmin || isAdmin) ? t('dashboard.total_users') : t('dashboard.my_posts')}
+            <CardTitle className="text-xs sm:text-sm font-medium">
+              {(isSuperAdmin || isAdmin) ? 'Total Users' : 'My Posts'}
             </CardTitle>
             {(isSuperAdmin || isAdmin) ? (
-            <Users className="h-4 w-4 text-muted-foreground" />
+              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
             ) : (
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
             )}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {isLoadingStats ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 (isSuperAdmin || isAdmin) ? stats.totalUsers : (stats.myBlogPosts + stats.myCommunityPosts)
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {(isSuperAdmin || isAdmin) 
-                ? `${stats.activeUsers} ${t('dashboard.active_users')}`
-                : `${stats.myBlogPosts} blog, ${stats.myCommunityPosts} community`
+            <p className="text-xs text-muted-foreground mt-1">
+              {(isSuperAdmin || isAdmin)
+                ? `${stats.activeUsers} active users`
+                : `${stats.myBlogPosts} blog posts, ${stats.myCommunityPosts} community posts`
               }
             </p>
           </CardContent>
@@ -336,103 +334,109 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.blog_posts')}</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Blog Posts</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {isLoadingStats ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 stats.totalBlogPosts
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {(isSuperAdmin || isAdmin) ? t('dashboard.total_posts') : t('dashboard.my_posts')}
+            <p className="text-xs text-muted-foreground mt-1">
+              {(isSuperAdmin || isAdmin) ? 'Total posts' : 'My posts'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.community_posts')}</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Community Posts</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {isLoadingStats ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 stats.totalCommunityPosts
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {(isSuperAdmin || isAdmin) ? t('dashboard.total_posts') : t('dashboard.my_posts')}
+            <p className="text-xs text-muted-foreground mt-1">
+              {(isSuperAdmin || isAdmin) ? 'Total posts' : 'My posts'}
             </p>
           </CardContent>
         </Card>
 
         {(isSuperAdmin || isAdmin) && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('dashboard.active_users')}</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-              <div className="text-2xl font-bold">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium">Active Users</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold">
                 {isLoadingStats ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   stats.activeUsers
                 )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-                {t('dashboard.last_30_days')}
-            </p>
-          </CardContent>
-        </Card>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Last 30 days
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">{t("dashboard.overview")}</TabsTrigger>
-          <TabsTrigger value="activity">{t("dashboard.activity")}</TabsTrigger>
-          <TabsTrigger value="analytics">{t("dashboard.analytics")}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs sm:text-sm py-2 px-2 sm:px-4">
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
             {/* User Profile */}
-            <Card className="col-span-4">
+            <Card className="lg:col-span-4">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {t("profile.user_profile")}
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
+                  User Profile
                 </CardTitle>
-                <CardDescription>
-                  {t("profile.user_profile_desc")}
+                <CardDescription className="text-xs sm:text-sm">
+                  Manage your account information and preferences
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <Avatar className="h-14 w-14 sm:h-16 sm:w-16">
                     <AvatarImage src={userProfile?.avatar} />
-                    <AvatarFallback className="text-lg">
+                    <AvatarFallback className="text-base sm:text-lg">
                       {getInitials(user.email)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-semibold">{user.name || 'User'}</h3>
-                    <p className="text-muted-foreground">{user.email}</p>
-                    <div className="flex gap-2">
-                      <Badge variant="secondary">{t('general_use.active')}</Badge>
-                      <Badge variant={user.emailVerification ? "default" : "secondary"}>
-                        {user.emailVerification ? t('status.verified') : t('status.unverified')}
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="text-base sm:text-lg font-semibold truncate">{user.name || 'User'}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="secondary" className="text-xs">Active</Badge>
+                      <Badge variant={user.emailVerification ? "default" : "secondary"} className="text-xs">
+                        {user.emailVerification ? 'Verified' : 'Unverified'}
                       </Badge>
                       {userProfile?.role && (
-                        <Badge variant="outline">{userProfile.role}</Badge>
+                        <Badge variant="outline" className="text-xs">{userProfile.role}</Badge>
                       )}
                     </div>
                   </div>
@@ -442,73 +446,73 @@ export default function Dashboard() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{t('dashboard.account_completion')}</span>
+                    <span className="text-muted-foreground">Account Completion</span>
                     <span className="font-medium">
                       {userProfile ? (
                         Math.round(
                           ((user.name ? 1 : 0) +
-                           (userProfile.bio ? 1 : 0) +
-                           (userProfile.location ? 1 : 0) +
-                           (userProfile.website ? 1 : 0) +
-                           (user.emailVerification ? 1 : 0)) / 5 * 100
+                            (userProfile.bio ? 1 : 0) +
+                            (userProfile.location ? 1 : 0) +
+                            (userProfile.website ? 1 : 0) +
+                            (user.emailVerification ? 1 : 0)) / 5 * 100
                         )
                       ) : 20}%
                     </span>
                   </div>
-                  <Progress 
+                  <Progress
                     value={userProfile ? (
                       Math.round(
                         ((user.name ? 1 : 0) +
-                         (userProfile.bio ? 1 : 0) +
-                         (userProfile.location ? 1 : 0) +
-                         (userProfile.website ? 1 : 0) +
-                         (user.emailVerification ? 1 : 0)) / 5 * 100
+                          (userProfile.bio ? 1 : 0) +
+                          (userProfile.location ? 1 : 0) +
+                          (userProfile.website ? 1 : 0) +
+                          (user.emailVerification ? 1 : 0)) / 5 * 100
                       )
-                    ) : 20} 
-                    className="h-2" 
+                    ) : 20}
+                    className="h-2"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t('dashboard.complete_profile')}
+                    Complete your profile to unlock all features
                   </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <Card className="col-span-3">
+            <Card className="lg:col-span-3">
               <CardHeader>
-                <CardTitle>{t("actions.quick_actions")}</CardTitle>
-                <CardDescription>
-                  {t("actions.common_tasks")}
+                <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Common tasks and shortcuts
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 sm:space-y-3">
                 <Button variant="default" className="w-full justify-start" size="sm" asChild>
                   <Link href="/auth/blog/blog-posts/create">
-                  <FileText className="h-4 w-4 mr-2" />
-                    {t("actions.create_blog_post")}
+                    <FileText className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">Create Blog Post</span>
                   </Link>
                 </Button>
                 <Button variant="outline" className="w-full justify-start" size="sm" asChild>
                   <Link href="/auth/profile">
-                  <Settings className="h-4 w-4 mr-2" />
-                  {t("actions.account_settings")}
+                    <Settings className="h-4 w-4 mr-2 shrink-0" />
+                    <span className="truncate">Account Settings</span>
                   </Link>
                 </Button>
                 {(isSuperAdmin || isAdmin) && (
                   <>
                     <Button variant="outline" className="w-full justify-start" size="sm" asChild>
                       <Link href="/auth/admin/database">
-                        <Database className="h-4 w-4 mr-2" />
-                        {t("actions.database_admin")}
+                        <Database className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Database Admin</span>
                       </Link>
                     </Button>
                     <Button variant="outline" className="w-full justify-start" size="sm" asChild>
                       <Link href="/auth/audit">
-                  <Shield className="h-4 w-4 mr-2" />
-                        {t("actions.audit_logs")}
+                        <Shield className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate">Audit Logs</span>
                       </Link>
-                </Button>
+                    </Button>
                   </>
                 )}
               </CardContent>
@@ -516,10 +520,10 @@ export default function Dashboard() {
           </div>
 
           {/* Welcome Alert */}
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              {t("welcome.welcome_desc")}
+          <Alert className="mt-4">
+            <Info className="h-4 w-4 shrink-0" />
+            <AlertDescription className="text-xs sm:text-sm">
+              Welcome to your dashboard! Here you can manage your content, view analytics, and access quick actions.
             </AlertDescription>
           </Alert>
         </TabsContent>
@@ -529,55 +533,63 @@ export default function Dashboard() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
             {/* Activity Over Time Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  {t('dashboard.activity_over_time')}
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Activity Over Time
                 </CardTitle>
-                <CardDescription>
-                  {t('dashboard.last_7_days')}
+                <CardDescription className="text-xs sm:text-sm">
+                  Last 7 days
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
-                  <div className="flex items-center justify-center h-[300px]">
+                  <div className="flex items-center justify-center h-[250px] sm:h-[300px]">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <ChartContainer config={chartConfig} className="h-[300px]">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line 
-                        type="monotone" 
-                        dataKey="blogPosts" 
-                        stroke="var(--color-blogPosts)" 
-                        strokeWidth={2}
-                        name="Blog Posts"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="communityPosts" 
-                        stroke="var(--color-communityPosts)" 
-                        strokeWidth={2}
-                        name="Community Posts"
-                      />
-                      {(isSuperAdmin || isAdmin) && (
-                        <Line 
-                          type="monotone" 
-                          dataKey="users" 
-                          stroke="var(--color-users)" 
-                          strokeWidth={2}
-                          name="Users"
+                  <div className="w-full overflow-x-auto">
+                    <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px] min-w-[300px]">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
                         />
-                      )}
-                    </LineChart>
-                  </ChartContainer>
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                          type="monotone"
+                          dataKey="blogPosts"
+                          stroke="var(--color-blogPosts)"
+                          strokeWidth={2}
+                          name="Blog Posts"
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="communityPosts"
+                          stroke="var(--color-communityPosts)"
+                          strokeWidth={2}
+                          name="Community Posts"
+                        />
+                        {(isSuperAdmin || isAdmin) && (
+                          <Line
+                            type="monotone"
+                            dataKey="users"
+                            stroke="var(--color-users)"
+                            strokeWidth={2}
+                            name="Users"
+                          />
+                        )}
+                      </LineChart>
+                    </ChartContainer>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -585,21 +597,21 @@ export default function Dashboard() {
             {/* Content Distribution Chart */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  {t('dashboard.content_distribution')}
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Content Distribution
                 </CardTitle>
-                <CardDescription>
-                  {t('dashboard.content_overview')}
+                <CardDescription className="text-xs sm:text-sm">
+                  Content overview
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
-                  <div className="flex items-center justify-center h-[300px]">
+                  <div className="flex items-center justify-center h-[250px] sm:h-[300px]">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : contentDistribution.length > 0 ? (
-                  <ChartContainer config={chartConfig} className="h-[300px]">
+                  <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px]">
                     <PieChart>
                       <Pie
                         data={contentDistribution}
@@ -607,7 +619,7 @@ export default function Dashboard() {
                         cy="50%"
                         labelLine={false}
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
+                        outerRadius={70}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -619,8 +631,8 @@ export default function Dashboard() {
                     </PieChart>
                   </ChartContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                    {t('dashboard.no_data')}
+                  <div className="flex items-center justify-center h-[250px] sm:h-[300px] text-muted-foreground text-sm">
+                    No data available
                   </div>
                 )}
               </CardContent>

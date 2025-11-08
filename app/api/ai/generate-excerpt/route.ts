@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
+import { createProtectedPOST } from '@/lib/api-protection';
+import { apiSchemas } from '@/lib/api-schemas';
 import {
     OpenRouterErrorData,
     OpenRouterResponse,
@@ -12,32 +13,9 @@ import {
     getAllModelsRateLimitedMessage,
 } from '@/lib/openrouter';
 
-interface GenerateExcerptRequest {
-    title: string;
-    content: string;
-}
-
-export async function POST(request: NextRequest) {
-    try {
-        const body: GenerateExcerptRequest = await request.json();
+export const POST = createProtectedPOST(
+    async ({ body }) => {
         const { title, content } = body;
-
-        // Validate input
-        if (!title || !content) {
-            return NextResponse.json(
-                { error: 'Title and content are required' },
-                { status: 400 }
-            );
-        }
-
-        // Check if title has more than 1 word
-        const titleWords = title.trim().split(/\s+/).length;
-        if (titleWords <= 1) {
-            return NextResponse.json(
-                { error: 'Title must have more than 1 word' },
-                { status: 400 }
-            );
-        }
 
         // Get OpenRouter API headers (validates API key)
         let headers: Record<string, string>;
@@ -53,7 +31,7 @@ export async function POST(request: NextRequest) {
         // Remove HTML tags from content for better AI understanding
         const textContent = content.replace(/<[^>]*>/g, '').trim();
 
-        // Validate that content is not empty after stripping HTML
+        // Validate that content is not empty after stripping HTML (additional check)
         if (!textContent || textContent.length === 0) {
             return NextResponse.json(
                 { error: 'Content is empty or contains only HTML tags. Please provide text content.' },
@@ -449,12 +427,9 @@ Excerpt:`;
             { excerpt: cleanedExcerpt },
             { status: 200 }
         );
-
-    } catch (error) {
-        console.error('Error generating excerpt:', error);
-        return NextResponse.json(
-            { error: 'Failed to generate excerpt. Please try again.' },
-            { status: 500 }
-        );
+    },
+    {
+        rateLimit: 'api',
+        schema: apiSchemas.ai.generateExcerpt,
     }
-}
+);

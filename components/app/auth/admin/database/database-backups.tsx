@@ -16,9 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download } from "lucide-react";
+import { Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslation } from "@/lib/language-context";
 import type { BackupRecord } from "@/app/auth/admin/database/types";
 
 interface DatabaseBackupsProps {
@@ -27,7 +26,6 @@ interface DatabaseBackupsProps {
 }
 
 export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsProps) {
-  const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [backupToDelete, setBackupToDelete] = useState<string | null>(null);
 
@@ -45,10 +43,10 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
       });
 
       if (!response.ok) {
-        throw new Error(t("database.failed_to_delete_backup"));
+        throw new Error("Failed to delete backup");
       }
 
-      toast.success(t("database.backup_deleted_successfully"));
+      toast.success("Backup deleted successfully");
 
       // Refresh backup history
       onRefresh();
@@ -56,7 +54,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
       setBackupToDelete(null);
     } catch (error) {
       console.error('Failed to delete backup:', error);
-      toast.error(error instanceof Error ? error.message : t("database.failed_to_delete_backup"));
+      toast.error(error instanceof Error ? error.message : "Failed to delete backup");
     }
   };
 
@@ -95,98 +93,98 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
     <>
       <Card>
         <CardHeader>
-          <CardTitle>{t("database.backup_history")}</CardTitle>
-          <CardDescription>
-            {t("database.recent_database_backups")}
+          <CardTitle className="text-base sm:text-lg">Backup History</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Recent database backups
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("database.backup_id")}</TableHead>
-                <TableHead>{t("general_use.type")}</TableHead>
-                <TableHead>{t("general_use.status")}</TableHead>
-                <TableHead>{t("database.size")}</TableHead>
-                <TableHead>{t("database.collections")}</TableHead>
-                <TableHead>{t("general_use.created")}</TableHead>
-                <TableHead>{t("general_use.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {backupHistory.length > 0 ? (
-                backupHistory.slice(0, 10).map((backup: BackupRecord, index: number) => (
-                  <TableRow key={backup.id || index}>
-                    <TableCell className="font-mono text-sm">
-                      {backup.id || `backup_${String(index + 1).padStart(3, '0')}`}
-                    </TableCell>
-                    <TableCell>
-                      <BackupStatusBadge status={backup.type || 'manual'} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon('completed')}
-                        <span className="capitalize">{t("status.completed")}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {backup.totalRecords ? `${(backup.totalRecords * 0.5).toFixed(1)} MB` : 'Unknown'}
-                    </TableCell>
-                    <TableCell>{backup.collections || 0}</TableCell>
-                    <TableCell>
-                      {backup.timestamp ? new Date(backup.timestamp).toLocaleString() : 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" disabled>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteBackup(backup.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </Button>
-                      </div>
+          <div className="w-full overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs sm:text-sm">Backup ID</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Type</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Size</TableHead>
+                  <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Collections</TableHead>
+                  <TableHead className="text-xs sm:text-sm hidden md:table-cell">Created</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {backupHistory.length > 0 ? (
+                  backupHistory.slice(0, 10).map((backup: BackupRecord, index: number) => (
+                    <TableRow key={backup.id || index}>
+                      <TableCell className="font-mono text-xs sm:text-sm max-w-[100px] sm:max-w-none truncate">
+                        {backup.id || `backup_${String(index + 1).padStart(3, '0')}`}
+                      </TableCell>
+                      <TableCell>
+                        <BackupStatusBadge status={backup.type || 'manual'} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <div className="shrink-0">{getStatusIcon('completed')}</div>
+                          <span className="text-xs sm:text-sm capitalize truncate">Completed</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm">
+                        {backup.totalRecords ? `${(backup.totalRecords * 0.5).toFixed(1)} MB` : 'Unknown'}
+                      </TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden sm:table-cell">{backup.collections || 0}</TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden md:table-cell">
+                        {backup.timestamp ? new Date(backup.timestamp).toLocaleString() : 'Unknown'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          <Button variant="outline" size="sm" disabled className="h-8 w-8 p-0">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteBackup(backup.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <Download className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-xs sm:text-sm">No backup history available</p>
+                      <p className="text-xs sm:text-sm mt-1">Backups will appear here</p>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    <Download className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>{t("database.no_backup_history_available")}</p>
-                    <p className="text-sm">{t("database.backups_will_appear_here")}</p>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("database.delete_backup")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("database.delete_backup_confirmation")}
+        <AlertDialogContent className="w-[90vw] sm:w-full max-w-md p-4 sm:p-6">
+          <AlertDialogHeader className="px-0 sm:px-0">
+            <AlertDialogTitle className="text-base sm:text-lg">Delete Backup</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm mt-2">
+              Are you sure you want to delete this backup? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBackupToDelete(null)}>
-              {t("status.cancel")}
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 px-0 sm:px-0 mt-4 sm:mt-0">
+            <AlertDialogCancel onClick={() => setBackupToDelete(null)} className="w-full sm:w-auto order-2 sm:order-1">
+              Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBackup}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto order-1 sm:order-2"
             >
-              {t("status.delete")}
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslation } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,26 +23,24 @@ export function AccountSettingsForm({
   onInputChange,
   onSubmit
 }: AccountSettingsFormProps) {
-  const { t } = useTranslation()
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Edit className="h-5 w-5" />
-          {t("profile.account_settings")}
+          Account Settings
         </CardTitle>
         <CardDescription>
-          {t("profile.account_settings_desc")}
+          Update your account information and preferences
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{t("profile.display_name")}</Label>
+            <Label htmlFor="name">Display Name</Label>
             <Input
               id="name"
-              placeholder={t("profile.name_placeholder")}
+              placeholder="Enter your name"
               value={formData.name}
               onChange={(e) => onInputChange('name', e.target.value)}
               disabled={isUpdating}
@@ -51,27 +48,27 @@ export function AccountSettingsForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">{t("profile.email_address")}</Label>
+            <Label htmlFor="email">Email Address</Label>
             <Input
               id="email"
               type="email"
-              placeholder={t("profile.email_placeholder")}
+              placeholder="Enter your email"
               value={formData.email}
               onChange={(e) => onInputChange('email', e.target.value)}
               disabled={true}
             />
             <p className="text-xs text-muted-foreground">
-              {t("profile.email_change_note")}
+              Email cannot be changed. Contact support if you need to update your email.
             </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="bio">
-              {t("profile.bio")} <span className="text-muted-foreground">({t("general_use.optional")})</span>
+              Bio <span className="text-muted-foreground">(Optional)</span>
             </Label>
             <Textarea
               id="bio"
-              placeholder={t("profile.bio_placeholder")}
+              placeholder="Tell us about yourself"
               value={formData.bio}
               onChange={(e) => onInputChange('bio', e.target.value)}
               disabled={isUpdating}
@@ -79,20 +76,20 @@ export function AccountSettingsForm({
               maxLength={500}
             />
             <p className="text-xs text-muted-foreground">
-              {formData.bio.length}/500 {t("general_use.characters")}
+              {formData.bio.length}/500 characters
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="location">
-                {t("profile.location")} <span className="text-muted-foreground">({t("general_use.optional")})</span>
+                Location <span className="text-muted-foreground">(Optional)</span>
               </Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="location"
-                  placeholder={t("profile.location_placeholder")}
+                  placeholder="Enter your location"
                   value={formData.location}
                   onChange={(e) => onInputChange('location', e.target.value)}
                   disabled={isUpdating}
@@ -104,14 +101,14 @@ export function AccountSettingsForm({
 
             <div className="space-y-2">
               <Label htmlFor="website">
-                {t("profile.website")} <span className="text-muted-foreground">({t("general_use.optional")})</span>
+                Website <span className="text-muted-foreground">(Optional)</span>
               </Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="website"
                   type="url"
-                  placeholder={t("profile.website_placeholder")}
+                  placeholder="https://example.com"
                   value={formData.website}
                   onChange={(e) => onInputChange('website', e.target.value)}
                   disabled={isUpdating}
@@ -125,7 +122,7 @@ export function AccountSettingsForm({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="timezone">
-                {t("profile.timezone")} <span className="text-muted-foreground">({t("general_use.optional")})</span>
+                Timezone <span className="text-muted-foreground">(Optional)</span>
               </Label>
               <Select
                 value={formData.timezone || ''}
@@ -133,7 +130,7 @@ export function AccountSettingsForm({
                 disabled={isUpdating}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("profile.timezone_placeholder")} />
+                  <SelectValue placeholder="Select timezone" />
                 </SelectTrigger>
                 <SelectContent>
                   {TIMEZONES.map((tz) => (
@@ -146,7 +143,7 @@ export function AccountSettingsForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="language">{t("profile.language")}</Label>
+              <Label htmlFor="language">Language</Label>
               <Select
                 value={formData.language}
                 onValueChange={(value: 'en' | 'ms') => onInputChange('language', value)}
@@ -156,15 +153,15 @@ export function AccountSettingsForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">{t("general_use.english")}</SelectItem>
-                  <SelectItem value="ms">{t("general_use.malay")}</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="ms">Malay</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="theme">{t("profile.theme")}</Label>
+            <Label htmlFor="theme">Theme</Label>
             <Select
               value={formData.theme}
               onValueChange={(value: 'light' | 'dark' | 'system') => onInputChange('theme', value)}
@@ -174,9 +171,9 @@ export function AccountSettingsForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="light">{t("profile.theme_light")}</SelectItem>
-                <SelectItem value="dark">{t("profile.theme_dark")}</SelectItem>
-                <SelectItem value="system">{t("profile.theme_system")}</SelectItem>
+                  <SelectItem value="light">Light</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
+                <SelectItem value="system">System</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -192,7 +189,7 @@ export function AccountSettingsForm({
             />
             <Label htmlFor="notificationsEnabled" className="flex items-center gap-2 cursor-pointer">
               <Bell className="h-4 w-4" />
-              {t("profile.notifications_enabled")}
+              Notifications Enabled
             </Label>
           </div>
 
@@ -200,10 +197,10 @@ export function AccountSettingsForm({
             {isUpdating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {t("profile.updating")}
+                Updating...
               </>
             ) : (
-              t("profile.update_profile")
+              "Update"
             )}
           </Button>
         </form>

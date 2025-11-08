@@ -6,7 +6,6 @@ import { AlertTriangle, RefreshCw, Home, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { logError, createAppError, ErrorType } from '@/lib/error-handler'
-import { useTranslation } from '@/lib/language-context'
 
 interface ErrorPageProps {
   error: Error & { digest?: string }
@@ -15,13 +14,12 @@ interface ErrorPageProps {
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
   const router = useRouter()
-  const { t } = useTranslation()
 
   useEffect(() => {
     // Log the error
     const appError = createAppError(
       ErrorType.CLIENT,
-      error.message || 'Page error occurred',
+      error.message || 'Unknown error',
       error,
       {
         digest: error.digest,
@@ -46,9 +44,9 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           <div className="mx-auto mb-4 h-12 w-12 text-destructive">
             <AlertTriangle className="h-full w-full" />
           </div>
-          <CardTitle className="text-destructive">{t('errors.something_went_wrong')}</CardTitle>
+          <CardTitle className="text-destructive">Something went wrong</CardTitle>
           <CardDescription>
-            {t('errors.try_again')}
+            An error occurred. Please try again.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -63,7 +61,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
           {process.env.NODE_ENV === 'development' && (
             <details className="text-xs text-muted-foreground">
-              <summary className="cursor-pointer font-medium">Stack Trace (Development)</summary>
+              <summary className="cursor-pointer font-medium">Stack Trace</summary>
               <pre className="mt-2 whitespace-pre-wrap break-all bg-muted p-2 rounded text-xs">
                 {error.stack}
               </pre>
@@ -73,17 +71,17 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
           <div className="grid grid-cols-2 gap-2">
             <Button onClick={reset} variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />
-              {t('general_use.retry')}
+              Retry
             </Button>
             <Button onClick={handleGoBack} variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              {t('general_use.back')}
+              Back
             </Button>
           </div>
 
           <Button onClick={handleGoHome} className="w-full">
             <Home className="h-4 w-4 mr-2" />
-            {t('auth.go_to_dashboard')}
+            Go to Dashboard
           </Button>
         </CardContent>
       </Card>

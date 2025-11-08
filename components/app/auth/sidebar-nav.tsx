@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { useTranslation } from "@/lib/language-context"
 import { useAuth } from "@/lib/auth-context"
 import { teams } from "@/lib/appwrite"
 import { useState, useEffect, useRef } from "react"
@@ -39,17 +38,17 @@ import {
 
 const navigationItems = [
   {
-    titleKey: "nav.dashboard",
+    title: "Dashboard",
     url: "/auth/dashboard",
     icon: Home,
   },
   {
-    titleKey: "nav.profile",
+    title: "Profile",
     url: "/auth/profile",
     icon: User,
   },
   {
-    titleKey: "nav.settings",
+    title: "Settings",
     url: "/auth/settings",
     icon: Settings,
   },
@@ -58,27 +57,27 @@ const navigationItems = [
 
 const adminItems = [
   {
-    titleKey: "nav.audit",
+    title: "Audit Logs",
     url: "/auth/audit",
     icon: ClipboardList,
   },
   {
-    titleKey: "nav.sessions",
+    title: "Active Sessions",
     url: "/auth/sessions",
     icon: Clock,
   },
   {
-    titleKey: "nav.security",
+    title: "Security",
     url: "/auth/admin/security",
     icon: Shield,
   },
   {
-    titleKey: "nav.database",
+    title: "Database",
     url: "/auth/admin/database",
     icon: Database,
   },
   {
-    titleKey: "nav.analytics",
+    title: "Analytics",
     url: "/auth/admin/analytics",
     icon: BarChart3,
   },
@@ -86,19 +85,19 @@ const adminItems = [
 
 const blogItems = [
   {
-    titleKey: "nav.blog_categories",
+    title: "Blog Categories",
     url: "/auth/blog/blog-categories",
     icon: BookOpen,
     requiresSuperAdmin: false,
   },
   {
-    titleKey: "nav.blog_tags",
+    title: "Blog Tags",
     url: "/auth/blog/blog-tags",
     icon: Tag,
     requiresSuperAdmin: true,
   },
   {
-    titleKey: "nav.blog_posts",
+    title: "Blog Posts",
     url: "/auth/blog/blog-posts",
     icon: FileText,
     requiresSuperAdmin: false,
@@ -107,13 +106,13 @@ const blogItems = [
 
 const communityItems = [
   {
-    titleKey: "nav.community_posts",
+    title: "Community Posts",
     url: "/auth/community/community-posts",
     icon: MessageSquare,
     requiresSuperAdmin: false,
   },
   {
-    titleKey: "nav.community_topics",
+    title: "Community Topics",
     url: "/auth/community/community-topics",
     icon: FolderTree,
     requiresSuperAdmin: true,
@@ -122,12 +121,12 @@ const communityItems = [
 
 const developerItems = [
   {
-    titleKey: "nav.keys",
+    title: "API Keys",
     url: "/auth/developer/keys",
     icon: Key,
   },
   {
-    titleKey: "nav.docs",
+    title: "Documentation",
     url: "/auth/developer/docs",
     icon: FileText,
   },
@@ -135,11 +134,17 @@ const developerItems = [
 
 export function SidebarNav() {
   const pathname = usePathname()
-  const { isMobile } = useSidebar()
-  const { t } = useTranslation()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { user, loading: authLoading, isAuthenticated } = useAuth()
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const isCheckingRef = useRef(false)
+
+  // Handler to close sidebar on mobile when navigation item is clicked
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   // Check if user is a member of Super Admin team
   useEffect(() => {
@@ -164,20 +169,20 @@ export function SidebarNav() {
         const userTeams = await teams.list({})
 
         console.log('userTeams', userTeams)
-        
+
         const hasSuperAdminAccess = userTeams.teams?.some((team: any) => team.name === 'Super Admin')
         setIsSuperAdmin(hasSuperAdminAccess || false)
       } catch (error: any) {
         // Handle specific error cases
-        const isScopeError = error.type === 'general_unauthorized_scope' || 
-                            error.message?.includes('missing scopes') ||
-                            error.message?.includes('teams.read')
-        
-        const isCorsError = error.message?.includes('Failed to fetch') || 
-                           error.message?.includes('CORS') || 
-                           error.message?.includes('ERR_FAILED') ||
-                           error.name === 'TypeError' && error.message?.includes('fetch')
-        
+        const isScopeError = error.type === 'general_unauthorized_scope' ||
+          error.message?.includes('missing scopes') ||
+          error.message?.includes('teams.read')
+
+        const isCorsError = error.message?.includes('Failed to fetch') ||
+          error.message?.includes('CORS') ||
+          error.message?.includes('ERR_FAILED') ||
+          error.name === 'TypeError' && error.message?.includes('fetch')
+
         if (isScopeError) {
           console.warn('Missing teams.read scope. User may need to re-authenticate or permissions may have changed.')
           console.warn('Error details:', error)
@@ -271,19 +276,19 @@ export function SidebarNav() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.main_navigation", "Main Navigation")}</SidebarGroupLabel>
+          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    tooltip={t(item.titleKey)}
+                    tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -293,19 +298,19 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.administration")}</SidebarGroupLabel>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredAdminItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    tooltip={t(item.titleKey)}
+                    tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -315,19 +320,19 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.blog_management")}</SidebarGroupLabel>
+          <SidebarGroupLabel>Blog Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredBlogItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    tooltip={t(item.titleKey)}
+                    tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -337,19 +342,19 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.community_management")}</SidebarGroupLabel>
+          <SidebarGroupLabel>Community Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredCommunityItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url || pathname?.startsWith(item.url)}
-                    tooltip={t(item.titleKey)}
+                    tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -359,19 +364,19 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.developer")}</SidebarGroupLabel>
+          <SidebarGroupLabel>Developer</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {developerItems.map((item) => (
-                <SidebarMenuItem key={item.titleKey}>
+                <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.url}
-                    tooltip={t(item.titleKey)}
+                    tooltip={item.title}
                   >
-                    <Link href={item.url}>
+                    <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{t(item.titleKey)}</span>
+                      <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

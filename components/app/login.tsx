@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
-import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { account } from "@/lib/appwrite"
 import { updateLoginStats } from "@/lib/user-profile"
@@ -24,7 +23,6 @@ export function LoginForm() {
   const [error, setError] = useState("")
   const { theme, setTheme } = useTheme()
   const { login, user } = useAuth()
-  const { t } = useTranslation()
 
   // If user is already logged in, show dashboard or redirect
   if (user) {
@@ -32,9 +30,11 @@ export function LoginForm() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">{t('auth.welcome_back')}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              Welcome back
+            </CardTitle>
             <CardDescription className="text-center">
-              {t('auth.already_logged_in', { email: user.email })}
+              You are already logged in as {user.email}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -42,7 +42,7 @@ export function LoginForm() {
               onClick={() => window.location.href = '/auth/dashboard'}
               className="w-full"
             >
-              {t('auth.go_to_dashboard')}
+              Go to Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -59,7 +59,7 @@ export function LoginForm() {
       await login(email, password)
 
       // Get current user data
-        const currentUser = await account.get()
+      const currentUser = await account.get()
 
       // Create/update user profile and update login stats
       // This will create the profile if it doesn't exist
@@ -82,7 +82,7 @@ export function LoginForm() {
         console.warn('Failed to log audit event:', auditError)
       }
 
-      toast.success(t('auth.login_successful'))
+      toast.success("Login successful!")
 
       // Redirect to dashboard or home page
       window.location.href = '/auth/dashboard'
@@ -103,8 +103,8 @@ export function LoginForm() {
         console.warn('Failed to log failed login audit event:', auditError)
       }
 
-      setError(err.message || t('auth.login_failed'))
-      toast.error(t('auth.login_failed'))
+      setError(err.message || "Login failed")
+      toast.error("Login failed")
     } finally {
       setIsLoading(false)
     }
@@ -126,9 +126,11 @@ export function LoginForm() {
               <span className="sr-only">Toggle theme</span>
             </Button>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">{t('auth.welcome_back')}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            Welcome back
+          </CardTitle>
           <CardDescription className="text-center">
-            {t('auth.login_prompt')}
+            Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -141,14 +143,14 @@ export function LoginForm() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                {t('auth.email')}
+                Email
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder={t('profile.email_placeholder')}
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -160,14 +162,14 @@ export function LoginForm() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                {t('auth.password')}
+                Password
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder={t('auth.password')}
+                  placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10"
@@ -196,14 +198,14 @@ export function LoginForm() {
                   className="rounded border-gray-300 text-primary focus:ring-primary"
                   disabled={isLoading}
                 />
-                <span className="text-muted-foreground">{t('auth.remember_me')}</span>
+                <span className="text-muted-foreground">Remember me</span>
               </label>
               <a
                 href="#"
                 className="text-sm text-primary hover:underline focus:underline"
                 onClick={(e) => e.preventDefault()}
               >
-                {t('auth.forgot_password')}
+                Forgot password?
               </a>
             </div>
 
@@ -212,17 +214,17 @@ export function LoginForm() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? t('general_use.loading') : t('auth.sign_in')}
+              {isLoading ? "Loading..." : "Sign in"}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            {t('auth.dont_have_account')}{" "}
+            Don't have an account?{" "}
             <Link
               href="/register"
               className="text-primary hover:underline focus:underline"
             >
-              {t('auth.sign_up')}
+              Sign up
             </Link>
           </div>
         </CardContent>

@@ -33,7 +33,6 @@ import {
 } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
 
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_TAG_LENGTH = 20;
@@ -50,7 +49,6 @@ const generateSlug = (title: string): string => {
 
 export default function EditCommunityPostPage() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -105,9 +103,9 @@ export default function EditCommunityPostPage() {
                            error?.type === 'AppwriteException';
         
         if (isAuthError) {
-          setError(t('community.posts.create.auth_error'));
+          setError('You do not have permission to edit this post');
         } else {
-          setError(t('general_use.error'));
+          setError("Error");
         }
       } finally {
         setIsLoading(false);
@@ -115,7 +113,7 @@ export default function EditCommunityPostPage() {
     };
 
     loadData();
-  }, [user, postId, router, t]);
+  }, [user, postId, router]);
 
   const loadPost = async () => {
     try {
@@ -169,7 +167,7 @@ export default function EditCommunityPostPage() {
       setTopics(activeTopics);
     } catch (error) {
       console.error('Failed to load topics:', error);
-      toast.error('Failed to load topics');
+      toast.error("Failed to load topics");
     }
   };
 
@@ -178,30 +176,30 @@ export default function EditCommunityPostPage() {
 
     // Validation
     if (!formData.title.trim()) {
-      toast.error(t('errors.item_is_required', { item: t('general_use.title') }));
+      toast.error("Title is required");
       return;
     }
     if (!formData.slug.trim()) {
-      toast.error(t('errors.item_is_required', { item: 'Slug' }));
+      toast.error("Slug is required");
       return;
     }
     if (!formData.content.trim()) {
-      toast.error(t('errors.item_is_required', { item: t('community.posts.create.content_required') }));
+      toast.error("Content is required");
       return;
     }
     if (formData.content.length > MAX_CONTENT_LENGTH) {
-      toast.error(t('community.posts.create.content_max', { max: MAX_CONTENT_LENGTH.toString() }));
+      toast.error(`Content must be less than ${MAX_CONTENT_LENGTH} characters`);
       return;
     }
     if (!formData.authorId) {
-      toast.error(t('errors.item_is_required', { item: 'Author ID' }));
+      toast.error("Author ID is required");
       return;
     }
 
     // Validate tags
     const invalidTags = formData.tags.filter(tag => tag.length > MAX_TAG_LENGTH);
     if (invalidTags.length > 0) {
-      toast.error(t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() }));
+      toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
       return;
     }
 
@@ -247,7 +245,7 @@ export default function EditCommunityPostPage() {
         }
       });
 
-      toast.success(t('general_use.success'));
+      toast.success("Post updated successfully");
       router.push(`/auth/community/community-posts/${postId}`);
     } catch (error: any) {
       console.error('Failed to update community post:', error);
@@ -260,9 +258,9 @@ export default function EditCommunityPostPage() {
                          error?.type === 'AppwriteException';
       
       if (isAuthError) {
-        toast.error(t('community.posts.create.auth_error'));
+        toast.error("You do not have permission to edit this post");
       } else {
-        toast.error(t('general_use.error'));
+        toast.error("Error");
       }
     } finally {
       setIsSubmitting(false);
@@ -293,17 +291,17 @@ export default function EditCommunityPostPage() {
     if (!trimmedTag) return;
 
     if (trimmedTag.length > MAX_TAG_LENGTH) {
-      toast.error(t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() }));
+      toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
       return;
     }
 
     if (formData.tags.includes(trimmedTag)) {
-      toast.error(t('general_use.error'));
+      toast.error("Tag already exists");
       return;
     }
 
     if (formData.tags.length >= 10) {
-      toast.error(t("community.posts.create.tags_help"));
+      toast.error("Maximum 10 tags allowed");
       return;
     }
 
@@ -349,16 +347,16 @@ export default function EditCommunityPostPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">{t("general_use.error")}</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
             <CardDescription>
-              {error || t("community.posts.view.post_not_found", { defaultValue: "Post not found" })}
+              {error || "Post not found"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/auth/community/community-posts">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t("community.posts.view.back_to_posts", { defaultValue: "Back to Posts" })}
+                Back to Posts
               </Link>
             </Button>
           </CardContent>
@@ -376,17 +374,17 @@ export default function EditCommunityPostPage() {
             <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
               <Link href="/auth/community/community-posts">
                 <ArrowLeft className="h-3 w-3 mr-1" />
-                {t("community.posts.title")}
+                Community Posts
               </Link>
             </Button>
             <span className="text-muted-foreground">/</span>
             <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
               <Link href={`/auth/community/community-posts/${postId}`}>
-                {post ? post.title : t("general_use.unknown", { defaultValue: "Post" })}
+                {post ? post.title : "Post"}
               </Link>
             </Button>
             <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">{t("general_use.edit")}</span>
+            <span className="text-foreground font-medium">Edit</span>
           </nav>
         </div>
       </div>
@@ -396,9 +394,9 @@ export default function EditCommunityPostPage() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">{t("community.posts.edit.title", { defaultValue: "Edit Community Post" })}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Edit Community Post</h1>
               <p className="text-sm text-muted-foreground">
-                {t("community.posts.edit.subtitle", { defaultValue: "Update your community post" })}
+                Update your community post
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -412,7 +410,7 @@ export default function EditCommunityPostPage() {
               </div>
               {post && (
                 <div className="text-sm text-muted-foreground">
-                  {t("general_use.updated")}: {new Date(post.$updatedAt).toLocaleDateString()}
+                  Updated: {new Date(post.$updatedAt).toLocaleDateString()}
                 </div>
               )}
             </div>
@@ -429,43 +427,43 @@ export default function EditCommunityPostPage() {
               {/* Basic Information */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("community.posts.create.post_info")}</CardTitle>
+                  <CardTitle>Post Information</CardTitle>
                   <CardDescription>
-                    {t("community.posts.create.post_info_desc")}
+                    Basic information about your post
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="title">{t("community.posts.create.title_required")}</Label>
+                    <Label htmlFor="title">Title *</Label>
                     <Input
                       id="title"
                       value={formData.title}
                       onChange={(e) => handleTitleChange(e.target.value)}
-                      placeholder={t("community.posts.create.title_placeholder")}
+                      placeholder="Enter post title"
                       required
                       maxLength={200}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="slug">{t("community.posts.create.slug_required")}</Label>
+                    <Label htmlFor="slug">Slug *</Label>
                     <Input
                       id="slug"
                       value={formData.slug}
                       onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                      placeholder={t("community.posts.create.slug_placeholder")}
+                      placeholder="url-friendly-slug"
                       required
                       maxLength={200}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="excerpt">{t("community.posts.create.excerpt")}</Label>
+                    <Label htmlFor="excerpt">Excerpt</Label>
                     <Textarea
                       id="excerpt"
                       value={formData.excerpt || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                      placeholder={t("community.posts.create.excerpt_placeholder")}
+                      placeholder="Brief description of your post"
                       rows={3}
                       maxLength={500}
                     />
@@ -473,19 +471,19 @@ export default function EditCommunityPostPage() {
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="content">{t("community.posts.create.content_required")}</Label>
+                      <Label htmlFor="content">Content *</Label>
                       <span className={`text-xs ${contentLength > MAX_CONTENT_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {t("community.posts.create.characters_count", { current: contentLength.toString(), max: MAX_CONTENT_LENGTH.toString() })}
+                        {contentLength} / {MAX_CONTENT_LENGTH} characters
                       </span>
                     </div>
                     <TipTap
                       value={formData.content}
                       stickyTop="top-48"
                       onChange={handleContentChange}
-                      placeholder={t("community.posts.create.content_placeholder")}
+                      placeholder="Write your post content here..."
                     />
                     <p className="text-xs text-muted-foreground">
-                      {t("community.posts.create.content_max", { max: MAX_CONTENT_LENGTH.toString() })}
+                      Maximum {MAX_CONTENT_LENGTH} characters
                     </p>
                   </div>
                 </CardContent>
@@ -499,15 +497,15 @@ export default function EditCommunityPostPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    {t("community.posts.create.topic")}
+                    Topic
                   </CardTitle>
                   <CardDescription>
-                    {t("community.posts.create.topic_desc")}
+                    Select a topic for your post
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="topic">{t("community.posts.create.topic")} ({t("general_use.optional")})</Label>
+                    <Label htmlFor="topic">Topic (Optional)</Label>
                     <Select
                       value={formData.communityTopics?.$id || ''}
                       onValueChange={(value) => {
@@ -516,7 +514,7 @@ export default function EditCommunityPostPage() {
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t("community.posts.create.topic_placeholder")} />
+                        <SelectValue placeholder="Select a topic" />
                       </SelectTrigger>
                       <SelectContent>
                         {topics.map((topic) => (
@@ -528,7 +526,7 @@ export default function EditCommunityPostPage() {
                     </Select>
                     {topics.length === 0 && (
                       <p className="text-xs text-muted-foreground">
-                        {t("community.posts.create.no_topics")}
+                        No topics available
                       </p>
                     )}
                   </div>
@@ -540,18 +538,18 @@ export default function EditCommunityPostPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Hash className="h-4 w-4" />
-                    {t("community.posts.create.tags")}
+                    Tags
                   </CardTitle>
                   <CardDescription>
-                    {t("community.posts.create.tags_desc", { max: MAX_TAG_LENGTH.toString() })}
+                    Add tags (max {MAX_TAG_LENGTH} characters each)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label>{t("community.posts.create.add_tags")}</Label>
+                      <Label>Add Tags</Label>
                       <Input
-                        placeholder={t("community.posts.create.tags_placeholder", { max: MAX_TAG_LENGTH.toString() })}
+                        placeholder={`Enter tag (max ${MAX_TAG_LENGTH} chars) and press Enter`}
                         maxLength={MAX_TAG_LENGTH}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -565,14 +563,14 @@ export default function EditCommunityPostPage() {
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
-                        {t("community.posts.create.tags_help")}
+                        Press Enter to add a tag. Maximum 10 tags allowed.
                       </p>
                     </div>
 
                     {/* Display current tags */}
                     {formData.tags.length > 0 && (
                       <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">{t("community.posts.create.current_tags")}</Label>
+                        <Label className="text-sm text-muted-foreground">Current Tags</Label>
                         <div className="flex flex-wrap gap-2">
                           {formData.tags.map((tag, index) => (
                             <Badge
@@ -602,11 +600,11 @@ export default function EditCommunityPostPage() {
               {/* Post Settings */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("community.posts.edit.settings", { defaultValue: "Post Settings" })}</CardTitle>
+                  <CardTitle>Post Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>{t("community.posts.create.status")}</Label>
+                    <Label>Status</Label>
                     <Select
                       value={formData.status}
                       onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
@@ -615,10 +613,10 @@ export default function EditCommunityPostPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">{t("status.pending")}</SelectItem>
-                        <SelectItem value="approved">{t("status.approved")}</SelectItem>
-                        <SelectItem value="rejected">{t("status.rejected")}</SelectItem>
-                        <SelectItem value="archived">{t("status.archived")}</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -631,7 +629,7 @@ export default function EditCommunityPostPage() {
                         onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPinned: checked as boolean }))}
                       />
                       <Label htmlFor="isPinned" className="cursor-pointer">
-                        {t("community.posts.edit.pin_post", { defaultValue: "Pin Post" })}
+                        Pin Post
                       </Label>
                     </div>
 
@@ -642,7 +640,7 @@ export default function EditCommunityPostPage() {
                         onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isLocked: checked as boolean }))}
                       />
                       <Label htmlFor="isLocked" className="cursor-pointer">
-                        {t("community.posts.edit.lock_post", { defaultValue: "Lock Post" })}
+                        Lock Post
                       </Label>
                     </div>
 
@@ -653,18 +651,18 @@ export default function EditCommunityPostPage() {
                         onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked as boolean }))}
                       />
                       <Label htmlFor="isFeatured" className="cursor-pointer">
-                        {t("community.posts.edit.feature_post", { defaultValue: "Feature Post" })}
+                        Feature Post
                       </Label>
                     </div>
                   </div>
 
                   {formData.author && (
                     <div className="space-y-2">
-                      <Label>{t("community.posts.create.author")}</Label>
+                      <Label>Author</Label>
                       <Input
                         value={formData.author}
                         onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                        placeholder={t("community.posts.create.author_placeholder")}
+                        placeholder="Author name"
                         maxLength={100}
                       />
                     </div>
@@ -680,7 +678,7 @@ export default function EditCommunityPostPage() {
               <div className="text-sm text-muted-foreground">
                 {contentLength > 0 && (
                   <span>
-                    {t("community.posts.create.characters_count", { current: contentLength.toString(), max: MAX_CONTENT_LENGTH.toString() })}
+                    {contentLength} / {MAX_CONTENT_LENGTH} characters
                   </span>
                 )}
               </div>
@@ -688,13 +686,13 @@ export default function EditCommunityPostPage() {
                 <Button variant="outline" type="button" size="lg" asChild>
                   <Link href={`/auth/community/community-posts/${postId}`}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    {t("general_use.cancel")}
+                    Cancel
                   </Link>
                 </Button>
                 <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   <Save className="h-4 w-4 mr-2" />
-                  {t("general_use.save")}
+                  Save
                 </Button>
               </div>
             </div>

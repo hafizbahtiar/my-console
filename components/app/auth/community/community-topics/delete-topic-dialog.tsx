@@ -11,7 +11,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CommunityTopic } from "./types";
-import { useTranslation } from "@/lib/language-context";
 
 interface DeleteTopicDialogProps {
     open: boolean;
@@ -26,27 +25,25 @@ export function DeleteTopicDialog({
     topic,
     onConfirm,
 }: DeleteTopicDialogProps) {
-    const { t } = useTranslation();
-
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{t("community.topics.delete_title")}</AlertDialogTitle>
+                    <AlertDialogTitle>Delete Topic</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {t("community.topics.delete_confirmation", { name: topic?.name || '' })}
-                        {topic?.postCount ? ` ${t("community.topics.has_posts", { count: topic.postCount.toString() })}` : ''}
+                        Are you sure you want to delete "{topic?.name || ''}"? This action cannot be undone.
+                        {topic?.postCount ? ` This topic has ${topic.postCount} post${topic.postCount !== 1 ? 's' : ''}.` : ''}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => onOpenChange(false)}>
-                        {t("general_use.cancel")}
+                        Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirm}
                         className="bg-red-600 hover:bg-red-700"
                     >
-                        {t("general_use.delete")}
+                        Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

@@ -11,7 +11,6 @@ import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { IconPicker } from "./icon-picker";
 import { TopicFormData, CommunityTopic } from "./types";
-import { useTranslation } from "@/lib/language-context";
 import { generateSlug, generateUniqueSlug, getAvailableParents } from "./utils";
 
 interface TopicFormProps {
@@ -31,7 +30,6 @@ export function TopicForm({
     onNameChange,
     mode = 'create'
 }: TopicFormProps) {
-    const { t } = useTranslation();
     const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
     const handleNameChange = (name: string) => {
@@ -100,19 +98,19 @@ export function TopicForm({
         <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'name' : 'edit-name'} className="text-right">
-                    {t("general_use.name")} *
+                    Name *
                 </Label>
                 <Input
                     id={mode === 'create' ? 'name' : 'edit-name'}
                     value={formData.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     className="col-span-3"
-                    placeholder={t("community.topics.name_placeholder")}
+                    placeholder="Enter topic name"
                 />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'slug' : 'edit-slug'} className="text-right">
-                    {t("community.topics.slug")}
+                    Slug
                 </Label>
                 <div className="col-span-3 space-y-1">
                     <Input
@@ -130,7 +128,7 @@ export function TopicForm({
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
                 <Label htmlFor={mode === 'create' ? 'description' : 'edit-description'} className="text-right pt-2">
-                    {t("general_use.description")}
+                    Description
                 </Label>
                 <div className="col-span-3 space-y-2">
                     <div className="flex items-center gap-2">
@@ -139,7 +137,7 @@ export function TopicForm({
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                             className="flex-1"
-                            placeholder={t("community.topics.description_placeholder")}
+                            placeholder="Enter topic description"
                             rows={3}
                         />
                         <Button
@@ -155,21 +153,21 @@ export function TopicForm({
                             ) : (
                                 <Sparkles className="h-4 w-4" />
                             )}
-                            {isGeneratingDescription ? t('ai.generating') : t('ai.generate_with_ai')}
+                            {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
                         </Button>
                     </div>
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'parent' : 'edit-parent'} className="text-right">
-                    {t("community.topics.parent_topic")}
+                    Parent Topic
                 </Label>
                 <Select value={formData.parentId} onValueChange={(value) => setFormData(prev => ({ ...prev, parentId: value }))}>
                     <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder={t("community.topics.no_parent")} />
+                        <SelectValue placeholder="No parent" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="none">{t("community.topics.no_parent")}</SelectItem>
+                        <SelectItem value="none">No parent</SelectItem>
                         {availableParents.map((topic) => (
                             <SelectItem key={topic.$id} value={topic.$id}>
                                 {topic.name}
@@ -180,7 +178,7 @@ export function TopicForm({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'color' : 'edit-color'} className="text-right">
-                    {t("community.topics.color")}
+                    Color
                 </Label>
                 <div className="col-span-3 flex items-center gap-2">
                     <Input
@@ -200,7 +198,7 @@ export function TopicForm({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'icon' : 'edit-icon'} className="text-right">
-                    {t("community.topics.icon")}
+                    Icon
                 </Label>
                 <div className="col-span-3">
                     <IconPicker
@@ -212,7 +210,7 @@ export function TopicForm({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor={mode === 'create' ? 'displayOrder' : 'edit-displayOrder'} className="text-right">
-                    {t("community.topics.display_order")}
+                    Display Order
                 </Label>
                 <Input
                     id={mode === 'create' ? 'displayOrder' : 'edit-displayOrder'}
@@ -225,20 +223,20 @@ export function TopicForm({
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
                 <Label htmlFor={mode === 'create' ? 'rules' : 'edit-rules'} className="text-right pt-2">
-                    {t("community.topics.rules")}
+                    Rules
                 </Label>
                 <Textarea
                     id={mode === 'create' ? 'rules' : 'edit-rules'}
                     value={formData.rules}
                     onChange={(e) => setFormData(prev => ({ ...prev, rules: e.target.value }))}
                     className="col-span-3"
-                    placeholder={t("community.topics.rules_placeholder")}
+                    placeholder="Enter topic rules and guidelines"
                     rows={4}
                     maxLength={2000}
                 />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">{t("general_use.status")}</Label>
+                <Label className="text-right">Status</Label>
                 <div className="col-span-3 space-y-3">
                     <div className="flex items-center space-x-2">
                         <Checkbox
@@ -247,7 +245,7 @@ export function TopicForm({
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked as boolean }))}
                         />
                         <Label htmlFor={mode === 'create' ? 'isActive' : 'edit-isActive'} className="cursor-pointer">
-                            {t("community.topics.active")}
+                            Active
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -257,7 +255,7 @@ export function TopicForm({
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked as boolean }))}
                         />
                         <Label htmlFor={mode === 'create' ? 'isPublic' : 'edit-isPublic'} className="cursor-pointer">
-                            {t("community.topics.public")}
+                            Public
                         </Label>
                     </div>
                 </div>

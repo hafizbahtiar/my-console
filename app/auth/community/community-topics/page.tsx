@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import { tablesDB, DATABASE_ID, COMMUNITY_TOPICS_COLLECTION_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
 import { createPaginationParams, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { AccessControl } from "@/components/app/auth/community/community-topics/access-control";
 import { TopicForm } from "@/components/app/auth/community/community-topics/topic-form";
@@ -36,7 +35,6 @@ import { generateSlug, generateUniqueSlug } from "@/components/app/auth/communit
 
 export default function CommunityTopicsPage() {
     const { user } = useAuth();
-    const { t } = useTranslation();
     const router = useRouter();
 
     // Main component state
@@ -99,8 +97,8 @@ export default function CommunityTopicsPage() {
             setError(null);
         } catch (error) {
             console.error('Failed to load topics:', error);
-            setError(t('general_use.error'));
-            toast.error(t('general_use.error'));
+            setError("Error");
+            toast.error("Error");
             throw error;
         } finally {
             setIsRefreshing(false);
@@ -119,7 +117,7 @@ export default function CommunityTopicsPage() {
                 await loadTopics();
             } catch (error) {
                 console.error('Failed to load data:', error);
-                setError('Failed to load community topics');
+                setError("Failed to load community topics");
             } finally {
                 setIsLoading(false);
             }
@@ -130,7 +128,7 @@ export default function CommunityTopicsPage() {
 
     const handleCreateTopic = async () => {
         if (!formData.name.trim()) {
-            toast.error(t('item_is_required', { item: 'Topic name' }));
+            toast.error("Name is required");
             return;
         }
 
@@ -175,13 +173,13 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success(t('general_use.success'));
+            toast.success("Topic created successfully");
             setCreateDialogOpen(false);
             resetForm();
             await loadTopics();
         } catch (error) {
             console.error('Failed to create topic:', error);
-            toast.error(t('general_use.error'));
+            toast.error("Error");
         } finally {
             setIsSubmitting(false);
         }
@@ -189,7 +187,7 @@ export default function CommunityTopicsPage() {
 
     const handleEditTopic = async () => {
         if (!selectedTopic || !formData.name.trim()) {
-            toast.error(t('item_is_required', { item: 'Topic name' }));
+            toast.error("Name is required");
             return;
         }
 
@@ -241,14 +239,14 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success(t('general_use.success'));
+            toast.success("Topic updated successfully");
             setEditDialogOpen(false);
             setSelectedTopic(null);
             resetForm();
             await loadTopics();
         } catch (error) {
             console.error('Failed to update topic:', error);
-            toast.error(t('general_use.error'));
+            toast.error("Error");
         } finally {
             setIsSubmitting(false);
         }
@@ -278,13 +276,13 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success(t('general_use.success'));
+            toast.success("Topic deleted successfully");
             setDeleteDialogOpen(false);
             setTopicToDelete(null);
             await loadTopics();
         } catch (error) {
             console.error('Failed to delete topic:', error);
-            toast.error(t('general_use.error'));
+            toast.error("Error");
         }
     };
 
@@ -338,9 +336,9 @@ export default function CommunityTopicsPage() {
             <div className="flex-1 space-y-4 p-4 pt-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{t("community.topics.title")}</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">Community Topics</h1>
                         <p className="text-muted-foreground">
-                            {t("community.topics.subtitle")}
+                            Manage discussion topics for your community
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -350,20 +348,20 @@ export default function CommunityTopicsPage() {
                             disabled={isRefreshing}
                         >
                             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            {t("general_use.refresh")}
+                            Refresh
                         </Button>
                         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    {t("general_use.create")}
+                                    Create
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
-                                    <DialogTitle>{t("community.topics.create_title")}</DialogTitle>
+                                    <DialogTitle>Create New Topic</DialogTitle>
                                     <DialogDescription>
-                                        {t("community.topics.create_description")}
+                                        Create a new discussion topic for your community
                                     </DialogDescription>
                                 </DialogHeader>
                                 <TopicForm
@@ -374,11 +372,11 @@ export default function CommunityTopicsPage() {
                                 />
                                 <DialogFooter>
                                     <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                                        {t("general_use.cancel")}
+                                        Cancel
                                     </Button>
                                     <Button onClick={handleCreateTopic} disabled={isSubmitting}>
                                         {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                                        {t("general_use.create")}
+                                        Create
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -390,14 +388,10 @@ export default function CommunityTopicsPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <MessageSquare className="h-5 w-5" />
-                            {t("community.topics.title")} ({allTopics.length})
+                            Community Topics ({allTopics.length})
                         </CardTitle>
                         <CardDescription>
-                            {t("general_use.showing_entries_paginated", {
-                                showing: topics.length.toString(),
-                                filtered: allTopics.length.toString(),
-                                total: allTopics.length.toString()
-                            })}
+                            Showing {topics.length} of {allTopics.length} entries (Total: {allTopics.length})
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -417,9 +411,9 @@ export default function CommunityTopicsPage() {
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>{t("community.topics.edit_title")}</DialogTitle>
+                            <DialogTitle>Edit Topic</DialogTitle>
                             <DialogDescription>
-                                {t("community.topics.edit_description")}
+                                Update the topic information
                             </DialogDescription>
                         </DialogHeader>
                         <TopicForm
@@ -431,11 +425,11 @@ export default function CommunityTopicsPage() {
                         />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                                {t("general_use.cancel")}
+                                Cancel
                             </Button>
                             <Button onClick={handleEditTopic} disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                                {t("general_use.update")}
+                                Update
                             </Button>
                         </DialogFooter>
                     </DialogContent>

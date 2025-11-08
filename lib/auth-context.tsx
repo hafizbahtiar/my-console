@@ -123,7 +123,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Create new email/password session
-      await account.createEmailPasswordSession({ email, password })
+      const session = await account.createEmailPasswordSession({ email, password })
+
+      // Update session manager
+      try {
+        const { getSessionManager } = await import('@/lib/session-manager')
+        const manager = getSessionManager()
+        manager.updateSession(session)
+      } catch (error) {
+        // Session manager initialization is optional
+        console.warn('Failed to update session manager:', error)
+      }
 
       // Update user state
       await checkUser()
@@ -143,6 +153,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
+      // Clear session manager
+      try {
+        const { getSessionManager } = await import('@/lib/session-manager')
+        const manager = getSessionManager()
+        manager.clear()
+      } catch (error) {
+        // Session manager cleanup is optional
+        console.warn('Failed to clear session manager:', error)
+      }
+
       await account.deleteSession({ sessionId: 'current' })
       setUser(null)
     } catch (error: any) {
@@ -164,10 +184,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshSession = async () => {
     try {
-      await checkUser()
+      // Use session manager if available
+      const { getSessionManager } = await import('@/lib/session-manager')
+      const manager = getSessionManager()
+      
+      const refreshed = await manager.refresh()
+      if (refreshed) {
+        await checkUser()
+      } else {
+        setUser(null)
+      }
     } catch (error: any) {
-      console.warn('Failed to refresh session:', error.message)
-      setUser(null)
+      // Fallback to basic check
+      try {
+        await checkUser()
+      } catch (fallbackError: any) {
+        console.warn('Failed to refresh session:', fallbackError.message)
+        setUser(null)
+      }
     }
   }
 

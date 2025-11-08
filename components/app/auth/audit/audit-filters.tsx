@@ -1,6 +1,5 @@
 "use client"
 
-import { useTranslation } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -60,27 +59,26 @@ export function AuditFilters({
   uniqueActions,
   uniqueResources
 }: AuditFiltersProps) {
-  const { t } = useTranslation()
-
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            {t('audit.filters_search')}
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Filter className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+            Search & Filters
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex-1 sm:flex-initial"
             >
-              {showAdvancedFilters ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-              {t('audit.advanced')}
+              {showAdvancedFilters ? <ChevronUp className="h-4 w-4 mr-1 shrink-0" /> : <ChevronDown className="h-4 w-4 mr-1 shrink-0" />}
+              <span className="truncate">Advanced</span>
             </Button>
             <Select value={exportFormat} onValueChange={setExportFormat}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-20 sm:w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -88,52 +86,53 @@ export function AuditFilters({
                 <SelectItem value="json">JSON</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={onExport} disabled={filteredLogsCount === 0}>
-              <Download className="h-4 w-4 mr-2" />
-              {t('audit.export')}
+            <Button onClick={onExport} disabled={filteredLogsCount === 0} size="sm" className="flex-1 sm:flex-initial">
+              <Download className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate">Export</span>
             </Button>
-            <Button onClick={onComplianceReport} variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              {t('audit.compliance_report')}
+            <Button onClick={onComplianceReport} variant="outline" size="sm" className="flex-1 sm:flex-initial">
+              <FileText className="h-4 w-4 mr-2 shrink-0" />
+              <span className="truncate hidden sm:inline">Compliance Report</span>
+              <span className="truncate sm:hidden">Report</span>
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
         {/* Basic Filters */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="flex-1">
+        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
+          <div className="flex-1 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground shrink-0" />
               <Input
-                placeholder={t('audit.search_placeholder')}
+                placeholder="Search logs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
           </div>
 
           <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder={t('audit.all_actions')} />
+            <SelectTrigger className="w-full sm:w-40 text-sm">
+              <SelectValue placeholder="All Actions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('audit.all_actions')}</SelectItem>
+              <SelectItem value="all">All Actions</SelectItem>
               {uniqueActions.map(action => (
-                <SelectItem key={action} value={action}>{action}</SelectItem>
+                <SelectItem key={action} value={action} className="text-sm">{action}</SelectItem>
               ))}
             </SelectContent>
           </Select>
 
           <Select value={resourceFilter} onValueChange={setResourceFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder={t('audit.all_resources')} />
+            <SelectTrigger className="w-full sm:w-40 text-sm">
+              <SelectValue placeholder="All Resources" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('audit.all_resources')}</SelectItem>
+              <SelectItem value="all">All Resources</SelectItem>
               {uniqueResources.map(resource => (
-                <SelectItem key={resource} value={resource}>{resource}</SelectItem>
+                <SelectItem key={resource} value={resource} className="text-sm">{resource}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -142,65 +141,68 @@ export function AuditFilters({
         {/* Advanced Filters */}
         {showAdvancedFilters && (
           <div className="border-t pt-4 space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:flex-wrap">
               {/* Date Range */}
-              <div className="flex gap-2 items-center">
-                <span className="text-sm font-medium">{t('audit.date_range')}</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      {dateRange.from ? dateRange.from.toLocaleDateString() : t('audit.from')}
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center flex-1 min-w-0">
+                <span className="text-xs sm:text-sm font-medium shrink-0">Date Range</span>
+                <div className="flex flex-wrap gap-2 items-center flex-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                        <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+                        <span className="truncate">{dateRange.from ? dateRange.from.toLocaleDateString() : 'From'}</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.from}
+                        onSelect={(date) => setDateRange({ ...dateRange, from: date })}
+                        autoFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-xs sm:text-sm text-muted-foreground shrink-0">To</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="flex-1 sm:flex-initial text-xs sm:text-sm">
+                        <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 shrink-0" />
+                        <span className="truncate">{dateRange.to ? dateRange.to.toLocaleDateString() : 'To'}</span>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.to}
+                        onSelect={(date) => setDateRange({ ...dateRange, to: date })}
+                        autoFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {(dateRange.from || dateRange.to) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDateRange({})}
+                      className="text-xs sm:text-sm"
+                    >
+                      Clear
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateRange.from}
-                      onSelect={(date) => setDateRange({ ...dateRange, from: date })}
-                      autoFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <span className="text-muted-foreground">{t('audit.to')}</span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <CalendarIcon className="h-4 w-4 mr-2" />
-                      {dateRange.to ? dateRange.to.toLocaleDateString() : t('audit.to')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateRange.to}
-                      onSelect={(date) => setDateRange({ ...dateRange, to: date })}
-                      autoFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {(dateRange.from || dateRange.to) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDateRange({})}
-                  >
-                    {t('audit.clear')}
-                  </Button>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Severity Filter */}
               <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder={t('audit.severity')} />
+                <SelectTrigger className="w-full sm:w-32 text-sm">
+                  <SelectValue placeholder="Severity" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('audit.all_severity')}</SelectItem>
-                  <SelectItem value="low">{t('audit.low')}</SelectItem>
-                  <SelectItem value="medium">{t('audit.medium')}</SelectItem>
-                  <SelectItem value="high">{t('audit.high')}</SelectItem>
-                  <SelectItem value="critical">{t('audit.critical')}</SelectItem>
+                  <SelectItem value="all" className="text-sm">All Severity</SelectItem>
+                  <SelectItem value="low" className="text-sm">Low</SelectItem>
+                  <SelectItem value="medium" className="text-sm">Medium</SelectItem>
+                  <SelectItem value="high" className="text-sm">High</SelectItem>
+                  <SelectItem value="critical" className="text-sm">Critical</SelectItem>
                 </SelectContent>
               </Select>
             </div>

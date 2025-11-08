@@ -41,13 +41,12 @@ import {
   BLOG_LIKES_COLLECTION_ID
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { useTranslation } from "@/lib/language-context";
+import { SafeHTML } from "@/components/ui/safe-html";
 
 
 
 export default function ViewBlogPostPage() {
   const { user } = useAuth();
-  const { t } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -399,7 +398,7 @@ export default function ViewBlogPostPage() {
         return category?.name || post.blogCategories;
       }
     }
-    return t("general_use.uncategorized", { defaultValue: "Uncategorized" });
+    return "Uncategorized";
   };
 
   const getTagNames = (tagIds: string[]) => {
@@ -424,14 +423,14 @@ export default function ViewBlogPostPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">{t("general_use.error")}</CardTitle>
+            <CardTitle className="text-destructive">Error</CardTitle>
             <CardDescription>
-              {error || t("blog.view.post_not_found")}
+              {error || "Blog post not found"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/auth/blog/blog-posts">{t("blog.posts.back_to_posts")}</Link>
+              <Link href="/auth/blog/blog-posts">Back to Posts</Link>
             </Button>
           </CardContent>
         </Card>
@@ -473,12 +472,12 @@ export default function ViewBlogPostPage() {
                 <StatusBadge status={post.status} type="blog-post" />
               </div>
               <div className="text-sm text-muted-foreground">
-                {t("general_use.updated")}: {new Date(post.$updatedAt).toLocaleDateString()}
+                Updated: {new Date(post.$updatedAt).toLocaleDateString()}
               </div>
               <Button asChild>
                 <Link href={`/auth/blog/blog-posts/${postId}/edit`}>
                   <Edit className="h-4 w-4 mr-2" />
-                  {t("blog.view.edit_post")}
+                  Edit Post
                 </Link>
               </Button>
             </div>
@@ -497,7 +496,7 @@ export default function ViewBlogPostPage() {
                   : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
             >
-              {t("blog.view.content_tab")}
+              Content
             </button>
             <button
               onClick={() => setActiveTab('comments')}
@@ -507,7 +506,7 @@ export default function ViewBlogPostPage() {
                 }`}
             >
               <MessageSquare className="h-4 w-4" />
-              {t("blog.view.comments_tab")} ({comments.length})
+              Comments ({comments.length})
             </button>
             <button
               onClick={() => setActiveTab('analytics')}
@@ -517,7 +516,7 @@ export default function ViewBlogPostPage() {
                 }`}
             >
               <BarChart3 className="h-4 w-4" />
-              {t("blog.view.analytics_tab")}
+              Analytics
             </button>
           </div>
         </div>
@@ -546,53 +545,53 @@ export default function ViewBlogPostPage() {
             {/* Metadata Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.author")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Author</p>
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4" />
                   <span className="font-medium">{post.author}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.category")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</p>
                 <p className="font-medium">{getCategoryName(post)}</p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.read_time")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Read Time</p>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   <span className="font-medium">{post.readTime}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.published_date")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Published Date</p>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span className="font-medium">
-                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : t("blog.view.not_published")}
+                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : "Not Published"}
                   </span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.views")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Views</p>
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4" />
                   <span className="font-medium">{post.views}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.likes")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Likes</p>
                 <div className="flex items-center gap-2">
                   <Heart className="h-4 w-4" />
                   <span className="font-medium">{post.likes}</span>
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("general_use.status")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
                 <StatusBadge status={post.status} type="blog-post" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.featured")}</p>
-                <p className="font-medium">{post.isFeatured ? t("general_use.yes") : t("general_use.no")}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Featured</p>
+                <p className="font-medium">{post.isFeatured ? "Yes" : "No"}</p>
               </div>
             </div>
 
@@ -601,7 +600,7 @@ export default function ViewBlogPostPage() {
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                   <Tag className="h-4 w-4" />
-                  {t("blog.view.tags")}
+                  Tags
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {post.blogTags.map((tag: any) => (
@@ -616,21 +615,21 @@ export default function ViewBlogPostPage() {
             {/* SEO Information */}
             {(post.seoTitle || post.seoDescription || post.seoKeywords.length > 0) && (
               <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.seo_info")}</h4>
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">SEO Information</h4>
                 <div className="space-y-2 text-sm">
                   {post.seoTitle && (
                     <div>
-                      <span className="font-medium">{t("blog.view.seo_title_label")}</span> {post.seoTitle}
+                      <span className="font-medium">SEO Title:</span> {post.seoTitle}
                     </div>
                   )}
                   {post.seoDescription && (
                     <div>
-                      <span className="font-medium">{t("blog.view.seo_desc_label")}</span> {post.seoDescription}
+                      <span className="font-medium">SEO Description:</span> {post.seoDescription}
                     </div>
                   )}
                   {post.seoKeywords.length > 0 && (
                     <div>
-                      <span className="font-medium">{t("blog.view.seo_keywords_label")}</span>{' '}
+                      <span className="font-medium">SEO Keywords:</span>{' '}
                       <div className="inline-flex flex-wrap gap-1 mt-1">
                         {post.seoKeywords.map((keyword, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
@@ -646,18 +645,18 @@ export default function ViewBlogPostPage() {
 
             {/* Content */}
             <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.content")}</h4>
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Content</h4>
               <div className="border rounded-lg p-6 bg-background prose prose-sm max-w-none dark:prose-invert">
-                <div dangerouslySetInnerHTML={{ __html: post.content }} />
+                <SafeHTML html={post.content} />
               </div>
             </div>
 
             {/* Related Posts */}
             {post.relatedPosts.length > 0 && (
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t("blog.view.related_posts")}</h4>
+                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Related Posts</h4>
                 <div className="text-sm text-muted-foreground">
-                  {t("blog.view.related_posts_count", { count: post.relatedPosts.length.toString() })}
+                  {post.relatedPosts.length} related post{post.relatedPosts.length !== 1 ? 's' : ''}
                 </div>
               </div>
             )}
@@ -670,20 +669,20 @@ export default function ViewBlogPostPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t("blog.view.total_views")}</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Views</CardTitle>
                   <Eye className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{viewAnalytics?.totalViews || 0}</div>
                   <p className="text-xs text-muted-foreground">
-                    {t("blog.view.unique_views", { count: viewAnalytics?.uniqueViews.toString() || '0' })}
+                    {viewAnalytics?.uniqueViews || 0} unique views
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t("blog.view.total_likes")}</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Likes</CardTitle>
                   <Heart className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -696,22 +695,22 @@ export default function ViewBlogPostPage() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t("blog.view.top_referrer")}</CardTitle>
+                  <CardTitle className="text-sm font-medium">Top Referrer</CardTitle>
                   <Globe className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {viewAnalytics?.topReferrers[0]?.source || t("blog.view.direct_traffic")}
+                    {viewAnalytics?.topReferrers[0]?.source || "Direct Traffic"}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("blog.view.views_count", { count: viewAnalytics?.topReferrers[0]?.count.toString() || '0' })}
+                    {viewAnalytics?.topReferrers[0]?.count || 0} views
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{t("blog.view.engagement_rate")}</CardTitle>
+                  <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -720,7 +719,7 @@ export default function ViewBlogPostPage() {
                       Math.round(((likeAnalytics?.activeLikes || 0) / viewAnalytics.totalViews) * 100) : 0}%
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("blog.view.likes_per_view")}
+                    Likes per view
                   </p>
                 </CardContent>
               </Card>
@@ -731,8 +730,8 @@ export default function ViewBlogPostPage() {
               {/* View Sources */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t("blog.view.traffic_sources")}</CardTitle>
-                  <CardDescription>{t("blog.view.traffic_sources_desc")}</CardDescription>
+                  <CardTitle className="text-lg">Traffic Sources</CardTitle>
+                  <CardDescription>Top sources of traffic to this post</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {viewAnalytics?.topReferrers.length ? (
@@ -755,7 +754,7 @@ export default function ViewBlogPostPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{t("blog.view.no_view_data")}</p>
+                    <p className="text-sm text-muted-foreground">No view data available</p>
                   )}
                 </CardContent>
               </Card>
@@ -763,8 +762,8 @@ export default function ViewBlogPostPage() {
               {/* Geographic Data */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t("blog.view.geographic_dist")}</CardTitle>
-                  <CardDescription>{t("blog.view.geographic_dist_desc")}</CardDescription>
+                  <CardTitle className="text-lg">Geographic Distribution</CardTitle>
+                  <CardDescription>Views by country</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {viewAnalytics?.geographic.length ? (
@@ -772,12 +771,12 @@ export default function ViewBlogPostPage() {
                       {viewAnalytics.geographic.slice(0, 5).map((geo, index) => (
                         <div key={index} className="flex items-center justify-between">
                           <span className="text-sm">{geo.country}</span>
-                          <span className="text-sm font-medium">{t("blog.view.views_count", { count: geo.count.toString() })}</span>
+                          <span className="text-sm font-medium">{geo.count} views</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{t("blog.view.no_geographic_data")}</p>
+                    <p className="text-sm text-muted-foreground">No geographic data available</p>
                   )}
                 </CardContent>
               </Card>
@@ -785,8 +784,8 @@ export default function ViewBlogPostPage() {
               {/* Like Types */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t("blog.view.like_dist")}</CardTitle>
-                  <CardDescription>{t("blog.view.like_dist_desc")}</CardDescription>
+                  <CardTitle className="text-lg">Like Distribution</CardTitle>
+                  <CardDescription>Distribution of like types</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {likeAnalytics?.likeTypes.length ? (
@@ -799,7 +798,7 @@ export default function ViewBlogPostPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{t("blog.view.no_like_data")}</p>
+                    <p className="text-sm text-muted-foreground">No like data available</p>
                   )}
                 </CardContent>
               </Card>
@@ -807,14 +806,14 @@ export default function ViewBlogPostPage() {
               {/* Recent Activity */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t("blog.view.recent_activity")}</CardTitle>
-                  <CardDescription>{t("blog.view.recent_activity_desc")}</CardDescription>
+                  <CardTitle className="text-lg">Recent Activity</CardTitle>
+                  <CardDescription>Latest views and likes</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {viewAnalytics?.recentViews.slice(0, 3).map((view, index) => (
                       <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{t("blog.view.view_label")}</span>
+                        <span className="text-muted-foreground">View</span>
                         <span>{new Date(view.timestamp).toLocaleDateString()}</span>
                       </div>
                     ))}
@@ -825,7 +824,7 @@ export default function ViewBlogPostPage() {
                       </div>
                     ))}
                     {(!viewAnalytics?.recentViews.length && !likeAnalytics?.recentLikes.length) && (
-                      <p className="text-sm text-muted-foreground">{t("blog.view.no_recent_activity")}</p>
+                      <p className="text-sm text-muted-foreground">No recent activity</p>
                     )}
                   </div>
                 </CardContent>
@@ -841,12 +840,12 @@ export default function ViewBlogPostPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  {t("blog.view.comments_title", { count: comments.length.toString() })}
+                  Comments ({comments.length})
                 </CardTitle>
                 <CardDescription>
                   {post.allowComments
-                    ? t("blog.view.comments_enabled")
-                    : t("blog.view.comments_disabled")
+                    ? "Comments are enabled for this post"
+                    : "Comments are disabled for this post"
                   }
                 </CardDescription>
               </CardHeader>
@@ -857,7 +856,7 @@ export default function ViewBlogPostPage() {
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
-                    {t("blog.view.comments_disabled_message")}
+                    Comments are disabled for this post
                   </p>
                 </CardContent>
               </Card>
@@ -865,7 +864,7 @@ export default function ViewBlogPostPage() {
               <Card>
                 <CardContent className="pt-6">
                   <p className="text-center text-muted-foreground">
-                    {t("blog.view.no_comments")}
+                    No comments yet
                   </p>
                 </CardContent>
               </Card>
@@ -885,7 +884,6 @@ export default function ViewBlogPostPage() {
 
 // Recursive comment component
 function CommentItem({ comment, depth }: { comment: BlogComment; depth: number }) {
-  const { t } = useTranslation();
   const maxDepth = 3;
 
   return (
@@ -902,7 +900,7 @@ function CommentItem({ comment, depth }: { comment: BlogComment; depth: number }
                   <p className="font-semibold text-sm">{comment.author}</p>
                   {comment.authorId && (
                     <Badge variant="outline" className="text-xs">
-                      {t("blog.view.verified_author")}
+                      Verified Author
                     </Badge>
                   )}
                 </div>
@@ -919,7 +917,7 @@ function CommentItem({ comment, depth }: { comment: BlogComment; depth: number }
             </div>
             {comment.depth > 0 && (
               <Badge variant="secondary" className="text-xs">
-                {t("blog.view.reply")}
+                Reply
               </Badge>
             )}
           </div>
@@ -944,7 +942,7 @@ function CommentItem({ comment, depth }: { comment: BlogComment; depth: number }
               {comment.replies && comment.replies.length > 0 && (
                 <div className="flex items-center gap-1">
                   <MessageSquare className="h-4 w-4" />
-                  <span>{comment.replies.length} {t("blog.view.replies")}</span>
+                  <span>{comment.replies.length} replies</span>
                 </div>
               )}
             </div>

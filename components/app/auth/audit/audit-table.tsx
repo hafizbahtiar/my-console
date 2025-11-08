@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTranslation } from "@/lib/language-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -47,8 +46,6 @@ interface AuditTableProps {
 }
 
 export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
-  const { t } = useTranslation()
-
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10) // Default to 10 items per page
@@ -98,17 +95,17 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
   const getActionDescription = (log: AuditLog) => {
     switch (log.action) {
       case 'USER_LOGIN':
-        return t('audit.user_logged_in')
+        return 'User logged in'
       case 'USER_LOGOUT':
-        return t('audit.user_logged_out')
+        return 'User logged out'
       case 'PROFILE_UPDATE':
-        return t('audit.profile_updated')
+        return 'Profile updated'
       case 'SETTINGS_CHANGE':
-        return t('audit.settings_changed')
+        return 'Settings changed'
       case 'SECURITY_EVENT':
-        return t('audit.security_event')
+        return 'Security event'
       default:
-        return t('audit.unknown_action')
+        return 'Unknown action'
     }
   }
 
@@ -134,63 +131,60 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-        <CardTitle>{t('audit.activity_log')}</CardTitle>
-        <CardDescription>
-              {t('general_use.showing_entries_paginated', {
-                showing: paginatedLogs.length.toString(),
-            filtered: filteredLogs.length.toString(),
-            total: totalLogs.toString()
-          })}
+      <CardHeader className="p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1 min-w-0 flex-1">
+            <CardTitle className="text-base sm:text-lg">Activity Log</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Showing {paginatedLogs.length} of {filteredLogs.length} entries (Total: {totalLogs})
         </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{t('audit.show')}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Show</span>
             <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="w-20">
+              <SelectTrigger className="w-16 sm:w-20 text-xs sm:text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {pageSizeOptions.map(size => (
-                  <SelectItem key={size} value={size.toString()}>
+                  <SelectItem key={size} value={size.toString()} className="text-xs sm:text-sm">
                     {size}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground">{t('audit.entries')}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">entries</span>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[500px] w-full">
+      <CardContent className="p-4 sm:p-6 pt-0">
+        <ScrollArea className="h-[400px] sm:h-[500px] w-full">
           <Accordion type="single" collapsible className="w-full space-y-2">
             {paginatedLogs.map((log) => (
               <AccordionItem
                 key={log.$id}
                 value={log.$id}
-                className="border border-border/50 rounded-lg px-4 hover:bg-muted/30 transition-colors"
+                className="border border-border/50 rounded-lg px-3 sm:px-4 hover:bg-muted/30 transition-colors"
               >
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center justify-between w-full mr-4">
-                    <div className="flex items-center gap-4 flex-1">
+                <AccordionTrigger className="hover:no-underline py-3 sm:py-4">
+                  <div className="flex items-center justify-between w-full mr-2 sm:mr-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                       {/* Action Icon & Badge */}
-                      <div className="flex items-center gap-2 min-w-0">
-                        {getActionIcon(log.action)}
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                        <div className="shrink-0">{getActionIcon(log.action)}</div>
                         <Badge
                           variant={getActionBadgeVariant(log.action)}
-                          className="text-xs px-2 py-1"
+                          className="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 whitespace-nowrap"
                         >
-                          {log.action.replace('_', ' ')}
+                          <span className="hidden sm:inline">{log.action.replace('_', ' ')}</span>
+                          <span className="sm:hidden">{log.action.split('_')[0]}</span>
                         </Badge>
                       </div>
 
                       {/* User */}
-                      <div className="hidden sm:block text-sm text-muted-foreground min-w-0">
+                      <div className="hidden md:block text-xs sm:text-sm text-muted-foreground shrink-0">
                         {log.userId === 'system' ? (
-                          <Badge variant="outline" className="text-xs">{t('audit.system')}</Badge>
+                          <Badge variant="outline" className="text-xs">System</Badge>
                         ) : (
                           <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                             {log.userId.slice(0, 8)}...
@@ -199,61 +193,71 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                       </div>
 
                       {/* Resource */}
-                      <div className="text-sm text-muted-foreground min-w-0 truncate">
+                      <div className="text-xs sm:text-sm text-muted-foreground min-w-0 truncate hidden sm:block">
                         {log.resource}
                       </div>
 
                       {/* Timestamp */}
-                      <div className="text-xs text-muted-foreground ml-auto">
-                        {formatTimestamp(log.$createdAt)}
+                      <div className="text-xs text-muted-foreground ml-auto shrink-0 text-right">
+                        <div className="hidden sm:block">{formatTimestamp(log.$createdAt)}</div>
+                        <div className="sm:hidden">{new Date(log.$createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="space-y-4">
+                <AccordionContent className="pb-3 sm:pb-4 pt-2">
+                  <div className="space-y-3 sm:space-y-4">
                     {/* Action Description */}
-                    <div className="text-sm">
+                    <div className="text-xs sm:text-sm">
                       <span className="font-medium">{getActionDescription(log)}</span>
                     </div>
 
                     <Separator />
 
                     {/* Detailed Information */}
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
                       {/* Basic Info */}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">{t('audit.resource_information')}</h4>
-                        <div className="space-y-1 text-xs">
-                          <div><strong>{t('audit.user_agent')}:</strong> {log.userAgent || 'N/A'}</div>
-                          <div><strong>{t('audit.ip_address')}:</strong> {log.ipAddress || 'N/A'}</div>
-                          <div><strong>{t('audit.session_id')}:</strong> {log.sessionId || 'N/A'}</div>
+                        <h4 className="text-xs sm:text-sm font-medium">Resource Information</h4>
+                        <div className="space-y-1.5 text-xs">
+                          <div className="break-words">
+                            <strong className="block mb-0.5">User Agent</strong>
+                            <span className="text-muted-foreground">{log.userAgent || 'N/A'}</span>
+                          </div>
+                          <div className="break-words">
+                            <strong className="block mb-0.5">IP Address</strong>
+                            <span className="text-muted-foreground">{log.ipAddress || 'N/A'}</span>
+                          </div>
+                          <div className="break-words">
+                            <strong className="block mb-0.5">Session ID</strong>
+                            <span className="text-muted-foreground font-mono text-xs">{log.sessionId || 'N/A'}</span>
+                          </div>
                         </div>
                       </div>
 
                       {/* Changes */}
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">{t('audit.changes_summary')}</h4>
+                        <h4 className="text-xs sm:text-sm font-medium">Changes Summary</h4>
                         <div className="space-y-2 text-xs">
                           {log.oldValues && (
                             <div>
-                              <div className="font-medium text-red-600">{t('audit.old_value')}:</div>
-                              <pre className="bg-red-50 dark:bg-red-950 p-2 rounded text-xs overflow-x-auto">
+                              <div className="font-medium text-red-600 mb-1">Old Value</div>
+                              <pre className="bg-red-50 dark:bg-red-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
                                 {JSON.stringify(parseJsonField(log.oldValues), null, 2)}
                               </pre>
                             </div>
                           )}
                           {log.newValues && (
                             <div>
-                              <div className="font-medium text-green-600">{t('audit.new_value')}:</div>
-                              <pre className="bg-green-50 dark:bg-green-950 p-2 rounded text-xs overflow-x-auto">
+                              <div className="font-medium text-green-600 mb-1">New Value</div>
+                              <pre className="bg-green-50 dark:bg-green-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
                                 {JSON.stringify(parseJsonField(log.newValues), null, 2)}
                               </pre>
                             </div>
                           )}
                           {!log.oldValues && !log.newValues && (
                             <div className="text-muted-foreground italic">
-                              {t('audit.no_changes')}
+                              No changes
                             </div>
                           )}
                         </div>
@@ -265,10 +269,10 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium">{t('audit.technical_details')}</h4>
+                          <h4 className="text-xs sm:text-sm font-medium">Technical Details</h4>
                           <div className="text-xs bg-muted p-2 rounded">
-                            <strong>{t('audit.metadata')}:</strong>
-                            <pre className="mt-1 overflow-x-auto">
+                            <strong className="block mb-1">Metadata</strong>
+                            <pre className="mt-1 overflow-x-auto max-h-[150px] sm:max-h-none">
                               {JSON.stringify(parseJsonField(log.metadata), null, 2)}
                             </pre>
                           </div>
@@ -284,13 +288,13 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-4">
+          <div className="flex justify-center mt-4 sm:mt-6">
             <Pagination>
-              <PaginationContent>
+              <PaginationContent className="flex-wrap gap-1 sm:gap-2">
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={`text-xs sm:text-sm ${currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                   />
                 </PaginationItem>
 
@@ -312,7 +316,7 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                       <PaginationLink
                         onClick={() => setCurrentPage(pageNumber)}
                         isActive={currentPage === pageNumber}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-xs sm:text-sm"
                       >
                         {pageNumber}
                       </PaginationLink>
@@ -328,7 +332,7 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                     <PaginationItem>
                       <PaginationLink
                         onClick={() => setCurrentPage(totalPages)}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-xs sm:text-sm"
                       >
                         {totalPages}
                       </PaginationLink>
@@ -339,7 +343,7 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    className={`text-xs sm:text-sm ${currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}`}
                   />
                 </PaginationItem>
               </PaginationContent>

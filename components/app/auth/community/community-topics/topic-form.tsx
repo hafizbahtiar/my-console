@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/language-context";
 import { IconPicker } from "./icon-picker";
 import { TopicFormData, CommunityTopic } from "./types";
 import { generateSlug, generateUniqueSlug, getAvailableParents } from "./utils";
@@ -30,6 +31,7 @@ export function TopicForm({
     onNameChange,
     mode = 'create'
 }: TopicFormProps) {
+    const { t } = useTranslation();
     const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
     const handleNameChange = (name: string) => {
@@ -48,13 +50,13 @@ export function TopicForm({
 
     const generateDescriptionWithAI = async () => {
         if (!formData.name.trim()) {
-            toast.error('Topic name is required for AI generation');
+            toast.error(t('community_topics_page.toast.name_required'));
             return;
         }
 
         const nameWords = formData.name.trim().split(/\s+/).length;
         if (nameWords <= 1) {
-            toast.error('Topic name must have more than 1 word for AI generation');
+            toast.error(t('community_topics_page.toast.name_required'));
             return;
         }
 
@@ -82,10 +84,10 @@ export function TopicForm({
                 description: data.excerpt
             }));
 
-            toast.success('Description generated successfully!');
+            toast.success(t('community_topics_page.toast.created_success'));
         } catch (error) {
             console.error('AI generation error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to generate description. Please try again.';
+            const errorMessage = error instanceof Error ? error.message : t('community_topics_page.toast.error');
             toast.error(errorMessage);
         } finally {
             setIsGeneratingDescription(false);
@@ -97,38 +99,38 @@ export function TopicForm({
     return (
         <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'name' : 'edit-name'} className="text-right">
-                    Name *
+                <Label htmlFor={mode === 'create' ? 'name' : 'edit-name'} className="text-right" suppressHydrationWarning>
+                    {t('name')} *
                 </Label>
                 <Input
                     id={mode === 'create' ? 'name' : 'edit-name'}
                     value={formData.name}
                     onChange={(e) => handleNameChange(e.target.value)}
                     className="col-span-3"
-                    placeholder="Enter topic name"
+                    placeholder={t('community_topics_page.form.name_placeholder')}
                 />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'slug' : 'edit-slug'} className="text-right">
-                    Slug
+                <Label htmlFor={mode === 'create' ? 'slug' : 'edit-slug'} className="text-right" suppressHydrationWarning>
+                    {t('slug')} *
                 </Label>
                 <div className="col-span-3 space-y-1">
                     <Input
                         id={mode === 'create' ? 'slug' : 'edit-slug'}
                         value={formData.slug}
                         onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                        placeholder="url-friendly-slug"
+                        placeholder={t('community_topics_page.form.slug_placeholder')}
                     />
                     {formData.slug && (
                         <p className="text-xs text-muted-foreground">
-                            URL: /community/topic/{formData.slug} (auto-generated from name, editable)
+                            URL: /community/topic/{formData.slug} ({t('optional')})
                         </p>
                     )}
                 </div>
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor={mode === 'create' ? 'description' : 'edit-description'} className="text-right pt-2">
-                    Description
+                <Label htmlFor={mode === 'create' ? 'description' : 'edit-description'} className="text-right pt-2" suppressHydrationWarning>
+                    {t('description')}
                 </Label>
                 <div className="col-span-3 space-y-2">
                     <div className="flex items-center gap-2">
@@ -137,7 +139,7 @@ export function TopicForm({
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                             className="flex-1"
-                            placeholder="Enter topic description"
+                            placeholder={t('community_topics_page.form.description_placeholder')}
                             rows={3}
                         />
                         <Button
@@ -153,21 +155,23 @@ export function TopicForm({
                             ) : (
                                 <Sparkles className="h-4 w-4" />
                             )}
-                            {isGeneratingDescription ? 'Generating...' : 'Generate with AI'}
+                            <span suppressHydrationWarning>
+                                {isGeneratingDescription ? t('community_topics_page.form.generating_description') : t('community_topics_page.form.generate_description')}
+                            </span>
                         </Button>
                     </div>
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'parent' : 'edit-parent'} className="text-right">
-                    Parent Topic
+                <Label htmlFor={mode === 'create' ? 'parent' : 'edit-parent'} className="text-right" suppressHydrationWarning>
+                    {t('community_topics_page.form.parent_label')}
                 </Label>
                 <Select value={formData.parentId} onValueChange={(value) => setFormData(prev => ({ ...prev, parentId: value }))}>
                     <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="No parent" />
+                        <SelectValue placeholder={t('community_topics_page.form.parent_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="none">No parent</SelectItem>
+                        <SelectItem value="none" suppressHydrationWarning>{t('community_topics_page.form.no_parent')}</SelectItem>
                         {availableParents.map((topic) => (
                             <SelectItem key={topic.$id} value={topic.$id}>
                                 {topic.name}
@@ -177,8 +181,8 @@ export function TopicForm({
                 </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'color' : 'edit-color'} className="text-right">
-                    Color
+                <Label htmlFor={mode === 'create' ? 'color' : 'edit-color'} className="text-right" suppressHydrationWarning>
+                    {t('color')}
                 </Label>
                 <div className="col-span-3 flex items-center gap-2">
                     <Input
@@ -197,8 +201,8 @@ export function TopicForm({
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'icon' : 'edit-icon'} className="text-right">
-                    Icon
+                <Label htmlFor={mode === 'create' ? 'icon' : 'edit-icon'} className="text-right" suppressHydrationWarning>
+                    {t('community_topics_page.form.icon_label')}
                 </Label>
                 <div className="col-span-3">
                     <IconPicker
@@ -209,8 +213,8 @@ export function TopicForm({
                 </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor={mode === 'create' ? 'displayOrder' : 'edit-displayOrder'} className="text-right">
-                    Display Order
+                <Label htmlFor={mode === 'create' ? 'displayOrder' : 'edit-displayOrder'} className="text-right" suppressHydrationWarning>
+                    {t('community_topics_page.form.display_order_label')}
                 </Label>
                 <Input
                     id={mode === 'create' ? 'displayOrder' : 'edit-displayOrder'}
@@ -219,24 +223,25 @@ export function TopicForm({
                     onChange={(e) => setFormData(prev => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
                     className="col-span-3"
                     min="0"
+                    placeholder={t('community_topics_page.form.display_order_placeholder')}
                 />
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor={mode === 'create' ? 'rules' : 'edit-rules'} className="text-right pt-2">
-                    Rules
+                <Label htmlFor={mode === 'create' ? 'rules' : 'edit-rules'} className="text-right pt-2" suppressHydrationWarning>
+                    {t('community_topics_page.form.rules_label')}
                 </Label>
                 <Textarea
                     id={mode === 'create' ? 'rules' : 'edit-rules'}
                     value={formData.rules}
                     onChange={(e) => setFormData(prev => ({ ...prev, rules: e.target.value }))}
                     className="col-span-3"
-                    placeholder="Enter topic rules and guidelines"
+                    placeholder={t('community_topics_page.form.rules_placeholder')}
                     rows={4}
                     maxLength={2000}
                 />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">Status</Label>
+                <Label className="text-right" suppressHydrationWarning>{t('status')}</Label>
                 <div className="col-span-3 space-y-3">
                     <div className="flex items-center space-x-2">
                         <Checkbox
@@ -244,8 +249,8 @@ export function TopicForm({
                             checked={formData.isActive}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked as boolean }))}
                         />
-                        <Label htmlFor={mode === 'create' ? 'isActive' : 'edit-isActive'} className="cursor-pointer">
-                            Active
+                        <Label htmlFor={mode === 'create' ? 'isActive' : 'edit-isActive'} className="cursor-pointer" suppressHydrationWarning>
+                            {t('active')}
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -254,8 +259,8 @@ export function TopicForm({
                             checked={formData.isPublic}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked as boolean }))}
                         />
-                        <Label htmlFor={mode === 'create' ? 'isPublic' : 'edit-isPublic'} className="cursor-pointer">
-                            Public
+                        <Label htmlFor={mode === 'create' ? 'isPublic' : 'edit-isPublic'} className="cursor-pointer" suppressHydrationWarning>
+                            {t('public')}
                         </Label>
                     </div>
                 </div>

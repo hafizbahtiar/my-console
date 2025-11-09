@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { useTranslation } from "@/lib/language-context"
 import {
   Pagination,
   PaginationContent,
@@ -46,6 +47,8 @@ interface AuditTableProps {
 }
 
 export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
+  const { t } = useTranslation()
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10) // Default to 10 items per page
@@ -95,17 +98,17 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
   const getActionDescription = (log: AuditLog) => {
     switch (log.action) {
       case 'USER_LOGIN':
-        return 'User logged in'
+        return t('audit_page.table.action_descriptions.user_login')
       case 'USER_LOGOUT':
-        return 'User logged out'
+        return t('audit_page.table.action_descriptions.user_logout')
       case 'PROFILE_UPDATE':
-        return 'Profile updated'
+        return t('audit_page.table.action_descriptions.profile_update')
       case 'SETTINGS_CHANGE':
-        return 'Settings changed'
+        return t('audit_page.table.action_descriptions.settings_change')
       case 'SECURITY_EVENT':
-        return 'Security event'
+        return t('audit_page.table.action_descriptions.security_event')
       default:
-        return 'Unknown action'
+        return t('audit_page.table.action_descriptions.unknown_action')
     }
   }
 
@@ -134,13 +137,21 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
       <CardHeader className="p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1 min-w-0 flex-1">
-            <CardTitle className="text-base sm:text-lg">Activity Log</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Showing {paginatedLogs.length} of {filteredLogs.length} entries (Total: {totalLogs})
-        </CardDescription>
+            <CardTitle className="text-base sm:text-lg" suppressHydrationWarning>
+              {t('audit_page.table.title')}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+              {t('audit_page.table.showing', { 
+                current: paginatedLogs.length.toString(), 
+                filtered: filteredLogs.length.toString(), 
+                total: totalLogs.toString() 
+              })}
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Show</span>
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
+              {t('audit_page.table.show')}
+            </span>
             <Select value={itemsPerPage.toString()} onValueChange={handlePageSizeChange}>
               <SelectTrigger className="w-16 sm:w-20 text-xs sm:text-sm">
                 <SelectValue />
@@ -153,7 +164,9 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                 ))}
               </SelectContent>
             </Select>
-            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">entries</span>
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
+              {t('audit_page.table.entries')}
+            </span>
           </div>
         </div>
       </CardHeader>
@@ -184,7 +197,9 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                       {/* User */}
                       <div className="hidden md:block text-xs sm:text-sm text-muted-foreground shrink-0">
                         {log.userId === 'system' ? (
-                          <Badge variant="outline" className="text-xs">System</Badge>
+                          <Badge variant="outline" className="text-xs" suppressHydrationWarning>
+                            {t('audit_page.table.system')}
+                          </Badge>
                         ) : (
                           <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
                             {log.userId.slice(0, 8)}...
@@ -216,52 +231,72 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
 
                     {/* Detailed Information */}
                     <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
-                      {/* Basic Info */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs sm:text-sm font-medium">Resource Information</h4>
-                        <div className="space-y-1.5 text-xs">
-                          <div className="break-words">
-                            <strong className="block mb-0.5">User Agent</strong>
-                            <span className="text-muted-foreground">{log.userAgent || 'N/A'}</span>
-                          </div>
-                          <div className="break-words">
-                            <strong className="block mb-0.5">IP Address</strong>
-                            <span className="text-muted-foreground">{log.ipAddress || 'N/A'}</span>
-                          </div>
-                          <div className="break-words">
-                            <strong className="block mb-0.5">Session ID</strong>
-                            <span className="text-muted-foreground font-mono text-xs">{log.sessionId || 'N/A'}</span>
-                          </div>
+                    {/* Basic Info */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
+                        {t('audit_page.table.resource_information')}
+                      </h4>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="break-words">
+                          <strong className="block mb-0.5" suppressHydrationWarning>
+                            {t('audit_page.table.user_agent')}
+                          </strong>
+                          <span className="text-muted-foreground" suppressHydrationWarning>
+                            {log.userAgent || t('audit_page.table.na')}
+                          </span>
+                        </div>
+                        <div className="break-words">
+                          <strong className="block mb-0.5" suppressHydrationWarning>
+                            {t('audit_page.table.ip_address')}
+                          </strong>
+                          <span className="text-muted-foreground" suppressHydrationWarning>
+                            {log.ipAddress || t('audit_page.table.na')}
+                          </span>
+                        </div>
+                        <div className="break-words">
+                          <strong className="block mb-0.5" suppressHydrationWarning>
+                            {t('audit_page.table.session_id')}
+                          </strong>
+                          <span className="text-muted-foreground font-mono text-xs" suppressHydrationWarning>
+                            {log.sessionId || t('audit_page.table.na')}
+                          </span>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Changes */}
-                      <div className="space-y-2">
-                        <h4 className="text-xs sm:text-sm font-medium">Changes Summary</h4>
-                        <div className="space-y-2 text-xs">
-                          {log.oldValues && (
-                            <div>
-                              <div className="font-medium text-red-600 mb-1">Old Value</div>
-                              <pre className="bg-red-50 dark:bg-red-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
-                                {JSON.stringify(parseJsonField(log.oldValues), null, 2)}
-                              </pre>
+                    {/* Changes */}
+                    <div className="space-y-2">
+                      <h4 className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
+                        {t('audit_page.table.changes_summary')}
+                      </h4>
+                      <div className="space-y-2 text-xs">
+                        {log.oldValues && (
+                          <div>
+                            <div className="font-medium text-red-600 mb-1" suppressHydrationWarning>
+                              {t('audit_page.table.old_value')}
                             </div>
-                          )}
-                          {log.newValues && (
-                            <div>
-                              <div className="font-medium text-green-600 mb-1">New Value</div>
-                              <pre className="bg-green-50 dark:bg-green-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
-                                {JSON.stringify(parseJsonField(log.newValues), null, 2)}
-                              </pre>
+                            <pre className="bg-red-50 dark:bg-red-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
+                              {JSON.stringify(parseJsonField(log.oldValues), null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {log.newValues && (
+                          <div>
+                            <div className="font-medium text-green-600 mb-1" suppressHydrationWarning>
+                              {t('audit_page.table.new_value')}
                             </div>
-                          )}
-                          {!log.oldValues && !log.newValues && (
-                            <div className="text-muted-foreground italic">
-                              No changes
-                            </div>
-                          )}
-                        </div>
+                            <pre className="bg-green-50 dark:bg-green-950 p-2 rounded text-xs overflow-x-auto max-h-[150px] sm:max-h-none">
+                              {JSON.stringify(parseJsonField(log.newValues), null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {!log.oldValues && !log.newValues && (
+                          <div className="text-muted-foreground italic" suppressHydrationWarning>
+                            {t('audit_page.table.no_changes')}
+                          </div>
+                        )}
                       </div>
+                    </div>
                     </div>
 
                     {/* Technical Details */}
@@ -269,9 +304,13 @@ export function AuditTable({ filteredLogs, totalLogs }: AuditTableProps) {
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h4 className="text-xs sm:text-sm font-medium">Technical Details</h4>
+                          <h4 className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
+                            {t('audit_page.table.technical_details')}
+                          </h4>
                           <div className="text-xs bg-muted p-2 rounded">
-                            <strong className="block mb-1">Metadata</strong>
+                            <strong className="block mb-1" suppressHydrationWarning>
+                              {t('audit_page.table.metadata')}
+                            </strong>
                             <pre className="mt-1 overflow-x-auto max-h-[150px] sm:max-h-none">
                               {JSON.stringify(parseJsonField(log.metadata), null, 2)}
                             </pre>

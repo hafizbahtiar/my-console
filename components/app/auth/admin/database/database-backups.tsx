@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/lib/language-context";
 import { BackupStatusBadge } from "@/components/custom/status-badge";
 import {
   AlertDialog,
@@ -26,6 +27,7 @@ interface DatabaseBackupsProps {
 }
 
 export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsProps) {
+  const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [backupToDelete, setBackupToDelete] = useState<string | null>(null);
 
@@ -43,10 +45,10 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete backup");
+        throw new Error(t('database_page.backups.delete_dialog.delete_failed'));
       }
 
-      toast.success("Backup deleted successfully");
+      toast.success(t('database_page.backups.delete_dialog.deleted_success'));
 
       // Refresh backup history
       onRefresh();
@@ -54,7 +56,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
       setBackupToDelete(null);
     } catch (error) {
       console.error('Failed to delete backup:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to delete backup");
+      toast.error(error instanceof Error ? error.message : t('database_page.backups.delete_dialog.delete_failed'));
     }
   };
 
@@ -93,9 +95,11 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Backup History</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Recent database backups
+          <CardTitle className="text-base sm:text-lg" suppressHydrationWarning>
+            {t('database_page.backups.title')}
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+            {t('database_page.backups.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -103,13 +107,27 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs sm:text-sm">Backup ID</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Type</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Status</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Size</TableHead>
-                  <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Collections</TableHead>
-                  <TableHead className="text-xs sm:text-sm hidden md:table-cell">Created</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Actions</TableHead>
+                  <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                    {t('database_page.backups.backup_id')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                    {t('type')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                    {t('status')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                    {t('database_page.backups.size')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm hidden sm:table-cell" suppressHydrationWarning>
+                    {t('database_page.backups.collections')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm hidden md:table-cell" suppressHydrationWarning>
+                    {t('created')}
+                  </TableHead>
+                  <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                    {t('actions')}
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -125,15 +143,17 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <div className="shrink-0">{getStatusIcon('completed')}</div>
-                          <span className="text-xs sm:text-sm capitalize truncate">Completed</span>
+                          <span className="text-xs sm:text-sm capitalize truncate" suppressHydrationWarning>
+                            {t('database_page.backups.completed')}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs sm:text-sm">
-                        {backup.totalRecords ? `${(backup.totalRecords * 0.5).toFixed(1)} MB` : 'Unknown'}
+                        {backup.totalRecords ? `${(backup.totalRecords * 0.5).toFixed(1)} MB` : t('database_page.backups.unknown_size')}
                       </TableCell>
                       <TableCell className="text-xs sm:text-sm hidden sm:table-cell">{backup.collections || 0}</TableCell>
-                      <TableCell className="text-xs sm:text-sm hidden md:table-cell">
-                        {backup.timestamp ? new Date(backup.timestamp).toLocaleString() : 'Unknown'}
+                      <TableCell className="text-xs sm:text-sm hidden md:table-cell" suppressHydrationWarning>
+                        {backup.timestamp ? new Date(backup.timestamp).toLocaleString() : t('database_page.backups.unknown_time')}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1 sm:space-x-2">
@@ -156,8 +176,12 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       <Download className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-xs sm:text-sm">No backup history available</p>
-                      <p className="text-xs sm:text-sm mt-1">Backups will appear here</p>
+                      <p className="text-xs sm:text-sm" suppressHydrationWarning>
+                        {t('database_page.backups.no_backup_history')}
+                      </p>
+                      <p className="text-xs sm:text-sm mt-1" suppressHydrationWarning>
+                        {t('database_page.backups.backups_will_appear')}
+                      </p>
                     </TableCell>
                   </TableRow>
                 )}
@@ -171,20 +195,23 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="w-[90vw] sm:w-full max-w-md p-4 sm:p-6">
           <AlertDialogHeader className="px-0 sm:px-0">
-            <AlertDialogTitle className="text-base sm:text-lg">Delete Backup</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs sm:text-sm mt-2">
-              Are you sure you want to delete this backup? This action cannot be undone.
+            <AlertDialogTitle className="text-base sm:text-lg" suppressHydrationWarning>
+              {t('database_page.backups.delete_dialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm mt-2" suppressHydrationWarning>
+              {t('database_page.backups.delete_dialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 px-0 sm:px-0 mt-4 sm:mt-0">
-            <AlertDialogCancel onClick={() => setBackupToDelete(null)} className="w-full sm:w-auto order-2 sm:order-1">
-              Cancel
+            <AlertDialogCancel onClick={() => setBackupToDelete(null)} className="w-full sm:w-auto order-2 sm:order-1" suppressHydrationWarning>
+              {t('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBackup}
               className="bg-red-600 hover:bg-red-700 w-full sm:w-auto order-1 sm:order-2"
+              suppressHydrationWarning
             >
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

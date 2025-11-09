@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { account } from "@/lib/appwrite"
 import { updateLoginStats } from "@/lib/user-profile"
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Eye, EyeOff, Mail, Lock, Sun, Moon } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -22,7 +24,43 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const { theme, setTheme } = useTheme()
-  const { login, user } = useAuth()
+  const { login, user, loading: authLoading } = useAuth()
+  const { t } = useTranslation()
+
+  // Show skeleton while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+        <Card className="w-full max-w-md shadow-lg">
+          <CardHeader className="space-y-1 relative">
+            <div className="absolute top-4 right-4">
+              <Skeleton className="h-8 w-8 rounded-md" />
+            </div>
+            <Skeleton className="h-8 w-48 mx-auto" />
+            <Skeleton className="h-4 w-64 mx-auto" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-10 w-full" />
+            <div className="mt-6 text-center">
+              <Skeleton className="h-4 w-48 mx-auto" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   // If user is already logged in, show dashboard or redirect
   if (user) {
@@ -31,10 +69,10 @@ export function LoginForm() {
         <Card className="w-full max-w-md shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
-              Welcome back
+              {t('login_page.welcome_back')}
             </CardTitle>
             <CardDescription className="text-center">
-              You are already logged in as {user.email}
+              {t('login_page.already_logged_in', { email: user.email })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -42,7 +80,7 @@ export function LoginForm() {
               onClick={() => window.location.href = '/auth/dashboard'}
               className="w-full"
             >
-              Go to Dashboard
+              {t('login_page.go_to_dashboard')}
             </Button>
           </CardContent>
         </Card>
@@ -68,6 +106,7 @@ export function LoginForm() {
       } catch (profileError) {
         console.warn('Failed to create/update user profile:', profileError)
         // Don't block login if profile creation fails
+        toast.warning('Profile update skipped')
       }
 
       // Log audit event
@@ -80,9 +119,13 @@ export function LoginForm() {
         )
       } catch (auditError) {
         console.warn('Failed to log audit event:', auditError)
+        toast.warning('Audit logging failed')
       }
 
-      toast.success("Login successful!")
+      toast.success(t('login_page.login_success'), {
+        description: `Welcome back, ${currentUser.email || currentUser.name || 'User'}`,
+        duration: 3000,
+      })
 
       // Redirect to dashboard or home page
       window.location.href = '/auth/dashboard'
@@ -103,8 +146,14 @@ export function LoginForm() {
         console.warn('Failed to log failed login audit event:', auditError)
       }
 
-      setError(err.message || "Login failed")
-      toast.error("Login failed")
+      const errorMessage = err.message || t('login_page.login_failed')
+      setError(errorMessage)
+
+      // Show error toast with appropriate styling
+      toast.error(t('login_page.login_failed'), {
+        description: errorMessage,
+        duration: 5000,
+      })
     } finally {
       setIsLoading(false)
     }
@@ -123,14 +172,14 @@ export function LoginForm() {
             >
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
+              <span className="sr-only" suppressHydrationWarning>{t('toggle_theme')}</span>
             </Button>
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Welcome back
+            {t('login_page.welcome_back')}
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            {t('login_page.enter_credentials')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -143,14 +192,14 @@ export function LoginForm() {
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">
-                Email
+                {t('email')}
               </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder={t('enter_field', { field: t('email') })}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -162,14 +211,14 @@ export function LoginForm() {
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-sm font-medium">
-                Password
+                {t('password')}
               </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t('enter_field', { field: t('password') })}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10"
@@ -198,14 +247,14 @@ export function LoginForm() {
                   className="rounded border-gray-300 text-primary focus:ring-primary"
                   disabled={isLoading}
                 />
-                <span className="text-muted-foreground">Remember me</span>
+                <span className="text-muted-foreground">{t('login_page.remember_me')}</span>
               </label>
               <a
                 href="#"
                 className="text-sm text-primary hover:underline focus:underline"
                 onClick={(e) => e.preventDefault()}
               >
-                Forgot password?
+                {t('login_page.forgot_password')}
               </a>
             </div>
 
@@ -214,17 +263,17 @@ export function LoginForm() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Loading..." : "Sign in"}
+              {isLoading ? t('loading') : t('login_page.sign_in')}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            {t('login_page.no_account')}{" "}
             <Link
               href="/register"
               className="text-primary hover:underline focus:underline"
             >
-              Sign up
+              {t('login_page.sign_up')}
             </Link>
           </div>
         </CardContent>

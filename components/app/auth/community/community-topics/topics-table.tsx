@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { Edit, Trash2, FolderTree, MessageSquare } from "lucide-react";
+import { useTranslation } from "@/lib/language-context";
 import { CommunityTopic } from "./types";
 import { getParentTopicName } from "./utils";
 import {
@@ -36,6 +37,7 @@ export function TopicsTable({
     onEdit,
     onDelete,
 }: TopicsTableProps) {
+    const { t } = useTranslation();
     const totalPages = getTotalPages(allTopics.length, pageSize);
 
     return (
@@ -43,13 +45,13 @@ export function TopicsTable({
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Slug</TableHead>
-                        <TableHead>Parent</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Posts</TableHead>
-                        <TableHead>Replies</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead suppressHydrationWarning>{t('name')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('slug')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('community_topics_page.table.parent')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('status')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('community_topics_page.table.posts')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('community_topics_page.table.replies')}</TableHead>
+                        <TableHead suppressHydrationWarning>{t('actions')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -71,14 +73,16 @@ export function TopicsTable({
                                     </div>
                                 </TableCell>
                                 <TableCell className="font-mono text-sm">{topic.slug}</TableCell>
-                                <TableCell className="text-muted-foreground">
-                                    {getParentTopicName(topic.parentId, allTopics)}
+                                <TableCell className="text-muted-foreground" suppressHydrationWarning>
+                                    {getParentTopicName(topic.parentId, allTopics) || t('community_topics_page.table.no_parent')}
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex flex-col gap-1">
                                         <StatusBadge status={topic.isActive ? "active" : "inactive"} type="blog-category" />
                                         {!topic.isPublic && (
-                                            <span className="text-xs text-muted-foreground">Private</span>
+                                            <span className="text-xs text-muted-foreground" suppressHydrationWarning>
+                                                {t('private')}
+                                            </span>
                                         )}
                                     </div>
                                 </TableCell>
@@ -109,8 +113,10 @@ export function TopicsTable({
                         <TableRow>
                             <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                                 <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                <p>No topics found</p>
-                                <p className="text-sm">Create your first topic to get started</p>
+                                <p suppressHydrationWarning>{t('community_topics_page.table.no_topics')}</p>
+                                <p className="text-sm" suppressHydrationWarning>
+                                    {t('add')} {t('community_topics_page.table.no_topics').toLowerCase()}
+                                </p>
                             </TableCell>
                         </TableRow>
                     )}

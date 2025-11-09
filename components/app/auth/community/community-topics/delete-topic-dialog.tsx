@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslation } from "@/lib/language-context";
 import { CommunityTopic } from "./types";
 
 interface DeleteTopicDialogProps {
@@ -25,25 +26,37 @@ export function DeleteTopicDialog({
     topic,
     onConfirm,
 }: DeleteTopicDialogProps) {
+    const { t } = useTranslation();
+
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Topic</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Are you sure you want to delete "{topic?.name || ''}"? This action cannot be undone.
-                        {topic?.postCount ? ` This topic has ${topic.postCount} post${topic.postCount !== 1 ? 's' : ''}.` : ''}
+                    <AlertDialogTitle suppressHydrationWarning>
+                        {t('community_topics_page.delete_dialog.title')}
+                    </AlertDialogTitle>
+                    <AlertDialogDescription suppressHydrationWarning>
+                        {t('community_topics_page.delete_dialog.description', { name: topic?.name || '' })}
+                        {topic?.postCount ? (
+                            <span className="block mt-2">
+                                {t('community_topics_page.delete_dialog.has_posts', {
+                                    count: topic.postCount.toString(),
+                                    plural: topic.postCount !== 1 ? 's' : ''
+                                })}
+                            </span>
+                        ) : null}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => onOpenChange(false)}>
-                        Cancel
+                    <AlertDialogCancel onClick={() => onOpenChange(false)} suppressHydrationWarning>
+                        {t('cancel')}
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={onConfirm}
                         className="bg-red-600 hover:bg-red-700"
+                        suppressHydrationWarning
                     >
-                        Delete
+                        {t('delete')}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

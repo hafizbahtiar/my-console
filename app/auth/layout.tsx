@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { SidebarNav } from "@/components/app/auth/sidebar-nav"
@@ -29,6 +30,7 @@ export default function AuthLayout({
     children: React.ReactNode
 }) {
     const { user, logout, loading } = useAuth()
+    const { t } = useTranslation()
     const { theme, setTheme } = useTheme()
     const pathname = usePathname()
     const router = useRouter()
@@ -68,14 +70,14 @@ export default function AuthLayout({
             }
 
             await logout()
-            toast.success("Logged out successfully")
+            toast.success(t('logout_success'))
 
             // Use setTimeout to avoid router update during render
             setTimeout(() => {
                 router.push('/')
             }, 0)
         } catch (error) {
-            toast.error("Logout")
+            toast.error(t('logout_failed'))
         } finally {
             setLogoutDialogOpen(false)
         }
@@ -137,12 +139,12 @@ export default function AuthLayout({
                         >
                             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                            <span className="sr-only">Toggle theme</span>
+                            <span className="sr-only" suppressHydrationWarning>{t('toggle_theme')}</span>
                         </Button>
 
                         <Button variant="outline" size="sm" onClick={() => setLogoutDialogOpen(true)}>
                             <LogOut className="h-4 w-4 mr-2" />
-                            Logout
+                            <span suppressHydrationWarning>{t('logout')}</span>
                         </Button>
                     </div>
                 </header>
@@ -157,19 +159,19 @@ export default function AuthLayout({
             <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to logout? You will need to login again to access your account.
+                        <AlertDialogTitle suppressHydrationWarning>{t('confirm_logout')}</AlertDialogTitle>
+                        <AlertDialogDescription suppressHydrationWarning>
+                            {t('logout_confirmation_message')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel suppressHydrationWarning>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction 
                             onClick={handleLogout} 
                             className="bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600/20 dark:focus-visible:ring-red-600/40 dark:bg-red-600/90 dark:hover:bg-red-700/90 transition-colors"
                         >
                             <LogOut className="h-4 w-4 mr-2" />
-                            Logout
+                            <span suppressHydrationWarning>{t('logout')}</span>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

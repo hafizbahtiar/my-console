@@ -54,11 +54,14 @@ My Console is a full-featured admin dashboard application with:
 - **Comments Display**: Threaded comment system with hierarchical display, author information, engagement metrics, and visual indentation for nested replies
 
 #### 🌍 Internationalization
-- **Multi-language Support**: English and Malay (Bahasa Melayu)
+- **Multi-language Support**: Complete English and Malay (Bahasa Melayu) support across all 19 pages
 - **Browser Detection**: Automatic language detection based on browser settings
 - **Persistent Preferences**: Language settings saved to localStorage
 - **Fallback System**: Graceful fallback to English when translations are missing
 - **Immediate Updates**: Language changes apply instantly with user feedback
+- **Translation Preloading**: Prevents raw keys from showing during language switches
+- **Skeleton Loading**: Prevents raw translation keys from appearing during initial page loads
+- **Component Separation**: Modular components with dedicated translation keys
 
 #### 🎨 Theme & Customization
 - **Dark Mode**: Built-in theme switching with system preference detection
@@ -165,6 +168,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **/auth/blog/blog-posts/[id]/edit**: Edit existing blog posts
 - **/auth/blog/blog-categories**: Blog category management
 - **/auth/blog/blog-tags**: Blog tag management
+- **/auth/community/community-posts**: Community post management
+- **/auth/community/community-posts/create**: Create new community posts
+- **/auth/community/community-posts/[id]**: View community post details
+- **/auth/community/community-posts/[id]/edit**: Edit community posts
+- **/auth/community/community-topics**: Community topic management (admin only)
+- **/auth/admin/security**: Security management with IP blocking and event monitoring
 
 ## 🏗️ Application Architecture
 
@@ -187,6 +196,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - Browser language detection with localStorage persistence
 - Parameter interpolation and fallback handling
 - Translation files in JSON format (`public/locales/`)
+- **Complete Coverage**: All 19 pages fully internationalized (English & Malay)
+- **Translation Preloading**: Prevents raw keys during language switching
+- **Skeleton Loading**: All pages show skeleton UI during translation load
+- **Component Separation**: Modular components with dedicated translation keys
 
 #### Appwrite Integration (`lib/appwrite.ts`)
 - Centralized client configuration

@@ -6,18 +6,11 @@ import Link from "next/link";
 import { CommunityPostFormData } from "../types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { TipTap } from "@/components/ui/tiptap";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     ArrowLeft,
     Loader2,
     Save,
-    MessageSquare,
-    Hash,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,19 +21,18 @@ import {
 } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslation } from "@/lib/language-context";
+import {
+    CreateBreadcrumbNav,
+    BasicInfoSection,
+    TopicSection,
+    TagsSection,
+    PostSettingsSection,
+    generateSlug,
+} from "@/components/app/auth/community/community-posts/create";
 
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_TAG_LENGTH = 20;
-
-const generateSlug = (title: string): string => {
-    return title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim()
-        .substring(0, 200);
-};
 
 const getClientIP = (): string => {
     // This would typically come from the server-side request
@@ -56,13 +48,15 @@ const getUserAgent = (): string => {
 };
 
 export default function CreateCommunityPostPage() {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const { t, loading: translationLoading } = useTranslation();
     const router = useRouter();
 
     // State
     const [topics, setTopics] = useState<any[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [contentLength, setContentLength] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Form states
     const [formData, setFormData] = useState<CommunityPostFormData>({
@@ -90,8 +84,14 @@ export default function CreateCommunityPostPage() {
     // Load data on component mount
     useEffect(() => {
         const loadData = async () => {
+            // Wait for auth to finish loading before proceeding
+            if (authLoading) {
+                return;
+            }
+
+            // Don't redirect on refresh - allow skeleton/error state to show
             if (!user) {
-                router.push('/auth/dashboard');
+                setIsLoading(false);
                 return;
             }
 
@@ -103,11 +103,15 @@ export default function CreateCommunityPostPage() {
                 authorEmail: user.email || '',
             }));
 
-            await loadTopics();
+            try {
+                await loadTopics();
+            } finally {
+                setIsLoading(false);
+            }
         };
 
         loadData();
-    }, [user, router]);
+    }, [user, authLoading, router]);
 
     const loadTopics = async () => {
         try {
@@ -123,7 +127,7 @@ export default function CreateCommunityPostPage() {
             setTopics(activeTopics);
         } catch (error) {
             console.error('Failed to load topics:', error);
-            toast.error("Failed to load topics");
+            toast.error(t('error'));
         }
     };
 
@@ -132,30 +136,30 @@ export default function CreateCommunityPostPage() {
 
         // Validation
         if (!formData.title.trim()) {
-            toast.error("Title is required");
+            toast.error(t('community_posts_page.create_page.validation.title_required'));
             return;
         }
         if (!formData.slug.trim()) {
-            toast.error("Slug is required");
+            toast.error(t('community_posts_page.create_page.validation.slug_required'));
             return;
         }
         if (!formData.content.trim()) {
-            toast.error("Content is required");
+            toast.error(t('community_posts_page.create_page.validation.content_required'));
             return;
         }
         if (formData.content.length > MAX_CONTENT_LENGTH) {
-            toast.error(`Content must be less than ${MAX_CONTENT_LENGTH} characters`);
+            toast.error(t('community_posts_page.create_page.validation.content_too_long', { max: MAX_CONTENT_LENGTH.toString() }));
             return;
         }
         if (!formData.authorId) {
-            toast.error("Author ID is required");
+            toast.error(t('community_posts_page.create_page.validation.author_id_required'));
             return;
         }
 
         // Validate tags
         const invalidTags = formData.tags.filter(tag => tag.length > MAX_TAG_LENGTH);
         if (invalidTags.length > 0) {
-            toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
+            toast.error(t('community_posts_page.create_page.validation.tag_too_long', { max: MAX_TAG_LENGTH.toString() }));
             return;
         }
 
@@ -206,7 +210,7 @@ export default function CreateCommunityPostPage() {
                 }
             });
 
-            toast.success("Post created successfully");
+            toast.success(t('community_posts_page.create_page.success'));
             router.push('/auth/community/community-posts');
         } catch (error: any) {
             console.error('Failed to create community post:', error);
@@ -219,9 +223,9 @@ export default function CreateCommunityPostPage() {
                 error?.type === 'AppwriteException';
 
             if (isAuthError) {
-                toast.error("You do not have permission to create community posts");
+                toast.error(t('community_posts_page.create_page.permission_denied'));
             } else {
-                toast.error("Error");
+                toast.error(t('community_posts_page.create_page.failed'));
             }
         } finally {
             setIsSubmitting(false);
@@ -252,17 +256,17 @@ export default function CreateCommunityPostPage() {
         if (!trimmedTag) return;
 
         if (trimmedTag.length > MAX_TAG_LENGTH) {
-            toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
+            toast.error(t('community_posts_page.create_page.validation.tag_too_long', { max: MAX_TAG_LENGTH.toString() }));
             return;
         }
 
         if (formData.tags.includes(trimmedTag)) {
-            toast.error("Tag already exists");
+            toast.error(t('community_posts_page.create_page.validation.tag_exists'));
             return;
         }
 
         if (formData.tags.length >= 10) {
-            toast.error("Maximum 10 tags allowed");
+            toast.error(t('community_posts_page.create_page.validation.max_tags'));
             return;
         }
 
@@ -279,32 +283,98 @@ export default function CreateCommunityPostPage() {
         }));
     };
 
+    // Wrapper function to handle partial updates
+    const handleFormDataChange = (data: Partial<CommunityPostFormData>) => {
+        setFormData(prev => ({ ...prev, ...data }));
+    };
+
+    // Show skeleton while translations or data is loading
+    if (translationLoading || isLoading || authLoading) {
+        return (
+            <div className="min-h-screen bg-background">
+                {/* Breadcrumb Skeleton */}
+                <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                    <div className="px-4 sm:px-6 py-2 sm:py-3">
+                        <Skeleton className="h-8 w-full" />
+                    </div>
+                </div>
+
+                {/* Header Skeleton */}
+                <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                    <div className="px-4 sm:px-6 py-4">
+                        <div className="space-y-2">
+                            <Skeleton className="h-8 w-48 sm:h-9 sm:w-64" />
+                            <Skeleton className="h-4 w-64 sm:h-5 sm:w-80" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content Skeleton */}
+                <div className="px-4 sm:px-6 py-8">
+                    <div className="grid gap-8 xl:grid-cols-12">
+                        <div className="xl:col-span-8 space-y-8">
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-6 w-48" />
+                                    <Skeleton className="h-4 w-64" />
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-10 w-full" />
+                                        <Skeleton className="h-10 w-full" />
+                                        <Skeleton className="h-24 w-full" />
+                                        <Skeleton className="h-64 w-full" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                        <div className="xl:col-span-4 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-6 w-32" />
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-10 w-full" />
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-6 w-24" />
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-10 w-full" />
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader>
+                                    <Skeleton className="h-6 w-32" />
+                                </CardHeader>
+                                <CardContent>
+                                    <Skeleton className="h-20 w-full" />
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-background">
             {/* Breadcrumb Navigation */}
-            <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto px-6 py-3">
-                    <nav className="flex items-center space-x-2 text-sm">
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
-                            <Link href="/auth/community/community-posts">
-                                <ArrowLeft className="h-3 w-3 mr-1" />
-                                Community Posts
-                            </Link>
-                        </Button>
-                        <span className="text-muted-foreground">/</span>
-                        <span className="text-foreground font-medium">Create</span>
-                    </nav>
-                </div>
-            </div>
+            <CreateBreadcrumbNav />
 
             {/* Header */}
             <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container mx-auto px-6 py-4">
+                <div className="container mx-auto px-4 sm:px-6 py-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Create Community Post</h1>
-                            <p className="text-sm text-muted-foreground">
-                                Create a new discussion post for the community
+                            <h1 className="text-2xl font-bold tracking-tight" suppressHydrationWarning>
+                                {t('community_posts_page.create_page.title')}
+                            </h1>
+                            <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                                {t('community_posts_page.create_page.description')}
                             </p>
                         </div>
                     </div>
@@ -312,223 +382,50 @@ export default function CreateCommunityPostPage() {
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-6 py-8">
+            <div className="container mx-auto px-4 sm:px-6 py-8">
                 <form onSubmit={handleSubmit} className="space-y-8">
                     <div className="grid gap-8 xl:grid-cols-12">
                         {/* Main Content Column */}
                         <div className="xl:col-span-8 space-y-8">
-                            {/* Basic Information */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Post Information</CardTitle>
-                                    <CardDescription>
-                                        Basic information about your post
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="title">Title *</Label>
-                                        <Input
-                                            id="title"
-                                            value={formData.title}
-                                            onChange={(e) => handleTitleChange(e.target.value)}
-                                            placeholder="Enter post title"
-                                            required
-                                            maxLength={200}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="slug">Slug *</Label>
-                                        <Input
-                                            id="slug"
-                                            value={formData.slug}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                                            placeholder="url-friendly-slug"
-                                            required
-                                            maxLength={200}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="excerpt">Excerpt</Label>
-                                        <Textarea
-                                            id="excerpt"
-                                            value={formData.excerpt || ''}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                                            placeholder="Brief description of your post"
-                                            rows={3}
-                                            maxLength={500}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label htmlFor="content">Content *</Label>
-                                            <span className={`text-xs ${contentLength > MAX_CONTENT_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                                {contentLength} / {MAX_CONTENT_LENGTH} characters
-                                            </span>
-                                        </div>
-                                        <TipTap
-                                            value={formData.content}
-                                            stickyTop="top-48"
-                                            onChange={handleContentChange}
-                                            placeholder="Write your post content here..."
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            Maximum {MAX_CONTENT_LENGTH} characters
-                                        </p>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <BasicInfoSection
+                                formData={formData}
+                                contentLength={contentLength}
+                                maxContentLength={MAX_CONTENT_LENGTH}
+                                onFormDataChange={handleFormDataChange}
+                                onTitleChange={handleTitleChange}
+                                onContentChange={handleContentChange}
+                            />
                         </div>
 
                         {/* Sidebar */}
                         <div className="xl:col-span-4 space-y-6">
-                            {/* Topic Selection */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <MessageSquare className="h-4 w-4" />
-                                        Topic
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Select a topic for your post
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="topic">Topic (Optional)</Label>
-                                        <Select
-                                            value={formData.communityTopics?.$id || ''}
-                                            onValueChange={(value) => {
-                                                const selectedTopic = topics.find(topic => topic.$id === value);
-                                                setFormData(prev => ({ ...prev, communityTopics: selectedTopic || null }));
-                                            }}
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select a topic" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {topics.map((topic) => (
-                                                    <SelectItem key={topic.$id} value={topic.$id}>
-                                                        {topic.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        {topics.length === 0 && (
-                                            <p className="text-xs text-muted-foreground">
-                                                No topics available
-                                            </p>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                            <TopicSection
+                                formData={formData}
+                                topics={topics}
+                                onFormDataChange={handleFormDataChange}
+                            />
 
-                            {/* Tags */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Hash className="h-4 w-4" />
-                                        Tags
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Add tags (max {MAX_TAG_LENGTH} characters each)
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-3">
-                                        <div className="space-y-2">
-                                            <Label>Add Tags</Label>
-                                            <Input
-                                                placeholder={`Enter tag (max ${MAX_TAG_LENGTH} chars) and press Enter`}
-                                                maxLength={MAX_TAG_LENGTH}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        const value = (e.target as HTMLInputElement).value.trim();
-                                                        if (value) {
-                                                            addTag(value);
-                                                            (e.target as HTMLInputElement).value = '';
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                            <p className="text-xs text-muted-foreground">
-                                                Press Enter to add a tag. Maximum 10 tags allowed.
-                                            </p>
-                                        </div>
+                            <TagsSection
+                                formData={formData}
+                                maxTagLength={MAX_TAG_LENGTH}
+                                onAddTag={addTag}
+                                onRemoveTag={removeTag}
+                            />
 
-                                        {/* Display current tags */}
-                                        {formData.tags.length > 0 && (
-                                            <div className="space-y-2">
-                                                <Label className="text-sm text-muted-foreground">Current Tags</Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {formData.tags.map((tag, index) => (
-                                                        <Badge
-                                                            key={index}
-                                                            variant="secondary"
-                                                            className="flex items-center gap-1"
-                                                        >
-                                                            {tag}
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeTag(index)}
-                                                                className="ml-1 hover:text-destructive"
-                                                            >
-                                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                            </button>
-                                                        </Badge>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Post Info */}
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Post Settings</CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label>Status</Label>
-                                        <div className="p-3 bg-muted rounded-md">
-                                            <Badge variant="secondary">Pending Review</Badge>
-                                            <p className="text-xs text-muted-foreground mt-2">
-                                                Your post will be reviewed before being published
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {formData.author && (
-                                        <div className="space-y-2">
-                                            <Label>Author</Label>
-                                            <Input
-                                                value={formData.author}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                                                placeholder="Author name"
-                                                maxLength={100}
-                                            />
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                            <PostSettingsSection
+                                formData={formData}
+                                onFormDataChange={handleFormDataChange}
+                            />
                         </div>
                     </div>
 
                     {/* Submit Actions */}
-                    <div className="sticky z-40 bottom-0 -mb-8 px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
+                    <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
                         <div className="flex items-center justify-between">
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-muted-foreground" suppressHydrationWarning>
                                 {contentLength > 0 && (
                                     <span>
-                                        {contentLength} / {MAX_CONTENT_LENGTH} characters
+                                        {contentLength} / {MAX_CONTENT_LENGTH} {t('community_posts_page.create_page.basic_info.characters')}
                                     </span>
                                 )}
                             </div>
@@ -536,13 +433,13 @@ export default function CreateCommunityPostPage() {
                                 <Button variant="outline" type="button" size="lg" asChild>
                                     <Link href="/auth/community/community-posts">
                                         <ArrowLeft className="h-4 w-4 mr-2" />
-                                        Cancel
+                                        <span suppressHydrationWarning>{t('cancel')}</span>
                                     </Link>
                                 </Button>
                                 <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg">
                                     {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                                     <Save className="h-4 w-4 mr-2" />
-                                    Create Post
+                                    <span suppressHydrationWarning>{t('community_posts_page.create_page.submit.create')}</span>
                                 </Button>
                             </div>
                         </div>

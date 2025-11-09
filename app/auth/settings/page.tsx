@@ -1,666 +1,155 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useTheme } from "next-themes"
-import { useAuth } from "@/lib/auth-context"
-import { account } from "@/lib/appwrite"
-import { auditLogger } from "@/lib/audit-log"
-import { AppwriteException } from "appwrite"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { useTranslation } from "@/lib/language-context"
+import { AppearanceSettings, NotificationSettings, SecuritySettings, ConnectionTest } from "@/components/app/auth/settings"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Settings, Bell, Shield, Palette, Globe, Key, Zap, CheckCircle, XCircle, Loader2, Server, Eye, EyeOff } from "lucide-react"
-import { toast } from "sonner"
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme()
-  const { user } = useAuth()
+  const { t, loading } = useTranslation()
 
-  // Helper function to get theme label
-  const getThemeLabel = (themeValue: string | undefined) => {
-    if (!themeValue || themeValue === 'system') return "System"
-    if (themeValue === 'light') return "Light"
-    if (themeValue === 'dark') return "Dark"
-    return "System"
+  // Show skeleton while translations are loading
+  if (loading) {
+    return (
+      <div className="flex-1 space-y-4 p-4 pt-6">
+        <div>
+          <Skeleton className="h-9 w-32 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+
+        <div className="grid gap-6">
+          {/* Appearance Settings Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-20 mb-2" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-10 w-40" />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-16 mb-2" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-10 w-40" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notification Settings Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+                <Skeleton className="h-6 w-11 rounded-full" />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-24 mb-2" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+                <Skeleton className="h-6 w-11 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Settings Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-24 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-40 mb-2" />
+                  <Skeleton className="h-3 w-64" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-11 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-64" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Connection Test Skeleton */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-36 mb-2" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Skeleton className="h-4 w-40 mb-2" />
+                  <Skeleton className="h-3 w-56" />
+                </div>
+                <Skeleton className="h-10 w-48" />
+              </div>
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
-  const [notifications, setNotifications] = useState(true)
-  const [emailUpdates, setEmailUpdates] = useState(true)
-  const [twoFactor, setTwoFactor] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [primaryColor, setPrimaryColor] = useState<string>('default')
-  const [isClient, setIsClient] = useState(false)
-
-  // Color options with their CSS variable values
-  const colorOptions = [
-    { name: 'default', label: 'Default', value: 'oklch(0.205 0 0)', darkValue: 'oklch(0.922 0 0)' },
-    { name: 'blue', label: 'Blue', value: 'oklch(0.5 0.2 250)', darkValue: 'oklch(0.7 0.2 250)' },
-    { name: 'green', label: 'Green', value: 'oklch(0.5 0.2 150)', darkValue: 'oklch(0.7 0.2 150)' },
-    { name: 'purple', label: 'Purple', value: 'oklch(0.5 0.2 300)', darkValue: 'oklch(0.7 0.2 300)' },
-    { name: 'red', label: 'Red', value: 'oklch(0.5 0.2 25)', darkValue: 'oklch(0.7 0.2 25)' },
-    { name: 'orange', label: 'Orange', value: 'oklch(0.6 0.2 70)', darkValue: 'oklch(0.75 0.2 70)' },
-    { name: 'pink', label: 'Pink', value: 'oklch(0.6 0.2 350)', darkValue: 'oklch(0.75 0.2 350)' },
-    { name: 'cyan', label: 'Cyan', value: 'oklch(0.6 0.2 200)', darkValue: 'oklch(0.75 0.2 200)' },
-    { name: 'amber', label: 'Amber', value: 'oklch(0.65 0.2 85)', darkValue: 'oklch(0.8 0.2 85)' },
-  ]
-
-  // Prevent hydration mismatch by only rendering Select after mount
-  useEffect(() => {
-    setMounted(true)
-    setIsClient(true)
-
-    // Load saved primary color from localStorage
-    const savedColor = localStorage.getItem('primary-color') || 'default'
-    setPrimaryColor(savedColor)
-    applyPrimaryColor(savedColor)
-  }, [])
-
-  // Apply primary color to CSS variables
-  const applyPrimaryColor = (colorName: string) => {
-    if (colorName === 'default') {
-      // Reset to default
-      document.documentElement.style.setProperty('--primary', '')
-      document.documentElement.style.setProperty('--primary-foreground', '')
-      return
-    }
-
-    const color = colorOptions.find(c => c.name === colorName)
-    if (color) {
-      const isDark = document.documentElement.classList.contains('dark')
-      const primaryValue = isDark ? color.darkValue : color.value
-
-      // Calculate appropriate foreground color (white or black based on lightness)
-      const lightness = parseFloat(primaryValue.match(/oklch\(([\d.]+)/)?.[1] || '0.5')
-      const foregroundValue = lightness > 0.6 ? 'oklch(0.145 0 0)' : 'oklch(0.985 0 0)'
-
-      document.documentElement.style.setProperty('--primary', primaryValue)
-      document.documentElement.style.setProperty('--primary-foreground', foregroundValue)
-    }
-  }
-
-  // Handle primary color change
-  const handlePrimaryColorChange = (colorName: string) => {
-    setPrimaryColor(colorName)
-    localStorage.setItem('primary-color', colorName)
-    applyPrimaryColor(colorName)
-    toast.success("Primary color updated successfully")
-  }
-
-  // Update color when theme changes
-  useEffect(() => {
-    if (mounted && primaryColor) {
-      applyPrimaryColor(primaryColor)
-    }
-  }, [theme, mounted, primaryColor])
-
-  // Ping functionality state
-  const [pingStatus, setPingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [pingLogs, setPingLogs] = useState<Array<{
-    date: Date
-    method: string
-    path: string
-    status: number
-    response: string
-  }>>([])
-
-  // Password change state
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  })
-
-
-  const handlePasswordChange = async () => {
-    if (!user) return
-
-    // Validate form
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.error("Current password is required")
-      return
-    }
-
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error("Passwords do not match")
-      return
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      toast.error("Password must be between 8 and 265 characters long.")
-      return
-    }
-
-    if (passwordForm.newPassword.length > 265) {
-      toast.error("Password must be between 8 and 265 characters long.")
-      return
-    }
-
-    // Check for commonly used weak passwords
-    const weakPasswords = [
-      'password', 'password123', '123456', '123456789', 'qwerty', 'abc123',
-      'password1', 'admin', 'letmein', 'welcome', 'monkey', 'dragon',
-      'passw0rd', 'p@ssword', 'p@ssw0rd', '12345678', 'iloveyou'
-    ]
-
-    if (weakPasswords.includes(passwordForm.newPassword.toLowerCase())) {
-      toast.error("Password is too weak. Please choose a stronger password that is not commonly used.")
-      return
-    }
-
-    // Check if new password is the same as current password
-    if (passwordForm.currentPassword === passwordForm.newPassword) {
-      toast.error("New password must be different from your current password.")
-      return
-    }
-
-    setPasswordLoading(true)
-
-    try {
-      // Log password change attempt
-      await auditLogger.logSecurityEvent(user.$id, 'password_change_attempt', {
-        timestamp: new Date().toISOString()
-      })
-
-      // Update password using Appwrite - use object parameter style
-      await account.updatePassword({
-        password: passwordForm.newPassword,
-        oldPassword: passwordForm.currentPassword
-      })
-
-      // Log successful password change
-      await auditLogger.logSecurityEvent(user.$id, 'password_changed', {
-        timestamp: new Date().toISOString()
-      })
-
-      toast.success("Success")
-
-      // Reset form and close dialog
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      })
-      setPasswordDialogOpen(false)
-
-    } catch (error: any) {
-      console.error('Password change failed:', error)
-
-      let errorMessage = "Failed to change password. Please try again."
-      if (error?.message?.includes('Invalid credentials')) {
-        errorMessage = "Current password is incorrect. Please try again."
-      } else if (error?.message?.includes('Password must be between 8 and 265')) {
-        errorMessage = "Password must be between 8 and 265 characters long."
-      } else if (error?.message?.includes('should not be one of the commonly used password')) {
-        errorMessage = "Password is too weak. Please choose a stronger password that is not commonly used."
-      } else if (error?.message?.includes('Invalid `password` param')) {
-        errorMessage = "Invalid password format. Please check your password and try again."
-      } else if (error?.message) {
-        errorMessage = error.message
-      }
-
-      toast.error(errorMessage)
-
-      // Log failed password change attempt
-      await auditLogger.logSecurityEvent(user.$id, 'password_change_failed', {
-        timestamp: new Date().toISOString(),
-        reason: error?.message || 'unknown'
-      })
-
-    } finally {
-      setPasswordLoading(false)
-    }
-  }
-
-  const handlePasswordFormChange = (field: keyof typeof passwordForm, value: string) => {
-    setPasswordForm(prev => ({ ...prev, [field]: value }))
-  }
-
-  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }))
-  }
-
-  const handlePing = async () => {
-    if (pingStatus === 'loading') return
-
-    setPingStatus('loading')
-
-    try {
-      const result = await account.get()
-      const log = {
-        date: new Date(),
-        method: 'GET',
-        path: '/v1/ping',
-        status: 200,
-        response: JSON.stringify(result, null, 2),
-      }
-      setPingLogs(prev => [log, ...prev])
-      setPingStatus('success')
-      toast.success("Connection successful!")
-    } catch (err) {
-      const log = {
-        date: new Date(),
-        method: 'GET',
-        path: '/v1/ping',
-        status: err instanceof AppwriteException ? err.code : 500,
-        response: err instanceof AppwriteException
-          ? err.message
-          : 'Something went wrong',
-      }
-      setPingLogs(prev => [log, ...prev])
-      setPingStatus('error')
-      toast.error("Connection failed")
-    }
-  }
-
 
   return (
     <div className="flex-1 space-y-4 p-4 pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Settings
+        <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
+          {t('settings_page.title')}
         </h1>
-        <p className="text-muted-foreground">
-          Manage your account preferences and application settings
+        <p className="text-muted-foreground" suppressHydrationWarning>
+          {t('settings_page.description')}
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* Appearance Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Appearance
-            </CardTitle>
-            <CardDescription>
-              Customize the look and feel of your dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Theme</Label>
-                <p className="text-sm text-muted-foreground">
-                  Choose your preferred color scheme
-                </p>
-              </div>
-              <Select value={mounted ? (theme || 'system') : 'system'} onValueChange={setTheme}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder={getThemeLabel(theme)} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Primary Color</Label>
-                <p className="text-sm text-muted-foreground">
-                  Choose your primary accent color
-                </p>
-              </div>
-              <Select
-                value={mounted ? (primaryColor || 'default') : 'default'}
-                onValueChange={handlePrimaryColorChange}
-              >
-                <SelectTrigger className="w-48">
-                  <div className="flex items-center gap-2">
-                    {mounted && (() => {
-                      const selectedColor = colorOptions.find(c => c.name === primaryColor)
-                      if (!selectedColor) return null
-
-                      const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                      const colorValue = isDark ? selectedColor.darkValue : selectedColor.value
-
-                      return (
-                        <div
-                          className="h-4 w-4 rounded border border-border/50 shrink-0"
-                          style={{ backgroundColor: colorValue }}
-                        />
-                      )
-                    })()}
-                    <SelectValue placeholder="Choose your primary accent color" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {mounted && colorOptions.map((color) => {
-                    const isDark = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                    const colorValue = isDark ? color.darkValue : color.value
-
-                    return (
-                      <SelectItem key={color.name} value={color.name}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded border border-border/50 shrink-0"
-                            style={{ backgroundColor: colorValue }}
-                          />
-                          <span>{color.label}</span>
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notification Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-            <CardDescription>
-              Configure how you receive notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Push Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive notifications in your browser
-                </p>
-              </div>
-              <Switch
-                checked={notifications}
-                onCheckedChange={setNotifications}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Email Updates</Label>
-                <p className="text-sm text-muted-foreground">
-                  Receive email notifications about updates
-                </p>
-              </div>
-              <Switch
-                checked={emailUpdates}
-                onCheckedChange={setEmailUpdates}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security
-            </CardTitle>
-            <CardDescription>
-              Manage your account security settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Two-Factor Authentication</Label>
-                <p className="text-sm text-muted-foreground">
-                  Add an extra layer of security to your account
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={twoFactor}
-                  onCheckedChange={setTwoFactor}
-                />
-                <Badge variant={twoFactor ? "default" : "secondary"}>
-                  {twoFactor ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Change Password</Label>
-              <p className="text-sm text-muted-foreground">
-                Update your account password for better security
-              </p>
-              <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Key className="h-4 w-4 mr-2" />
-                    Change Password
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Change Password</DialogTitle>
-                    <DialogDescription>
-                      Enter your current password and choose a new secure password.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="current-password">Current Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="current-password"
-                          type={showPasswords.current ? "text" : "password"}
-                          placeholder="Enter current password"
-                          value={passwordForm.currentPassword}
-                          onChange={(e) => handlePasswordFormChange('currentPassword', e.target.value)}
-                          disabled={passwordLoading}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => togglePasswordVisibility('current')}
-                          disabled={passwordLoading}
-                        >
-                          {showPasswords.current ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        Password must be 8-265 characters long and not commonly used
-                      </div>
-                      <div className="relative">
-                        <Input
-                          id="new-password"
-                          type={showPasswords.new ? "text" : "password"}
-                          placeholder="Enter new password (min 8 characters)"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => handlePasswordFormChange('newPassword', e.target.value)}
-                          disabled={passwordLoading}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => togglePasswordVisibility('new')}
-                          disabled={passwordLoading}
-                        >
-                          {showPasswords.new ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirm-password"
-                          type={showPasswords.confirm ? "text" : "password"}
-                          placeholder="Confirm new password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => handlePasswordFormChange('confirmPassword', e.target.value)}
-                          disabled={passwordLoading}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => togglePasswordVisibility('confirm')}
-                          disabled={passwordLoading}
-                        >
-                          {showPasswords.confirm ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setPasswordDialogOpen(false)}
-                      disabled={passwordLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handlePasswordChange}
-                      disabled={passwordLoading}
-                    >
-                      {passwordLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Updating...
-                        </>
-                      ) : (
-                        <>
-                          <Key className="h-4 w-4 mr-2" />
-                          Change Password
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardContent>
-        </Card>
-
-
-        {/* Connection Test */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Server className="h-5 w-5" />
-              Connection Test
-            </CardTitle>
-            <CardDescription>
-              Test your connection to Appwrite services
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Test Appwrite Connection</Label>
-                <p className="text-sm text-muted-foreground">
-                  Send a ping to verify your Appwrite setup
-                </p>
-              </div>
-              <Button
-                onClick={handlePing}
-                disabled={pingStatus === 'loading'}
-                variant={pingStatus === 'success' ? 'default' : pingStatus === 'error' ? 'destructive' : 'outline'}
-              >
-                {pingStatus === 'loading' ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : pingStatus === 'success' ? (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                ) : pingStatus === 'error' ? (
-                  <XCircle className="h-4 w-4 mr-2" />
-                ) : (
-                  <Zap className="h-4 w-4 mr-2" />
-                )}
-                {pingStatus === 'loading' ? "Testing..." :
-                  pingStatus === 'success' ? "Connected!" :
-                    pingStatus === 'error' ? "Connection failed" : "Test Appwrite Connection"}
-              </Button>
-            </div>
-
-            {/* Project Info */}
-            <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Endpoint</Label>
-                <p className="text-xs font-mono break-all">
-                  {process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Project ID</Label>
-                <p className="text-xs font-mono break-all">
-                  {process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}
-                </p>
-              </div>
-            </div>
-
-            {/* Logs */}
-            {pingLogs.length > 0 && (
-              <div className="space-y-2">
-                <Label className="text-sm">Connection Logs ({pingLogs.length})</Label>
-                <ScrollArea className="h-48 w-full rounded-md border">
-                  <div className="p-4">
-                    {pingLogs.map((log, index) => (
-                      <div key={index} className="mb-4 last:mb-0">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                          <span>{log.date.toLocaleString()}</span>
-                          <Badge variant={log.status >= 400 ? "destructive" : "default"} className="text-xs">
-                            {log.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm mb-1">
-                          <Badge variant="outline" className="text-xs">{log.method}</Badge>
-                          <span className="font-mono text-xs">{log.path}</span>
-                        </div>
-                        <pre className="text-xs bg-muted p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                          {log.response}
-                        </pre>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AppearanceSettings />
+        <NotificationSettings />
+        <SecuritySettings />
+        <ConnectionTest />
       </div>
     </div>
   )

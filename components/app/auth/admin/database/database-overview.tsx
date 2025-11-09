@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "@/lib/language-context";
 import {
   Activity,
   Server,
@@ -31,6 +32,8 @@ interface DatabaseOverviewProps {
 }
 
 export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }: DatabaseOverviewProps) {
+  const { t } = useTranslation();
+
   const getActivityIcon = (action: unknown) => {
     const actionStr = String(action);
     switch (actionStr) {
@@ -55,17 +58,17 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
     const actionStr = String(action);
     switch (actionStr) {
       case 'USER_LOGIN':
-        return "User login";
+        return t('database_page.overview.activity.user_login');
       case 'USER_LOGOUT':
-        return "User logout";
+        return t('database_page.overview.activity.user_logout');
       case 'PROFILE_UPDATE':
-        return "Profile update";
+        return t('database_page.overview.activity.profile_update');
       case 'SECURITY_EVENT':
-        return "Security event";
+        return t('database_page.overview.activity.security_event');
       case 'BACKUP_STARTED':
-        return "Database backup started";
+        return t('database_page.overview.activity.backup_started');
       case 'BACKUP_COMPLETED':
-        return "Database backup completed";
+        return t('database_page.overview.activity.backup_completed');
       default:
         return `${actionStr.toLowerCase().replace('_', ' ')}`;
     }
@@ -88,15 +91,15 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
   const getStatusText = (status: string) => {
     switch (status) {
       case 'online':
-        return "Online";
+        return t('database_page.overview.online');
       case 'offline':
-        return "Offline";
+        return t('database_page.overview.offline');
       case 'maintenance':
-        return "Warning";
+        return t('database_page.overview.maintenance');
       case 'error':
-        return "Error";
+        return t('error');
       default:
-        return "Unknown";
+        return t('database_page.overview.unknown_status');
     }
   };
 
@@ -119,11 +122,13 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Activity className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-            Recent Activity
+            {t('database_page.overview.recent_activity')}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Latest database operations</CardDescription>
+          <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+            {t('database_page.overview.recent_activity_description')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
           {recentActivity.length > 0 ? (
@@ -141,7 +146,9 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
           ) : (
             <div className="text-center text-muted-foreground py-6 sm:py-8">
               <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs sm:text-sm">No recent activity</p>
+              <p className="text-xs sm:text-sm" suppressHydrationWarning>
+                {t('database_page.overview.no_recent_activity')}
+              </p>
             </div>
           )}
         </CardContent>
@@ -149,37 +156,47 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Server className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-            System Health
+            {t('database_page.overview.system_health')}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Database system status</CardDescription>
+          <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+            {t('database_page.overview.system_health_description')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
           <div className="space-y-2.5">
             <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
-              <span className="truncate flex-1">CPU Usage</span>
+              <span className="truncate flex-1" suppressHydrationWarning>
+                {t('database_page.overview.cpu_usage')}
+              </span>
               <span className="shrink-0 font-semibold">{systemHealth?.cpu || 0}%</span>
             </div>
             <Progress value={systemHealth?.cpu || 0} className="h-2" />
           </div>
           <div className="space-y-2.5">
             <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
-              <span className="truncate flex-1">Memory Usage</span>
+              <span className="truncate flex-1" suppressHydrationWarning>
+                {t('database_page.overview.memory_usage')}
+              </span>
               <span className="shrink-0 font-semibold">{systemHealth?.memory || 0}%</span>
             </div>
             <Progress value={systemHealth?.memory || 0} className="h-2" />
           </div>
           <div className="space-y-2.5">
             <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
-              <span className="truncate flex-1">Storage Usage</span>
+              <span className="truncate flex-1" suppressHydrationWarning>
+                {t('database_page.overview.storage_usage')}
+              </span>
               <span className="shrink-0 font-semibold">{systemHealth?.storage || 0}%</span>
             </div>
             <Progress value={systemHealth?.storage || 0} className="h-2" />
           </div>
           <div className="space-y-2.5">
             <div className="flex justify-between items-center text-xs sm:text-sm gap-2">
-              <span className="truncate flex-1">Connection Pool</span>
+              <span className="truncate flex-1" suppressHydrationWarning>
+                {t('database_page.overview.connection_pool')}
+              </span>
               <span className="shrink-0 font-semibold">{systemHealth?.connections || '0/20'}</span>
             </div>
             <Progress value={systemHealth?.connections ? parseInt(systemHealth.connections.split('/')[0]) / parseInt(systemHealth.connections.split('/')[1]) * 100 : 0} className="h-2" />
@@ -190,11 +207,13 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
       {/* Database Status Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Database className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-            Status
+            {t('status')}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Current database state</CardDescription>
+          <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+            {t('database_page.overview.status_description')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -207,8 +226,8 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
                         'critical'
                 }
               />
-              <span className="text-xs sm:text-sm text-muted-foreground truncate">
-                {databaseStats?.status === 'online' ? "Operational" : "Check status"}
+              <span className="text-xs sm:text-sm text-muted-foreground truncate" suppressHydrationWarning>
+                {databaseStats?.status === 'online' ? t('database_page.overview.operational') : t('database_page.overview.check_status')}
               </span>
             </div>
           </div>
@@ -218,11 +237,13 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
       {/* Database Active Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Power className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-            Active
+            {t('database_page.overview.active')}
           </CardTitle>
-          <CardDescription className="text-xs sm:text-sm">Database connectivity status</CardDescription>
+          <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+            {t('database_page.overview.active_description')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -234,12 +255,12 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
                   <AlertCircle className="h-4 w-4 text-red-600" />
                 )}
               </div>
-              <span className={`text-xs sm:text-sm font-medium truncate ${databaseStats?.active ? 'text-green-600' : 'text-red-600'}`}>
-                {databaseStats?.active ? "Active" : "Inactive"}
+              <span className={`text-xs sm:text-sm font-medium truncate ${databaseStats?.active ? 'text-green-600' : 'text-red-600'}`} suppressHydrationWarning>
+                {databaseStats?.active ? t('active') : t('inactive')}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground shrink-0 pl-6 sm:pl-0">
-              {databaseStats?.active ? "Responsive" : "Not responding"}
+            <div className="text-xs text-muted-foreground shrink-0 pl-6 sm:pl-0" suppressHydrationWarning>
+              {databaseStats?.active ? t('database_page.overview.responsive') : t('database_page.overview.not_responding')}
             </div>
           </div>
         </CardContent>

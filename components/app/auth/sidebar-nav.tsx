@@ -4,8 +4,10 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/language-context"
 import { teams } from "@/lib/appwrite"
 import { useState, useEffect, useRef } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Sidebar,
   SidebarContent,
@@ -36,108 +38,111 @@ import {
   Clock,
 } from "lucide-react"
 
-const navigationItems = [
-  {
-    title: "Dashboard",
-    url: "/auth/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Profile",
-    url: "/auth/profile",
-    icon: User,
-  },
-  {
-    title: "Settings",
-    url: "/auth/settings",
-    icon: Settings,
-  },
-]
-
-
-const adminItems = [
-  {
-    title: "Audit Logs",
-    url: "/auth/audit",
-    icon: ClipboardList,
-  },
-  {
-    title: "Active Sessions",
-    url: "/auth/sessions",
-    icon: Clock,
-  },
-  {
-    title: "Security",
-    url: "/auth/admin/security",
-    icon: Shield,
-  },
-  {
-    title: "Database",
-    url: "/auth/admin/database",
-    icon: Database,
-  },
-  {
-    title: "Analytics",
-    url: "/auth/admin/analytics",
-    icon: BarChart3,
-  },
-]
-
-const blogItems = [
-  {
-    title: "Blog Categories",
-    url: "/auth/blog/blog-categories",
-    icon: BookOpen,
-    requiresSuperAdmin: false,
-  },
-  {
-    title: "Blog Tags",
-    url: "/auth/blog/blog-tags",
-    icon: Tag,
-    requiresSuperAdmin: true,
-  },
-  {
-    title: "Blog Posts",
-    url: "/auth/blog/blog-posts",
-    icon: FileText,
-    requiresSuperAdmin: false,
-  },
-]
-
-const communityItems = [
-  {
-    title: "Community Posts",
-    url: "/auth/community/community-posts",
-    icon: MessageSquare,
-    requiresSuperAdmin: false,
-  },
-  {
-    title: "Community Topics",
-    url: "/auth/community/community-topics",
-    icon: FolderTree,
-    requiresSuperAdmin: true,
-  },
-]
-
-const developerItems = [
-  {
-    title: "API Keys",
-    url: "/auth/developer/keys",
-    icon: Key,
-  },
-  {
-    title: "Documentation",
-    url: "/auth/developer/docs",
-    icon: FileText,
-  },
-]
+// Navigation items will be created inside component to use translations
 
 export function SidebarNav() {
   const pathname = usePathname()
   const { isMobile, setOpenMobile } = useSidebar()
   const { user, loading: authLoading, isAuthenticated } = useAuth()
+  const { t, loading: translationLoading } = useTranslation()
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const isCheckingRef = useRef(false)
+
+  // Navigation items with translations
+  const navigationItems = [
+    {
+      title: t('sidebar.dashboard'),
+      url: "/auth/dashboard",
+      icon: Home,
+    },
+    {
+      title: t('profile'),
+      url: "/auth/profile",
+      icon: User,
+    },
+    {
+      title: t('settings'),
+      url: "/auth/settings",
+      icon: Settings,
+    },
+  ]
+
+  const adminItems = [
+    {
+      title: t('sidebar.audit_logs'),
+      url: "/auth/audit",
+      icon: ClipboardList,
+    },
+    {
+      title: t('sidebar.active_sessions'),
+      url: "/auth/sessions",
+      icon: Clock,
+    },
+    {
+      title: t('sidebar.security'),
+      url: "/auth/admin/security",
+      icon: Shield,
+    },
+    {
+      title: t('database'),
+      url: "/auth/admin/database",
+      icon: Database,
+    },
+    {
+      title: t('sidebar.analytics'),
+      url: "/auth/admin/analytics",
+      icon: BarChart3,
+    },
+  ]
+
+  const blogItems = [
+    {
+      title: t('sidebar.blog_categories'),
+      url: "/auth/blog/blog-categories",
+      icon: BookOpen,
+      requiresSuperAdmin: false,
+    },
+    {
+      title: t('sidebar.blog_tags'),
+      url: "/auth/blog/blog-tags",
+      icon: Tag,
+      requiresSuperAdmin: true,
+    },
+    {
+      title: t('sidebar.blog_posts'),
+      url: "/auth/blog/blog-posts",
+      icon: FileText,
+      requiresSuperAdmin: false,
+    },
+  ]
+
+  const communityItems = [
+    {
+      title: t('sidebar.community_posts'),
+      url: "/auth/community/community-posts",
+      icon: MessageSquare,
+      requiresSuperAdmin: false,
+    },
+    {
+      title: t('sidebar.community_topics'),
+      url: "/auth/community/community-topics",
+      icon: FolderTree,
+      requiresSuperAdmin: true,
+    },
+  ]
+
+  const developerItems = [
+    {
+      title: t('sidebar.api_keys'),
+      url: "/auth/developer/keys",
+      icon: Key,
+    },
+    {
+      title: t('sidebar.documentation'),
+      url: "/auth/developer/docs",
+      icon: FileText,
+    },
+  ]
 
   // Handler to close sidebar on mobile when navigation item is clicked
   const handleNavClick = () => {
@@ -253,6 +258,114 @@ export function SidebarNav() {
     return true
   })
 
+  // Show skeleton while translations are loading
+  if (translationLoading) {
+    return (
+      <Sidebar variant="inset" className="border-r">
+        <SidebarHeader className="border-b px-6 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-primary/10 dark:bg-primary/20 shrink-0">
+              <Image
+                src="/favicon.svg"
+                alt="My Console Logo"
+                width={32}
+                height={32}
+                className="h-full w-full object-contain p-1"
+                priority
+              />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+              <Skeleton className="h-4 w-24 mb-1" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+        </SidebarHeader>
+
+        <SidebarContent>
+          {/* Main Navigation Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-32" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2, 3].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Administration Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-28" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Blog Management Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-36" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2, 3].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Community Management Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-40" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Developer Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-24" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+    )
+  }
+
   return (
     <Sidebar variant="inset" className="border-r">
       <SidebarHeader className="border-b px-6 py-4">
@@ -268,15 +381,15 @@ export function SidebarNav() {
             />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
-            <span className="truncate font-semibold">My Console</span>
-            <span className="truncate text-xs text-muted-foreground">Admin Panel</span>
+            <span className="truncate font-semibold" suppressHydrationWarning>{t('sidebar.app_name')}</span>
+            <span className="truncate text-xs text-muted-foreground" suppressHydrationWarning>{t('sidebar.admin_panel')}</span>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.main_navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
@@ -288,7 +401,7 @@ export function SidebarNav() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span suppressHydrationWarning>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -298,7 +411,7 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.administration')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredAdminItems.map((item) => (
@@ -310,7 +423,7 @@ export function SidebarNav() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span suppressHydrationWarning>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -320,7 +433,7 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Blog Management</SidebarGroupLabel>
+          <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.blog_management')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredBlogItems.map((item) => (
@@ -332,7 +445,7 @@ export function SidebarNav() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span suppressHydrationWarning>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -342,7 +455,7 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Community Management</SidebarGroupLabel>
+          <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.community_management')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredCommunityItems.map((item) => (
@@ -354,7 +467,7 @@ export function SidebarNav() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span suppressHydrationWarning>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -364,7 +477,7 @@ export function SidebarNav() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Developer</SidebarGroupLabel>
+          <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.developer')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {developerItems.map((item) => (
@@ -376,7 +489,7 @@ export function SidebarNav() {
                   >
                     <Link href={item.url} onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span suppressHydrationWarning>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

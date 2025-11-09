@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
     Dialog,
     DialogContent,
@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { tablesDB, DATABASE_ID, COMMUNITY_TOPICS_COLLECTION_ID } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslation } from "@/lib/language-context";
 import { createPaginationParams, DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import { AccessControl } from "@/components/app/auth/community/community-topics/access-control";
 import { TopicForm } from "@/components/app/auth/community/community-topics/topic-form";
@@ -35,7 +36,7 @@ import { generateSlug, generateUniqueSlug } from "@/components/app/auth/communit
 
 export default function CommunityTopicsPage() {
     const { user } = useAuth();
-    const router = useRouter();
+    const { t, loading: translationLoading } = useTranslation();
 
     // Main component state
     const [topics, setTopics] = useState<CommunityTopic[]>([]);
@@ -97,8 +98,8 @@ export default function CommunityTopicsPage() {
             setError(null);
         } catch (error) {
             console.error('Failed to load topics:', error);
-            setError("Error");
-            toast.error("Error");
+            setError(t('community_topics_page.failed_to_load'));
+            toast.error(t('community_topics_page.toast.error'));
             throw error;
         } finally {
             setIsRefreshing(false);
@@ -107,8 +108,9 @@ export default function CommunityTopicsPage() {
 
     // Load data on component mount
     useEffect(() => {
+        // Don't redirect on refresh - allow skeleton/error state to show
         if (!user) {
-            router.push('/auth/dashboard');
+            setIsLoading(false);
             return;
         }
 
@@ -117,18 +119,18 @@ export default function CommunityTopicsPage() {
                 await loadTopics();
             } catch (error) {
                 console.error('Failed to load data:', error);
-                setError("Failed to load community topics");
+                setError(t('community_topics_page.failed_to_load'));
             } finally {
                 setIsLoading(false);
             }
         };
 
         loadData();
-    }, [user, router, currentPage, pageSize]);
+    }, [user, currentPage, pageSize, t]);
 
     const handleCreateTopic = async () => {
         if (!formData.name.trim()) {
-            toast.error("Name is required");
+            toast.error(t('community_topics_page.toast.name_required'));
             return;
         }
 
@@ -173,13 +175,13 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success("Topic created successfully");
+            toast.success(t('community_topics_page.toast.created_success'));
             setCreateDialogOpen(false);
             resetForm();
             await loadTopics();
         } catch (error) {
             console.error('Failed to create topic:', error);
-            toast.error("Error");
+            toast.error(t('community_topics_page.toast.error'));
         } finally {
             setIsSubmitting(false);
         }
@@ -187,7 +189,7 @@ export default function CommunityTopicsPage() {
 
     const handleEditTopic = async () => {
         if (!selectedTopic || !formData.name.trim()) {
-            toast.error("Name is required");
+            toast.error(t('community_topics_page.toast.name_required'));
             return;
         }
 
@@ -239,14 +241,14 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success("Topic updated successfully");
+            toast.success(t('community_topics_page.toast.updated_success'));
             setEditDialogOpen(false);
             setSelectedTopic(null);
             resetForm();
             await loadTopics();
         } catch (error) {
             console.error('Failed to update topic:', error);
-            toast.error("Error");
+            toast.error(t('community_topics_page.toast.error'));
         } finally {
             setIsSubmitting(false);
         }
@@ -276,13 +278,13 @@ export default function CommunityTopicsPage() {
                 }
             });
 
-            toast.success("Topic deleted successfully");
+            toast.success(t('community_topics_page.toast.deleted_success'));
             setDeleteDialogOpen(false);
             setTopicToDelete(null);
             await loadTopics();
         } catch (error) {
             console.error('Failed to delete topic:', error);
-            toast.error("Error");
+            toast.error(t('community_topics_page.toast.error'));
         }
     };
 
@@ -312,10 +314,35 @@ export default function CommunityTopicsPage() {
         setFormData(DEFAULT_FORM_DATA);
     };
 
-    if (isLoading) {
+    // Show skeleton while translations or data is loading
+    if (translationLoading || isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin" />
+            <div className="flex-1 space-y-4 p-4 pt-6">
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="space-y-2 flex-1">
+                        <Skeleton className="h-9 w-64" />
+                        <Skeleton className="h-5 w-96" />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Skeleton className="h-9 w-24" />
+                        <Skeleton className="h-9 w-28" />
+                    </div>
+                </div>
+
+                {/* Card Skeleton */}
+                <Card>
+                    <CardHeader>
+                        <Skeleton className="h-6 w-48 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-64 w-full" />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         );
     }
@@ -323,9 +350,9 @@ export default function CommunityTopicsPage() {
     if (error) {
         return (
             <div className="flex-1 space-y-4 p-4 pt-6">
-                <Alert>
+                <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
+                    <AlertDescription suppressHydrationWarning>{error}</AlertDescription>
                 </Alert>
             </div>
         );
@@ -336,9 +363,11 @@ export default function CommunityTopicsPage() {
             <div className="flex-1 space-y-4 p-4 pt-6">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Community Topics</h1>
-                        <p className="text-muted-foreground">
-                            Manage discussion topics for your community
+                        <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
+                            {t('community_topics_page.title')}
+                        </h1>
+                        <p className="text-muted-foreground" suppressHydrationWarning>
+                            {t('community_topics_page.description')}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -348,20 +377,22 @@ export default function CommunityTopicsPage() {
                             disabled={isRefreshing}
                         >
                             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Refresh
+                            <span suppressHydrationWarning>{t('refresh')}</span>
                         </Button>
                         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Create
+                                    <span suppressHydrationWarning>{t('add')}</span>
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
-                                    <DialogTitle>Create New Topic</DialogTitle>
-                                    <DialogDescription>
-                                        Create a new discussion topic for your community
+                                    <DialogTitle suppressHydrationWarning>
+                                        {t('community_topics_page.create_dialog.title')}
+                                    </DialogTitle>
+                                    <DialogDescription suppressHydrationWarning>
+                                        {t('community_topics_page.create_dialog.description')}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <TopicForm
@@ -371,12 +402,12 @@ export default function CommunityTopicsPage() {
                                     mode="create"
                                 />
                                 <DialogFooter>
-                                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                                        Cancel
+                                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)} suppressHydrationWarning>
+                                        {t('cancel')}
                                     </Button>
                                     <Button onClick={handleCreateTopic} disabled={isSubmitting}>
                                         {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                                        Create
+                                        <span suppressHydrationWarning>{t('add')}</span>
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>
@@ -386,12 +417,15 @@ export default function CommunityTopicsPage() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2" suppressHydrationWarning>
                             <MessageSquare className="h-5 w-5" />
-                            Community Topics ({allTopics.length})
+                            {t('community_topics_page.table.title', { count: allTopics.length.toString() })}
                         </CardTitle>
-                        <CardDescription>
-                            Showing {topics.length} of {allTopics.length} entries (Total: {allTopics.length})
+                        <CardDescription suppressHydrationWarning>
+                            {t('community_topics_page.table.description', {
+                                current: topics.length.toString(),
+                                total: allTopics.length.toString()
+                            })}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -411,9 +445,11 @@ export default function CommunityTopicsPage() {
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>Edit Topic</DialogTitle>
-                            <DialogDescription>
-                                Update the topic information
+                            <DialogTitle suppressHydrationWarning>
+                                {t('community_topics_page.edit_dialog.title')}
+                            </DialogTitle>
+                            <DialogDescription suppressHydrationWarning>
+                                {t('community_topics_page.edit_dialog.description')}
                             </DialogDescription>
                         </DialogHeader>
                         <TopicForm
@@ -424,12 +460,12 @@ export default function CommunityTopicsPage() {
                             mode="edit"
                         />
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                                Cancel
+                            <Button variant="outline" onClick={() => setEditDialogOpen(false)} suppressHydrationWarning>
+                                {t('cancel')}
                             </Button>
                             <Button onClick={handleEditTopic} disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                                Update
+                                <span suppressHydrationWarning>{t('save')}</span>
                             </Button>
                         </DialogFooter>
                     </DialogContent>

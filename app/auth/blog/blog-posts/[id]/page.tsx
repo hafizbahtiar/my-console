@@ -9,27 +9,10 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { BlogPost, ViewAnalytics, LikeAnalytics, BlogComment } from "../types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/custom/status-badge";
-import {
-  ArrowLeft,
-  AlertCircle,
-  Eye,
-  Heart,
-  Edit,
-  Calendar,
-  User,
-  Tag,
-  TrendingUp,
-  BarChart3,
-  Globe,
-  Clock,
-  MessageSquare,
-  ThumbsUp,
-  ThumbsDown,
-} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import {
   tablesDB,
   DATABASE_ID,
@@ -41,12 +24,21 @@ import {
   BLOG_LIKES_COLLECTION_ID
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { SafeHTML } from "@/components/ui/safe-html";
+import { useTranslation } from "@/lib/language-context";
+import {
+  ViewBreadcrumbNav,
+  ViewHeader,
+  ViewTabs,
+  ViewContentTab,
+  ViewAnalyticsTab,
+  ViewCommentsTab,
+} from "@/components/app/auth/blog/blog-posts/view";
 
 
 
 export default function ViewBlogPostPage() {
   const { user } = useAuth();
+  const { t, loading: translationLoading } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -66,8 +58,16 @@ export default function ViewBlogPostPage() {
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
-      if (!user || !postId) {
-        router.push('/auth/dashboard');
+      // Don't redirect on refresh - allow skeleton/error state to show
+      if (!postId) {
+        setError(t('blog_posts_page.view_page.blog_post_not_found'));
+        setIsLoading(false);
+        return;
+      }
+
+      // Only load data if user is available
+      if (!user) {
+        setIsLoading(false);
         return;
       }
 
@@ -80,18 +80,18 @@ export default function ViewBlogPostPage() {
           loadViewAnalytics(),
           loadLikeAnalytics(),
           // Only track views for non-admin users (audience)
-          user ? Promise.resolve() : trackView()
+          trackView()
         ]);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setError('Failed to load blog post data');
+        setError(t('blog_posts_page.view_page.failed_to_load'));
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [user, postId, router]);
+  }, [user, postId, t]);
 
   const updateViewCount = async (currentPost: BlogPost) => {
     try {
@@ -155,20 +155,39 @@ export default function ViewBlogPostPage() {
 
   const loadComments = async () => {
     try {
-      // Load all comments for this post using the relationship
-      // Note: We'll filter approved and non-spam comments client-side
-      // as Appwrite query string format for booleans can be tricky
+      // Validate postId before querying
+      if (!postId || typeof postId !== 'string' || postId.trim() === '') {
+        console.warn('Invalid postId for comments query:', postId);
+        setComments([]);
+        setThreadedComments([]);
+        return;
+      }
+
+      const validPostId = postId.trim();
+      
+      // Load all comments and filter client-side
+      // This avoids query syntax issues with relationship fields
+      // Relationship queries in Appwrite can be tricky with string queries
       const commentsData = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: BLOG_COMMENTS_COLLECTION_ID,
-        queries: [
-          `equal("blogPosts", "${postId}")`
-        ],
       });
 
-      // Filter approved and non-spam comments client-side
+      // Filter comments by postId (checking both relationship object and string ID)
+      // Then filter approved and non-spam comments
       const allComments = (commentsData.rows || [])
         .map((row: any) => row as unknown as BlogComment)
+        .filter((comment: BlogComment) => {
+          // Check if comment belongs to this post
+          // blogPosts can be a relationship object or a string ID
+          const commentPostId = typeof comment.blogPosts === 'object' && comment.blogPosts?.$id
+            ? comment.blogPosts.$id
+            : typeof comment.blogPosts === 'string'
+            ? comment.blogPosts
+            : null;
+          
+          return commentPostId === validPostId;
+        })
         .filter((comment: BlogComment) =>
           comment.isApproved === true && comment.isSpam === false
         );
@@ -224,10 +243,23 @@ export default function ViewBlogPostPage() {
 
   const loadViewAnalytics = async () => {
     try {
+      // Validate postId before querying
+      if (!postId || typeof postId !== 'string' || postId.trim() === '') {
+        console.warn('Invalid postId for views query:', postId);
+        setViewAnalytics({
+          totalViews: 0,
+          uniqueViews: 0,
+          topReferrers: [],
+          geographic: [],
+          recentViews: []
+        });
+        return;
+      }
+
       const viewsData = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: BLOG_VIEWS_COLLECTION_ID,
-        queries: [`equal("postId", "${postId}")`],
+        queries: [`equal("postId", "${postId.trim()}")`],
       });
 
       // Process view analytics
@@ -288,10 +320,22 @@ export default function ViewBlogPostPage() {
 
   const loadLikeAnalytics = async () => {
     try {
+      // Validate postId before querying
+      if (!postId || typeof postId !== 'string' || postId.trim() === '') {
+        console.warn('Invalid postId for likes query:', postId);
+        setLikeAnalytics({
+          totalLikes: 0,
+          activeLikes: 0,
+          likeTypes: [],
+          recentLikes: []
+        });
+        return;
+      }
+
       const likesData = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: BLOG_LIKES_COLLECTION_ID,
-        queries: [`equal("postId", "${postId}")`],
+        queries: [`equal("postId", "${postId.trim()}")`],
       });
 
       const likes = likesData.rows || [];
@@ -409,555 +453,92 @@ export default function ViewBlogPostPage() {
   };
 
 
-  if (isLoading) {
+  // Show skeleton while translations or data is loading
+  if (translationLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
+        {/* Breadcrumb Skeleton */}
+        <Skeleton className="h-10 w-full" />
+        
+        {/* Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-8 w-3/4 sm:h-9 sm:w-2/3" />
+            <Skeleton className="h-4 w-full sm:h-5 sm:w-4/5" />
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <Skeleton className="h-12 w-full" />
+
+        {/* Content Skeleton */}
+        <div className="space-y-6">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </div>
       </div>
     );
   }
 
   if (error || !post) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">Error</CardTitle>
-            <CardDescription>
-              {error || "Blog post not found"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/auth/blog/blog-posts">Back to Posts</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription suppressHydrationWarning>
+            {error || t('blog_posts_page.view_page.blog_post_not_found')}
+          </AlertDescription>
+        </Alert>
+        <Button asChild>
+          <Link href="/auth/blog/blog-posts" suppressHydrationWarning>
+            {t('blog_posts_page.view_page.back_to_posts')}
+          </Link>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
       {/* Breadcrumb Navigation */}
-      <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-3">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
-              <Link href="/auth/blog/blog-posts">
-                <ArrowLeft className="h-3 w-3 mr-1" />
-                Blog Posts
-              </Link>
-            </Button>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">{post.title}</span>
-          </nav>
-        </div>
-      </div>
+      <ViewBreadcrumbNav post={post} />
 
       {/* Header */}
-      <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">{post.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                {post.excerpt}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className={`w-2 h-2 rounded-full ${post.status === 'published' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                <StatusBadge status={post.status} type="blog-post" />
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Updated: {new Date(post.$updatedAt).toLocaleDateString()}
-              </div>
-              <Button asChild>
-                <Link href={`/auth/blog/blog-posts/${postId}/edit`}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Post
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ViewHeader post={post} postId={postId} />
 
       {/* Tab Navigation */}
-      <div className="sticky top-40 z-20 border-b bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center gap-6">
-            <button
-              onClick={() => setActiveTab('content')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'content'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              Content
-            </button>
-            <button
-              onClick={() => setActiveTab('comments')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'comments'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Comments ({comments.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('analytics')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${activeTab === 'analytics'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </button>
-          </div>
-        </div>
-      </div>
+      <ViewTabs
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        commentsCount={comments.length}
+      />
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="px-4 sm:px-6 py-4 sm:py-8">
         {activeTab === 'content' && (
-          <div className="space-y-8">
-            {/* Featured Image */}
-            {post.featuredImage && (
-              <div className="relative">
-                <img
-                  src={post.featuredImage}
-                  alt={post.featuredImageAlt || post.title}
-                  className="w-full h-64 object-cover rounded-lg shadow-md"
-                />
-                {post.featuredImageAlt && (
-                  <p className="text-sm text-muted-foreground mt-2 italic">
-                    {post.featuredImageAlt}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Author</p>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="font-medium">{post.author}</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</p>
-                <p className="font-medium">{getCategoryName(post)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Read Time</p>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span className="font-medium">{post.readTime}</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Published Date</p>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span className="font-medium">
-                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : "Not Published"}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Views</p>
-                <div className="flex items-center gap-2">
-                  <Eye className="h-4 w-4" />
-                  <span className="font-medium">{post.views}</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Likes</p>
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4" />
-                  <span className="font-medium">{post.likes}</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
-                <StatusBadge status={post.status} type="blog-post" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Featured</p>
-                <p className="font-medium">{post.isFeatured ? "Yes" : "No"}</p>
-              </div>
-            </div>
-
-            {/* Tags */}
-            {post.blogTags && post.blogTags.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Tag className="h-4 w-4" />
-                  Tags
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {post.blogTags.map((tag: any) => (
-                    <Badge key={tag.$id} variant="secondary" className="text-sm">
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* SEO Information */}
-            {(post.seoTitle || post.seoDescription || post.seoKeywords.length > 0) && (
-              <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">SEO Information</h4>
-                <div className="space-y-2 text-sm">
-                  {post.seoTitle && (
-                    <div>
-                      <span className="font-medium">SEO Title:</span> {post.seoTitle}
-                    </div>
-                  )}
-                  {post.seoDescription && (
-                    <div>
-                      <span className="font-medium">SEO Description:</span> {post.seoDescription}
-                    </div>
-                  )}
-                  {post.seoKeywords.length > 0 && (
-                    <div>
-                      <span className="font-medium">SEO Keywords:</span>{' '}
-                      <div className="inline-flex flex-wrap gap-1 mt-1">
-                        {post.seoKeywords.map((keyword, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {keyword}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Content */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Content</h4>
-              <div className="border rounded-lg p-6 bg-background prose prose-sm max-w-none dark:prose-invert">
-                <SafeHTML html={post.content} />
-              </div>
-            </div>
-
-            {/* Related Posts */}
-            {post.relatedPosts.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Related Posts</h4>
-                <div className="text-sm text-muted-foreground">
-                  {post.relatedPosts.length} related post{post.relatedPosts.length !== 1 ? 's' : ''}
-                </div>
-              </div>
-            )}
-          </div>
+          <ViewContentTab post={post} getCategoryName={getCategoryName} />
         )}
 
         {activeTab === 'analytics' && (
-          <div className="space-y-8">
-            {/* Analytics Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-                  <Eye className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{viewAnalytics?.totalViews || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {viewAnalytics?.uniqueViews || 0} unique views
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Likes</CardTitle>
-                  <Heart className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{likeAnalytics?.activeLikes || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {likeAnalytics?.totalLikes || 0} total interactions
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Top Referrer</CardTitle>
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {viewAnalytics?.topReferrers[0]?.source || "Direct Traffic"}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {viewAnalytics?.topReferrers[0]?.count || 0} views
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {viewAnalytics?.totalViews ?
-                      Math.round(((likeAnalytics?.activeLikes || 0) / viewAnalytics.totalViews) * 100) : 0}%
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Likes per view
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Detailed Analytics */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* View Sources */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Traffic Sources</CardTitle>
-                  <CardDescription>Top sources of traffic to this post</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {viewAnalytics?.topReferrers.length ? (
-                    <div className="space-y-3">
-                      {viewAnalytics.topReferrers.map((referrer, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm">{referrer.source}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-muted rounded-full h-2">
-                              <div
-                                className="bg-primary h-2 rounded-full"
-                                style={{
-                                  width: `${(referrer.count / (viewAnalytics.topReferrers[0]?.count || 1)) * 100}%`
-                                }}
-                              />
-                            </div>
-                            <span className="text-sm font-medium w-8 text-right">{referrer.count}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No view data available</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Geographic Data */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Geographic Distribution</CardTitle>
-                  <CardDescription>Views by country</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {viewAnalytics?.geographic.length ? (
-                    <div className="space-y-3">
-                      {viewAnalytics.geographic.slice(0, 5).map((geo, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm">{geo.country}</span>
-                          <span className="text-sm font-medium">{geo.count} views</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No geographic data available</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Like Types */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Like Distribution</CardTitle>
-                  <CardDescription>Distribution of like types</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {likeAnalytics?.likeTypes.length ? (
-                    <div className="space-y-3">
-                      {likeAnalytics.likeTypes.map((type, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                          <span className="text-sm capitalize">{type.type}</span>
-                          <span className="text-sm font-medium">{type.count} likes</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No like data available</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Recent Activity */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Activity</CardTitle>
-                  <CardDescription>Latest views and likes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {viewAnalytics?.recentViews.slice(0, 3).map((view, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">View</span>
-                        <span>{new Date(view.timestamp).toLocaleDateString()}</span>
-                      </div>
-                    ))}
-                    {likeAnalytics?.recentLikes.slice(0, 2).map((like, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground capitalize">{like.type}</span>
-                        <span>{new Date(like.timestamp).toLocaleDateString()}</span>
-                      </div>
-                    ))}
-                    {(!viewAnalytics?.recentViews.length && !likeAnalytics?.recentLikes.length) && (
-                      <p className="text-sm text-muted-foreground">No recent activity</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <ViewAnalyticsTab
+            viewAnalytics={viewAnalytics}
+            likeAnalytics={likeAnalytics}
+          />
         )}
 
         {activeTab === 'comments' && (
-          <div className="space-y-8">
-            {/* Comments Header */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Comments ({comments.length})
-                </CardTitle>
-                <CardDescription>
-                  {post.allowComments
-                    ? "Comments are enabled for this post"
-                    : "Comments are disabled for this post"
-                  }
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            {/* Comments List */}
-            {!post.allowComments ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    Comments are disabled for this post
-                  </p>
-                </CardContent>
-              </Card>
-            ) : threadedComments.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    No comments yet
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {threadedComments.map((comment) => (
-                  <CommentItem key={comment.$id} comment={comment} depth={0} />
-                ))}
-              </div>
-            )}
-          </div>
+          <ViewCommentsTab
+            post={post}
+            threadedComments={threadedComments}
+          />
         )}
       </div>
-    </div>
-  );
-}
-
-// Recursive comment component
-function CommentItem({ comment, depth }: { comment: BlogComment; depth: number }) {
-  const maxDepth = 3;
-
-  return (
-    <div className={`${depth > 0 ? `ml-8 border-l-2 border-muted pl-4` : ''}`}>
-      <Card className={`${depth > 0 ? 'bg-muted/30' : ''}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-semibold text-sm">
-                {comment.author.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-sm">{comment.author}</p>
-                  {comment.authorId && (
-                    <Badge variant="outline" className="text-xs">
-                      Verified Author
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(comment.$createdAt).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            </div>
-            {comment.depth > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                Reply
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="space-y-4">
-            {/* Comment Content */}
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap text-sm">{comment.content}</p>
-            </div>
-
-            {/* Engagement Stats */}
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <ThumbsUp className="h-4 w-4" />
-                <span>{comment.likes}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <ThumbsDown className="h-4 w-4" />
-                <span>{comment.dislikes}</span>
-              </div>
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{comment.replies.length} replies</span>
-                </div>
-              )}
-            </div>
-
-            {/* Nested Replies */}
-            {comment.replies && comment.replies.length > 0 && depth < maxDepth && (
-              <div className="space-y-4 mt-4">
-                {comment.replies.map((reply) => (
-                  <CommentItem key={reply.$id} comment={reply} depth={depth + 1} />
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

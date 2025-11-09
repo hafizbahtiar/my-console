@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Edit, MapPin, Globe, Clock, Bell, Loader2 } from "lucide-react"
+import { useTranslation } from "@/lib/language-context"
 import { ProfileFormData } from "./types"
 import { TIMEZONES } from "./timezones"
 
@@ -23,24 +24,28 @@ export function AccountSettingsForm({
   onInputChange,
   onSubmit
 }: AccountSettingsFormProps) {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" suppressHydrationWarning>
           <Edit className="h-5 w-5" />
-          Account Settings
+          {t('profile_page.account_settings.title')}
         </CardTitle>
-        <CardDescription>
-          Update your account information and preferences
+        <CardDescription suppressHydrationWarning>
+          {t('profile_page.account_settings.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Display Name</Label>
+            <Label htmlFor="name" suppressHydrationWarning>
+              {t('profile_page.account_settings.display_name')}
+            </Label>
             <Input
               id="name"
-              placeholder="Enter your name"
+              placeholder={t('profile_page.account_settings.display_name_placeholder')}
               value={formData.name}
               onChange={(e) => onInputChange('name', e.target.value)}
               disabled={isUpdating}
@@ -48,48 +53,50 @@ export function AccountSettingsForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="email" suppressHydrationWarning>
+              {t('profile_page.account_settings.email_address')}
+            </Label>
             <Input
               id="email"
               type="email"
-              placeholder="Enter your email"
+              placeholder={t('profile_page.account_settings.email_placeholder')}
               value={formData.email}
               onChange={(e) => onInputChange('email', e.target.value)}
               disabled={true}
             />
-            <p className="text-xs text-muted-foreground">
-              Email cannot be changed. Contact support if you need to update your email.
+            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+              {t('profile_page.account_settings.email_cannot_change')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">
-              Bio <span className="text-muted-foreground">(Optional)</span>
+            <Label htmlFor="bio" suppressHydrationWarning>
+              {t('profile_page.account_settings.bio')} <span className="text-muted-foreground">({t('optional')})</span>
             </Label>
             <Textarea
               id="bio"
-              placeholder="Tell us about yourself"
+              placeholder={t('profile_page.account_settings.bio_placeholder')}
               value={formData.bio}
               onChange={(e) => onInputChange('bio', e.target.value)}
               disabled={isUpdating}
               rows={3}
               maxLength={500}
             />
-            <p className="text-xs text-muted-foreground">
-              {formData.bio.length}/500 characters
+            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+              {formData.bio.length}/500 {t('profile_page.account_settings.characters')}
             </p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="location">
-                Location <span className="text-muted-foreground">(Optional)</span>
+              <Label htmlFor="location" suppressHydrationWarning>
+                {t('profile_page.account_settings.location')} <span className="text-muted-foreground">({t('optional')})</span>
               </Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="location"
-                  placeholder="Enter your location"
+                  placeholder={t('profile_page.account_settings.location_placeholder')}
                   value={formData.location}
                   onChange={(e) => onInputChange('location', e.target.value)}
                   disabled={isUpdating}
@@ -100,15 +107,15 @@ export function AccountSettingsForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="website">
-                Website <span className="text-muted-foreground">(Optional)</span>
+              <Label htmlFor="website" suppressHydrationWarning>
+                {t('profile_page.account_settings.website')} <span className="text-muted-foreground">({t('optional')})</span>
               </Label>
               <div className="relative">
                 <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="website"
                   type="url"
-                  placeholder="https://example.com"
+                  placeholder={t('profile_page.account_settings.website_placeholder')}
                   value={formData.website}
                   onChange={(e) => onInputChange('website', e.target.value)}
                   disabled={isUpdating}
@@ -121,8 +128,8 @@ export function AccountSettingsForm({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="timezone">
-                Timezone <span className="text-muted-foreground">(Optional)</span>
+              <Label htmlFor="timezone" suppressHydrationWarning>
+                {t('profile_page.account_settings.timezone')} <span className="text-muted-foreground">({t('optional')})</span>
               </Label>
               <Select
                 value={formData.timezone || ''}
@@ -130,7 +137,7 @@ export function AccountSettingsForm({
                 disabled={isUpdating}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select timezone" />
+                  <SelectValue placeholder={t('profile_page.account_settings.timezone_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {TIMEZONES.map((tz) => (
@@ -143,7 +150,9 @@ export function AccountSettingsForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language" suppressHydrationWarning>
+                {t('profile_page.account_settings.language')}
+              </Label>
               <Select
                 value={formData.language}
                 onValueChange={(value: 'en' | 'ms') => onInputChange('language', value)}
@@ -153,15 +162,21 @@ export function AccountSettingsForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ms">Malay</SelectItem>
+                  <SelectItem value="en" suppressHydrationWarning>
+                    {t('settings_page.appearance.languages.en')}
+                  </SelectItem>
+                  <SelectItem value="ms" suppressHydrationWarning>
+                    {t('settings_page.appearance.languages.ms')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="theme">Theme</Label>
+            <Label htmlFor="theme" suppressHydrationWarning>
+              {t('profile_page.account_settings.theme')}
+            </Label>
             <Select
               value={formData.theme}
               onValueChange={(value: 'light' | 'dark' | 'system') => onInputChange('theme', value)}
@@ -171,9 +186,15 @@ export function AccountSettingsForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="system">System</SelectItem>
+                <SelectItem value="light" suppressHydrationWarning>
+                  {t('light')}
+                </SelectItem>
+                <SelectItem value="dark" suppressHydrationWarning>
+                  {t('dark')}
+                </SelectItem>
+                <SelectItem value="system" suppressHydrationWarning>
+                  {t('system')}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -187,9 +208,9 @@ export function AccountSettingsForm({
               disabled={isUpdating}
               className="rounded border-gray-300 text-primary focus:ring-primary"
             />
-            <Label htmlFor="notificationsEnabled" className="flex items-center gap-2 cursor-pointer">
+            <Label htmlFor="notificationsEnabled" className="flex items-center gap-2 cursor-pointer" suppressHydrationWarning>
               <Bell className="h-4 w-4" />
-              Notifications Enabled
+              {t('profile_page.account_settings.notifications_enabled')}
             </Label>
           </div>
 
@@ -197,10 +218,10 @@ export function AccountSettingsForm({
             {isUpdating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Updating...
+                <span suppressHydrationWarning>{t('profile_page.account_settings.updating')}</span>
               </>
             ) : (
-              "Update"
+              <span suppressHydrationWarning>{t('profile_page.account_settings.update')}</span>
             )}
           </Button>
         </form>

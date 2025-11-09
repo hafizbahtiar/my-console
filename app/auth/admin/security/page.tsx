@@ -1,16 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useTranslation } from "@/lib/language-context"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { AlertTriangle, Shield, AlertCircle, Ban, CheckCircle, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { tablesDB, DATABASE_ID, SECURITY_EVENTS_COLLECTION_ID, IP_BLOCKLIST_COLLECTION_ID } from "@/lib/appwrite"
+import {
+  SecurityHeader,
+  SecurityOverviewCards,
+  RecentAlertsCard,
+  SecurityStatusCard,
+  BlockIPForm,
+  BlockedIPsList,
+  SecurityEventsList
+} from "@/components/app/auth/admin/security"
 
 interface SecurityEvent {
     id: string
@@ -34,6 +38,7 @@ interface IPBlocklistEntry {
 }
 
 export default function SecurityPage() {
+    const { t, loading: translationLoading } = useTranslation()
     // State for different security sections
     const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([])
     const [ipBlocklist, setIpBlocklist] = useState<IPBlocklistEntry[]>([])
@@ -100,7 +105,7 @@ export default function SecurityPage() {
 
         } catch (error) {
             console.error('Failed to load security data:', error)
-            toast.error("Failed to load security data")
+            toast.error(t('security_page.toast.load_failed'))
         } finally {
             setLoading(false)
             setRefreshing(false)
@@ -109,16 +114,16 @@ export default function SecurityPage() {
 
     useEffect(() => {
         loadSecurityData()
-    }, [])
+    }, [t])
 
 
     const handleBlockIP = async () => {
         if (!newIPBlock.trim()) {
-            toast.error("IP address is required")
+            toast.error(t('security_page.toast.ip_required'))
             return
         }
         if (!blockReason.trim()) {
-            toast.error("Reason is required")
+            toast.error(t('security_page.toast.reason_required'))
             return
         }
 
@@ -143,14 +148,14 @@ export default function SecurityPage() {
                 await loadSecurityData()
                 setNewIPBlock('')
                 setBlockReason('')
-                toast.success("IP address blocked successfully")
+                toast.success(t('security_page.toast.blocked_success'))
             } catch (error) {
                 console.warn('IP blocklist table not found, blocking not saved')
-                toast.error("Error")
+                toast.error(t('security_page.toast.error'))
             }
         } catch (error) {
             console.error('Failed to block IP:', error)
-            toast.error("Error")
+            toast.error(t('security_page.toast.error'))
         }
     }
 
@@ -167,284 +172,106 @@ export default function SecurityPage() {
 
                 // Reload data to reflect changes
                 await loadSecurityData()
-                toast.success("IP address unblocked successfully")
+                toast.success(t('security_page.toast.unblocked_success'))
             } catch (error) {
                 console.warn('IP blocklist table not found, unblocking not saved')
-                toast.error("Error")
+                toast.error(t('security_page.toast.error'))
             }
         } catch (error) {
             console.error('Failed to unblock IP:', error)
-            toast.error("Error")
+            toast.error(t('security_page.toast.error'))
         }
     }
 
+    // Show skeleton while translations or data is loading
+    if (translationLoading || loading) {
+        return (
+            <div className="flex-1 space-y-4 p-4 pt-6">
+                {/* Header Skeleton */}
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-9 w-64" />
+                        <Skeleton className="h-5 w-80" />
+                    </div>
+                    <Skeleton className="h-10 w-24" />
+                </div>
 
-    const getSeverityColor = (severity: string) => {
-        switch (severity) {
-            case 'critical': return 'destructive'
-            case 'high': return 'destructive'
-            case 'medium': return 'secondary'
-            case 'low': return 'outline'
-            default: return 'outline'
-        }
-    }
+                {/* Cards Skeleton */}
+                <div className="grid gap-4 md:grid-cols-3">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="border rounded-lg p-4 space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-8 w-16" />
+                            <Skeleton className="h-3 w-32" />
+                        </div>
+                    ))}
+                </div>
 
-    const getEventTypeIcon = (type: string) => {
-        switch (type) {
-            case 'suspicious_activity': return <AlertTriangle className="h-4 w-4" />
-            case 'policy_violation': return <Shield className="h-4 w-4" />
-            default: return <AlertCircle className="h-4 w-4" />
-        }
+                {/* Tabs Skeleton */}
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="border rounded-lg p-6 space-y-4">
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-48 w-full" />
+                        </div>
+                        <div className="border rounded-lg p-6 space-y-4">
+                            <Skeleton className="h-6 w-32" />
+                            <Skeleton className="h-48 w-full" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     return (
         <div className="flex-1 space-y-4 p-4 pt-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Security Management</h1>
-                    <p className="text-muted-foreground">
-                        Monitor and manage security settings
-                    </p>
-                </div>
-                <Button onClick={loadSecurityData} disabled={refreshing}>
-                    <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                    Refresh
-                </Button>
-            </div>
+            <SecurityHeader onRefresh={loadSecurityData} refreshing={refreshing} />
 
             {/* Security Overview Cards */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Blocked IPs</CardTitle>
-                        <Ban className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {ipBlocklist.filter(ip => ip.isActive).length}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Currently blocked IP addresses
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Security Events</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {securityEvents.length}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Custom security monitoring
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Appwrite Status</CardTitle>
-                        <Shield className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">Active</div>
-                        <p className="text-xs text-muted-foreground">
-                            Built-in security enabled
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            <SecurityOverviewCards ipBlocklist={ipBlocklist} securityEvents={securityEvents} />
 
             {/* Main Security Dashboard */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="ip-control">IP Control</TabsTrigger>
-                    <TabsTrigger value="events">Events</TabsTrigger>
+                    <TabsTrigger value="overview" suppressHydrationWarning>
+                        {t('security_page.tabs.overview')}
+                    </TabsTrigger>
+                    <TabsTrigger value="ip-control" suppressHydrationWarning>
+                        {t('security_page.tabs.ip_control')}
+                    </TabsTrigger>
+                    <TabsTrigger value="events" suppressHydrationWarning>
+                        {t('security_page.tabs.events')}
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="h-5 w-5 text-orange-500" />
-                                    Recent Alerts
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <ScrollArea className="h-[200px]">
-                                    <div className="space-y-2">
-                                        {securityEvents.slice(0, 5).map((event) => (
-                                            <div key={event.id} className="flex items-center justify-between p-2 border rounded">
-                                                <div className="flex items-center gap-2">
-                                                    {getEventTypeIcon(event.type)}
-                                                    <div>
-                                                        <p className="text-sm font-medium">{event.description}</p>
-                                                        <p className="text-xs text-muted-foreground">{event.ipAddress}</p>
-                                                    </div>
-                                                </div>
-                                                <Badge variant={getSeverityColor(event.severity)}>
-                                                    {event.severity}
-                                                </Badge>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-green-500" />
-                                    Security Status
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Appwrite Security</span>
-                                    <Badge variant="default">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Active
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">IP Filtering</span>
-                                    <Badge variant="default">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Enabled
-                                    </Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm">Custom Security Events</span>
-                                    <Badge variant="default">
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Monitoring
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <RecentAlertsCard securityEvents={securityEvents} />
+                        <SecurityStatusCard />
                     </div>
                 </TabsContent>
 
                 <TabsContent value="ip-control" className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Block IP</CardTitle>
-                                <CardDescription>
-                                    Block an IP address from accessing the system
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="ipAddress">IP Address</Label>
-                                    <Input
-                                        id="ipAddress"
-                                        placeholder="192.168.1.100"
-                                        value={newIPBlock}
-                                        onChange={(e) => setNewIPBlock(e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="reason">Reason</Label>
-                                    <Input
-                                        id="reason"
-                                        placeholder="Suspicious activity"
-                                        value={blockReason}
-                                        onChange={(e) => setBlockReason(e.target.value)}
-                                    />
-                                </div>
-                                <Button onClick={handleBlockIP} className="w-full">
-                                    Block IP
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Blocked IPs</CardTitle>
-                                <CardDescription>
-                                    Currently blocked IP addresses
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <ScrollArea className="h-[300px]">
-                                    <div className="space-y-2">
-                                        {ipBlocklist.map((block) => (
-                                            <div key={block.id} className="flex items-center justify-between p-2 border rounded">
-                                                <div>
-                                                    <p className="text-sm font-medium">{block.ipAddress}</p>
-                                                    <p className="text-xs text-muted-foreground">{block.reason}</p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Badge variant={block.isActive ? "destructive" : "secondary"}>
-                                                        {block.isActive ? 'Blocked' : 'Unblocked'}
-                                                    </Badge>
-                                                    {block.isActive && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleUnblockIP(block.id)}
-                                                        >
-                                                            Unblock
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            </CardContent>
-                        </Card>
+                        <BlockIPForm
+                            newIPBlock={newIPBlock}
+                            blockReason={blockReason}
+                            onIPChange={setNewIPBlock}
+                            onReasonChange={setBlockReason}
+                            onSubmit={handleBlockIP}
+                        />
+                        <BlockedIPsList
+                            ipBlocklist={ipBlocklist}
+                            onUnblock={handleUnblockIP}
+                        />
                     </div>
                 </TabsContent>
 
                 <TabsContent value="events" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Security Events</CardTitle>
-                            <CardDescription>
-                                Recent security events and alerts
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <ScrollArea className="h-[500px]">
-                                <div className="space-y-2">
-                                    {securityEvents.map((event) => (
-                                        <div key={event.id} className="p-4 border rounded space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    {getEventTypeIcon(event.type)}
-                                                    <span className="text-sm font-medium capitalize">
-                                                        {event.type.replace('_', ' ')}
-                                                    </span>
-                                                </div>
-                                                <Badge variant={getSeverityColor(event.severity)}>
-                                                    {event.severity}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-sm">{event.description}</p>
-                                            <div className="flex justify-between text-xs text-muted-foreground">
-                                                <span>{event.ipAddress}</span>
-                                                <span>{new Date(event.timestamp).toLocaleString()}</span>
-                                            </div>
-                                            {event.userId && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    User: {event.userId}
-                                                </p>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
+                    <SecurityEventsList securityEvents={securityEvents} />
                 </TabsContent>
             </Tabs>
         </div>

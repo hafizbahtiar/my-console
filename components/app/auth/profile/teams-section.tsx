@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useTranslation } from "@/lib/language-context"
 import { Users } from "lucide-react"
 import { formatDate } from "./utils"
 
@@ -9,15 +10,17 @@ interface TeamsSectionProps {
 }
 
 export function TeamsSection({ teams }: TeamsSectionProps) {
+  const { t } = useTranslation()
+
   return (
     <Card className="md:col-span-2">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" suppressHydrationWarning>
           <Users className="h-5 w-5" />
-          Teams
+          {t('profile_page.teams.title')}
         </CardTitle>
-        <CardDescription>
-          Teams you belong to
+        <CardDescription suppressHydrationWarning>
+          {t('profile_page.teams.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -28,13 +31,13 @@ export function TeamsSection({ teams }: TeamsSectionProps) {
                 <Users className="h-4 w-4 text-blue-500" />
                 <div>
                   <p className="font-medium">{team.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {team.total} member{team.total !== 1 ? 's' : ''}
+                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    {team.total} {team.total !== 1 ? t('profile_page.teams.members') : t('profile_page.teams.member')}
                   </p>
                 </div>
               </div>
               <div className="text-right text-xs text-muted-foreground">
-                <p>Created</p>
+                <p suppressHydrationWarning>{t('profile_page.teams.created')}</p>
                 <p>{formatDate(team.$createdAt)}</p>
               </div>
             </div>
@@ -42,8 +45,10 @@ export function TeamsSection({ teams }: TeamsSectionProps) {
         ) : (
           <div className="text-center text-muted-foreground py-6">
             <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No teams found</p>
-            <p className="text-sm">You are not a member of any teams</p>
+            <p suppressHydrationWarning>{t('profile_page.teams.no_teams')}</p>
+            <p className="text-sm" suppressHydrationWarning>
+              {t('profile_page.teams.no_teams_description')}
+            </p>
           </div>
         )}
       </CardContent>

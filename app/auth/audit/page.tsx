@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react"
 import { auditLogger } from "@/lib/audit-log"
 import { useAuth } from "@/lib/auth-context"
+import { useTranslation } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { AuditStats, AuditFilters, AuditTable } from "@/components/app/auth/audit"
 import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Pagination,
   PaginationContent,
@@ -35,6 +38,7 @@ interface AuditLog {
 
 export default function AuditPage() {
   const { user } = useAuth()
+  const { t, loading: translationLoading } = useTranslation()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [allLogs, setAllLogs] = useState<AuditLog[]>([]) // Store all logs for filtering
   const [loading, setLoading] = useState(true)
@@ -80,7 +84,7 @@ export default function AuditPage() {
       setLogs(paginatedLogs)
     } catch (error) {
       console.error('Failed to load audit logs:', error)
-      toast.error("Error")
+      toast.error(t('audit_page.error'))
       setLogs([])
       setAllLogs([])
     } finally {
@@ -159,7 +163,10 @@ export default function AuditPage() {
       exportToJSON(dataToExport)
     }
 
-    toast.success(`Exported ${dataToExport.length} logs as ${exportFormat.toUpperCase()}`)
+    toast.success(t('audit_page.filters.exported_success', { 
+      count: dataToExport.length.toString(), 
+      format: exportFormat.toUpperCase() 
+    }))
   }
 
   const exportToCSV = (data: any[]) => {
@@ -213,19 +220,83 @@ export default function AuditPage() {
     a.click()
     window.URL.revokeObjectURL(url)
 
-    toast.success("Compliance report generated successfully")
+    toast.success(t('audit_page.filters.compliance_report_success'))
   }
 
-  if (loading) {
+  // Show skeleton while translations or audit data is loading
+  if (translationLoading || loading) {
     return (
-      <div className="flex-1 space-y-6 p-4 pt-6 md:p-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Audit Logs</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Loading audit logs...</p>
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-6">
+        {/* Header Skeleton */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <Skeleton className="h-8 w-32 sm:h-9 sm:w-40" />
+            <Skeleton className="h-4 w-64 sm:h-5 sm:w-80" />
+          </div>
+          <Skeleton className="h-10 w-full sm:w-32" />
         </div>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-16 w-16 sm:h-32 sm:w-32 border-b-2 border-primary"></div>
+
+        {/* Stats Skeleton */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4 rounded" />
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
+
+        {/* Filters Skeleton */}
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <Skeleton className="h-6 w-32" />
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
+            <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 w-full sm:w-40" />
+              <Skeleton className="h-10 w-full sm:w-40" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table Skeleton */}
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1 min-w-0 flex-1">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -235,14 +306,16 @@ export default function AuditPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Audit Logs</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">
-            View and manage system audit logs
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl" suppressHydrationWarning>
+            {t('audit_page.title')}
+          </h1>
+          <p className="text-sm text-muted-foreground sm:text-base" suppressHydrationWarning>
+            {t('audit_page.description')}
           </p>
         </div>
         <Button onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto">
           <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
-          <span className="truncate">Refresh</span>
+          <span className="truncate" suppressHydrationWarning>{t('audit_page.refresh')}</span>
         </Button>
       </div>
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/lib/language-context";
 import { DatabaseCollectionStatusBadge } from "@/components/custom/status-badge";
 import {
     Dialog,
@@ -139,6 +140,7 @@ function getValueLength(value: unknown): number | undefined {
 }
 
 export function DatabaseCollections({ collections, onRefresh }: DatabaseCollectionsProps) {
+    const { t } = useTranslation();
     const [schemaDialogOpen, setSchemaDialogOpen] = useState(false);
     const [selectedCollection, setSelectedCollection] = useState<CollectionSchema | null>(null);
     const [schemaLoading, setSchemaLoading] = useState(false);
@@ -152,7 +154,7 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
             setSelectedCollection(schema);
         } catch (error) {
             console.error('Failed to load collection schema:', error);
-            toast.error("Failed to load schema");
+            toast.error(t('database_page.collections.schema_dialog.failed_to_load'));
             setSchemaDialogOpen(false);
         } finally {
             setSchemaLoading(false);
@@ -171,9 +173,11 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
         <>
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base sm:text-lg">Database Collections</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                        Overview of all collections
+                    <CardTitle className="text-base sm:text-lg" suppressHydrationWarning>
+                        {t('database_page.collections.title')}
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+                        {t('database_page.collections.description')}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -181,12 +185,24 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-xs sm:text-sm">Collection ID</TableHead>
-                                    <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                                    <TableHead className="text-xs sm:text-sm">Documents</TableHead>
-                                    <TableHead className="text-xs sm:text-sm">Size</TableHead>
-                                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Last Modified</TableHead>
-                                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                                    <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                                        {t('database_page.collections.collection_id')}
+                                    </TableHead>
+                                    <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                                        {t('name')}
+                                    </TableHead>
+                                    <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                                        {t('database_page.collections.documents')}
+                                    </TableHead>
+                                    <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                                        {t('database_page.collections.size')}
+                                    </TableHead>
+                                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell" suppressHydrationWarning>
+                                        {t('database_page.collections.last_modified')}
+                                    </TableHead>
+                                    <TableHead className="text-xs sm:text-sm" suppressHydrationWarning>
+                                        {t('status')}
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -210,7 +226,9 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                            <p className="text-xs sm:text-sm">No collections found</p>
+                                            <p className="text-xs sm:text-sm" suppressHydrationWarning>
+                                                {t('database_page.collections.no_collections')}
+                                            </p>
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -224,11 +242,11 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
             <Dialog open={schemaDialogOpen} onOpenChange={setSchemaDialogOpen}>
                 <DialogContent className="w-[95vw] sm:w-full sm:max-w-[1200px] max-h-[90vh] sm:max-h-[85vh] p-4 sm:p-6">
                     <DialogHeader className="px-0 sm:px-0">
-                        <DialogTitle className="text-base sm:text-lg pr-8">
-                            {selectedCollection ? `Collection Schema: ${selectedCollection.name}` : "Collection Schema"}
+                        <DialogTitle className="text-base sm:text-lg pr-8" suppressHydrationWarning>
+                            {selectedCollection ? t('database_page.collections.schema_dialog.title', { name: selectedCollection.name }) : t('database_page.collections.schema_dialog.loading_title')}
                         </DialogTitle>
-                        <DialogDescription className="text-xs sm:text-sm mt-1 sm:mt-2">
-                            {selectedCollection ? `Schema for ${selectedCollection.totalDocuments.toLocaleString()} documents` : "Loading schema..."}
+                        <DialogDescription className="text-xs sm:text-sm mt-1 sm:mt-2" suppressHydrationWarning>
+                            {selectedCollection ? t('database_page.collections.schema_dialog.description', { count: selectedCollection.totalDocuments.toLocaleString() }) : t('database_page.collections.schema_dialog.loading_description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -236,26 +254,36 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                         {schemaLoading ? (
                             <div className="flex items-center justify-center py-8 sm:py-12">
                                 <Loader2 className="h-8 w-8 animate-spin" />
-                                <span className="ml-2 text-xs sm:text-sm">Loading schema...</span>
+                                <span className="ml-2 text-xs sm:text-sm" suppressHydrationWarning>
+                                    {t('database_page.collections.schema_dialog.loading_description')}
+                                </span>
                             </div>
                         ) : selectedCollection ? (
                             <div className="space-y-4 sm:space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                     <Card className="p-3 sm:p-4">
                                         <CardHeader className="pb-2 px-0 pt-0">
-                                            <CardTitle className="text-xs sm:text-sm font-semibold">Collection Info</CardTitle>
+                                            <CardTitle className="text-xs sm:text-sm font-semibold" suppressHydrationWarning>
+                                                {t('database_page.collections.schema_dialog.collection_info')}
+                                            </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-2.5 sm:space-y-3 px-0 pt-0">
                                             <div className="flex flex-col gap-1 sm:gap-2">
-                                                <span className="text-xs sm:text-sm text-muted-foreground font-medium">Collection ID</span>
+                                                <span className="text-xs sm:text-sm text-muted-foreground font-medium" suppressHydrationWarning>
+                                                    {t('database_page.collections.collection_id')}
+                                                </span>
                                                 <span className="font-mono text-xs sm:text-sm break-all bg-muted/50 p-2 rounded-md">{selectedCollection.id}</span>
                                             </div>
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 pt-1 border-t">
-                                                <span className="text-xs sm:text-sm text-muted-foreground">Total Documents</span>
+                                                <span className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
+                                                    {t('database_page.collections.schema_dialog.total_documents')}
+                                                </span>
                                                 <span className="text-xs sm:text-sm font-semibold">{selectedCollection.totalDocuments.toLocaleString()}</span>
                                             </div>
                                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 pt-1 border-t">
-                                                <span className="text-xs sm:text-sm text-muted-foreground">Total Columns</span>
+                                                <span className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
+                                                    {t('database_page.collections.schema_dialog.total_columns')}
+                                                </span>
                                                 <span className="text-xs sm:text-sm font-semibold">{selectedCollection.columns.length}</span>
                                             </div>
                                         </CardContent>
@@ -263,7 +291,9 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
 
                                     <Card className="p-3 sm:p-4">
                                         <CardHeader className="pb-2 px-0 pt-0">
-                                            <CardTitle className="text-xs sm:text-sm font-semibold">Schema Summary</CardTitle>
+                                            <CardTitle className="text-xs sm:text-sm font-semibold" suppressHydrationWarning>
+                                                {t('database_page.collections.schema_dialog.schema_summary')}
+                                            </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-2.5 sm:space-y-3 px-0 pt-0">
                                             {Object.entries(
@@ -283,19 +313,33 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
 
                                 <Card className="p-3 sm:p-4">
                                     <CardHeader className="px-0 pt-0 pb-3 sm:pb-4">
-                                        <CardTitle className="text-sm sm:text-base">Column Details</CardTitle>
-                                        <CardDescription className="text-xs sm:text-sm mt-1">Detailed information about each column in the collection</CardDescription>
+                                        <CardTitle className="text-sm sm:text-base" suppressHydrationWarning>
+                                            {t('database_page.collections.schema_dialog.column_details')}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs sm:text-sm mt-1" suppressHydrationWarning>
+                                            {t('database_page.collections.schema_dialog.column_details_description')}
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent className="px-0 pt-0">
                                         <div className="w-full overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4">
                                             <Table className="w-full min-w-[600px]">
                                                 <TableHeader>
                                                     <TableRow>
-                                                        <TableHead className="text-xs sm:text-sm min-w-[120px] sm:min-w-[150px]">Column Name</TableHead>
-                                                        <TableHead className="text-xs sm:text-sm min-w-[80px] sm:min-w-[100px]">Data Type</TableHead>
-                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]">Nullable</TableHead>
-                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]">Length</TableHead>
-                                                        <TableHead className="text-xs sm:text-sm min-w-[150px] sm:min-w-[200px]">Sample Values</TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[120px] sm:min-w-[150px]" suppressHydrationWarning>
+                                                            {t('database_page.collections.schema_dialog.column_name')}
+                                                        </TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[80px] sm:min-w-[100px]" suppressHydrationWarning>
+                                                            {t('database_page.collections.schema_dialog.data_type')}
+                                                        </TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]" suppressHydrationWarning>
+                                                            {t('database_page.collections.schema_dialog.nullable')}
+                                                        </TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[60px] sm:min-w-[80px]" suppressHydrationWarning>
+                                                            {t('database_page.collections.schema_dialog.length')}
+                                                        </TableHead>
+                                                        <TableHead className="text-xs sm:text-sm min-w-[150px] sm:min-w-[200px]" suppressHydrationWarning>
+                                                            {t('database_page.collections.schema_dialog.sample_values')}
+                                                        </TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -309,9 +353,13 @@ export function DatabaseCollections({ collections, onRefresh }: DatabaseCollecti
                                                             </TableCell>
                                                             <TableCell>
                                                                 {column.nullable ? (
-                                                                    <Badge variant="secondary" className="text-xs whitespace-nowrap">Yes</Badge>
+                                                                    <Badge variant="secondary" className="text-xs whitespace-nowrap" suppressHydrationWarning>
+                                                                        {t('yes')}
+                                                                    </Badge>
                                                                 ) : (
-                                                                    <Badge variant="outline" className="text-xs whitespace-nowrap">No</Badge>
+                                                                    <Badge variant="outline" className="text-xs whitespace-nowrap" suppressHydrationWarning>
+                                                                        {t('no')}
+                                                                    </Badge>
                                                                 )}
                                                             </TableCell>
                                                             <TableCell className="text-xs sm:text-sm whitespace-nowrap">

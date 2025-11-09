@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import {
   CheckCircle,
@@ -12,6 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/language-context";
 
 export type StatusType =
   | 'blog-post'
@@ -82,34 +85,34 @@ const statusConfigs = {
     },
   },
 
-  // Community post statuses
+  // Community post statuses (labels will be translated in component)
   'community-post': {
     pending: {
-      label: 'Pending',
+      label: '', // Will be translated in component
       variant: 'secondary' as const,
       colors: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-800',
       icon: Clock,
     },
     approved: {
-      label: 'Approved',
+      label: '', // Will be translated in component
       variant: 'default' as const,
       colors: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-800',
       icon: CheckCircle,
     },
     rejected: {
-      label: 'Rejected',
+      label: '', // Will be translated in component
       variant: 'destructive' as const,
       colors: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-800',
       icon: XCircle,
     },
     archived: {
-      label: 'Archived',
+      label: '', // Will be translated in component
       variant: 'outline' as const,
       colors: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
       icon: Archive,
     },
     deleted: {
-      label: 'Deleted',
+      label: '', // Will be translated in component
       variant: 'destructive' as const,
       colors: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:border-red-800',
       icon: XCircle,
@@ -296,14 +299,31 @@ export function StatusBadge({
   className,
   size = 'default'
 }: StatusBadgeProps) {
+  const { t } = useTranslation();
+  
   // Get the configuration for this type and status
   const typeConfig = statusConfigs[type];
   const statusConfig = typeConfig?.[status as keyof typeof typeConfig] || statusConfigs.generic.default;
 
   // For generic types, use the status as the label if no specific config exists
-  const finalConfig = type === 'generic' && !typeConfig?.[status as keyof typeof typeConfig]
+  let finalConfig = type === 'generic' && !typeConfig?.[status as keyof typeof typeConfig]
     ? { ...statusConfigs.generic.default, label: status }
     : statusConfig;
+
+  // Translate community-post statuses using root-level keys
+  if (type === 'community-post') {
+    const statusTranslations: Record<string, string> = {
+      pending: t('pending'),
+      approved: t('approved'),
+      rejected: t('rejected'),
+      archived: t('archived'),
+      deleted: t('deleted'),
+    };
+    finalConfig = {
+      ...finalConfig,
+      label: statusTranslations[status as string] || finalConfig.label,
+    };
+  }
 
   const Icon = finalConfig.icon;
   const iconSize = size === 'sm' ? 'w-3 h-3' : size === 'lg' ? 'w-4 h-4' : 'w-3 h-3';
@@ -318,9 +338,10 @@ export function StatusBadge({
         showIcon && Icon !== null && Icon !== undefined ? 'flex items-center gap-1' : '',
         className
       )}
+      suppressHydrationWarning
     >
       {showIcon && Icon !== null && Icon !== undefined && <Icon className={iconSize} />}
-      {finalConfig.label}
+      <span suppressHydrationWarning>{finalConfig.label}</span>
     </Badge>
   );
 }

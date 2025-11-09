@@ -6,22 +6,12 @@ import Link from "next/link";
 import { CommunityPost, CommunityPostFormData } from "../../types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { TipTap } from "@/components/ui/tiptap";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   ArrowLeft,
   Loader2,
   Save,
-  MessageSquare,
-  Hash,
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -33,22 +23,22 @@ import {
 } from "@/lib/appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
+import { useTranslation } from "@/lib/language-context";
+import {
+  EditBreadcrumbNav,
+  BasicInfoSection,
+  TopicSection,
+  TagsSection,
+  PostSettingsSection,
+  generateSlug,
+} from "@/components/app/auth/community/community-posts/edit";
 
 const MAX_CONTENT_LENGTH = 5000;
 const MAX_TAG_LENGTH = 20;
 
-const generateSlug = (title: string): string => {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-    .substring(0, 200);
-};
-
 export default function EditCommunityPostPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { t, loading: translationLoading } = useTranslation();
   const router = useRouter();
   const params = useParams();
   const postId = params.id as string;
@@ -85,8 +75,21 @@ export default function EditCommunityPostPage() {
   // Load data on component mount
   useEffect(() => {
     const loadData = async () => {
-      if (!user || !postId) {
-        router.push('/auth/dashboard');
+      // Wait for auth to finish loading before proceeding
+      if (authLoading) {
+        return;
+      }
+
+      // Don't redirect on refresh - allow skeleton/error state to show
+      if (!postId) {
+        setError(t('community_posts_page.edit_page.unknown_post'));
+        setIsLoading(false);
+        return;
+      }
+
+      // Only load data if user is available
+      if (!user) {
+        setIsLoading(false);
         return;
       }
 
@@ -103,9 +106,9 @@ export default function EditCommunityPostPage() {
                            error?.type === 'AppwriteException';
         
         if (isAuthError) {
-          setError('You do not have permission to edit this post');
+          setError(t('community_posts_page.edit_page.permission_denied'));
         } else {
-          setError("Error");
+          setError(t('error'));
         }
       } finally {
         setIsLoading(false);
@@ -113,7 +116,7 @@ export default function EditCommunityPostPage() {
     };
 
     loadData();
-  }, [user, postId, router]);
+  }, [user, authLoading, postId, router, t]);
 
   const loadPost = async () => {
     try {
@@ -167,7 +170,7 @@ export default function EditCommunityPostPage() {
       setTopics(activeTopics);
     } catch (error) {
       console.error('Failed to load topics:', error);
-      toast.error("Failed to load topics");
+      toast.error(t('error'));
     }
   };
 
@@ -176,30 +179,30 @@ export default function EditCommunityPostPage() {
 
     // Validation
     if (!formData.title.trim()) {
-      toast.error("Title is required");
+      toast.error(t('community_posts_page.edit_page.validation.title_required'));
       return;
     }
     if (!formData.slug.trim()) {
-      toast.error("Slug is required");
+      toast.error(t('community_posts_page.edit_page.validation.slug_required'));
       return;
     }
     if (!formData.content.trim()) {
-      toast.error("Content is required");
+      toast.error(t('community_posts_page.edit_page.validation.content_required'));
       return;
     }
     if (formData.content.length > MAX_CONTENT_LENGTH) {
-      toast.error(`Content must be less than ${MAX_CONTENT_LENGTH} characters`);
+      toast.error(t('community_posts_page.edit_page.validation.content_too_long', { max: MAX_CONTENT_LENGTH.toString() }));
       return;
     }
     if (!formData.authorId) {
-      toast.error("Author ID is required");
+      toast.error(t('community_posts_page.edit_page.validation.author_id_required'));
       return;
     }
 
     // Validate tags
     const invalidTags = formData.tags.filter(tag => tag.length > MAX_TAG_LENGTH);
     if (invalidTags.length > 0) {
-      toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
+      toast.error(t('community_posts_page.edit_page.validation.tag_too_long', { max: MAX_TAG_LENGTH.toString() }));
       return;
     }
 
@@ -245,7 +248,7 @@ export default function EditCommunityPostPage() {
         }
       });
 
-      toast.success("Post updated successfully");
+      toast.success(t('community_posts_page.edit_page.success'));
       router.push(`/auth/community/community-posts/${postId}`);
     } catch (error: any) {
       console.error('Failed to update community post:', error);
@@ -258,9 +261,9 @@ export default function EditCommunityPostPage() {
                          error?.type === 'AppwriteException';
       
       if (isAuthError) {
-        toast.error("You do not have permission to edit this post");
+        toast.error(t('community_posts_page.edit_page.permission_denied'));
       } else {
-        toast.error("Error");
+        toast.error(t('community_posts_page.edit_page.failed'));
       }
     } finally {
       setIsSubmitting(false);
@@ -291,17 +294,17 @@ export default function EditCommunityPostPage() {
     if (!trimmedTag) return;
 
     if (trimmedTag.length > MAX_TAG_LENGTH) {
-      toast.error(`Tags must be less than ${MAX_TAG_LENGTH} characters each`);
+      toast.error(t('community_posts_page.edit_page.validation.tag_too_long', { max: MAX_TAG_LENGTH.toString() }));
       return;
     }
 
     if (formData.tags.includes(trimmedTag)) {
-      toast.error("Tag already exists");
+      toast.error(t('community_posts_page.edit_page.validation.tag_exists'));
       return;
     }
 
     if (formData.tags.length >= 10) {
-      toast.error("Maximum 10 tags allowed");
+      toast.error(t('community_posts_page.edit_page.validation.max_tags'));
       return;
     }
 
@@ -318,25 +321,90 @@ export default function EditCommunityPostPage() {
     }));
   };
 
-  if (isLoading) {
+  // Wrapper function to handle partial updates
+  const handleFormDataChange = (data: Partial<CommunityPostFormData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
+  };
+
+  // Show skeleton while translations or data is loading
+  if (translationLoading || isLoading || authLoading) {
     return (
-      <div className="space-y-8">
-        <div className="space-y-2">
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-6 w-96" />
+      <div className="min-h-screen bg-background">
+        {/* Breadcrumb Skeleton */}
+        <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 sm:px-6 py-2 sm:py-3">
+            <Skeleton className="h-8 w-full" />
+          </div>
         </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-64 w-full" />
+
+        {/* Header Skeleton */}
+        <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="px-4 sm:px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-8 w-48 sm:h-9 sm:w-64" />
+                <Skeleton className="h-4 w-64 sm:h-5 sm:w-80" />
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="px-4 sm:px-6 py-8">
+          <div className="grid gap-8 xl:grid-cols-12">
+            <div className="xl:col-span-8 space-y-8">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="h-4 w-64" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-64 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="xl:col-span-4 space-y-6">
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-24" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-10 w-full" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -347,16 +415,16 @@ export default function EditCommunityPostPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-destructive mb-4" />
-            <CardTitle className="text-destructive">Error</CardTitle>
-            <CardDescription>
-              {error || "Post not found"}
+            <CardTitle className="text-destructive" suppressHydrationWarning>{t('error')}</CardTitle>
+            <CardDescription suppressHydrationWarning>
+              {error || t('community_posts_page.edit_page.unknown_post')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/auth/community/community-posts">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Posts
+                <span suppressHydrationWarning>{t('back')}</span>
               </Link>
             </Button>
           </CardContent>
@@ -368,35 +436,18 @@ export default function EditCommunityPostPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Breadcrumb Navigation */}
-      <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-3">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
-              <Link href="/auth/community/community-posts">
-                <ArrowLeft className="h-3 w-3 mr-1" />
-                Community Posts
-              </Link>
-            </Button>
-            <span className="text-muted-foreground">/</span>
-            <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-foreground" asChild>
-              <Link href={`/auth/community/community-posts/${postId}`}>
-                {post ? post.title : "Post"}
-              </Link>
-            </Button>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium">Edit</span>
-          </nav>
-        </div>
-      </div>
+      <EditBreadcrumbNav postId={postId} post={post} />
 
       {/* Header */}
       <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Edit Community Post</h1>
-              <p className="text-sm text-muted-foreground">
-                Update your community post
+              <h1 className="text-2xl font-bold tracking-tight" suppressHydrationWarning>
+                {t('community_posts_page.edit_page.title')}
+              </h1>
+              <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                {t('community_posts_page.edit_page.description')}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -409,8 +460,8 @@ export default function EditCommunityPostPage() {
                 <StatusBadge status={formData.status} type="community-post" />
               </div>
               {post && (
-                <div className="text-sm text-muted-foreground">
-                  Updated: {new Date(post.$updatedAt).toLocaleDateString()}
+                <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+                  {t('community_posts_page.edit_page.updated_status')}: {new Date(post.$updatedAt).toLocaleDateString()}
                 </div>
               )}
             </div>
@@ -419,266 +470,50 @@ export default function EditCommunityPostPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 sm:px-6 py-8">
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid gap-8 xl:grid-cols-12">
             {/* Main Content Column */}
             <div className="xl:col-span-8 space-y-8">
-              {/* Basic Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Post Information</CardTitle>
-                  <CardDescription>
-                    Basic information about your post
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                      placeholder="Enter post title"
-                      required
-                      maxLength={200}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="slug">Slug *</Label>
-                    <Input
-                      id="slug"
-                      value={formData.slug}
-                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                      placeholder="url-friendly-slug"
-                      required
-                      maxLength={200}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="excerpt">Excerpt</Label>
-                    <Textarea
-                      id="excerpt"
-                      value={formData.excerpt || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                      placeholder="Brief description of your post"
-                      rows={3}
-                      maxLength={500}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="content">Content *</Label>
-                      <span className={`text-xs ${contentLength > MAX_CONTENT_LENGTH ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {contentLength} / {MAX_CONTENT_LENGTH} characters
-                      </span>
-                    </div>
-                    <TipTap
-                      value={formData.content}
-                      stickyTop="top-48"
-                      onChange={handleContentChange}
-                      placeholder="Write your post content here..."
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Maximum {MAX_CONTENT_LENGTH} characters
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <BasicInfoSection
+                formData={formData}
+                contentLength={contentLength}
+                maxContentLength={MAX_CONTENT_LENGTH}
+                onFormDataChange={handleFormDataChange}
+                onTitleChange={handleTitleChange}
+                onContentChange={handleContentChange}
+              />
             </div>
 
             {/* Sidebar */}
             <div className="xl:col-span-4 space-y-6">
-              {/* Topic Selection */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Topic
-                  </CardTitle>
-                  <CardDescription>
-                    Select a topic for your post
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Label htmlFor="topic">Topic (Optional)</Label>
-                    <Select
-                      value={formData.communityTopics?.$id || ''}
-                      onValueChange={(value) => {
-                        const selectedTopic = topics.find(topic => topic.$id === value);
-                        setFormData(prev => ({ ...prev, communityTopics: selectedTopic || null }));
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a topic" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {topics.map((topic) => (
-                          <SelectItem key={topic.$id} value={topic.$id}>
-                            {topic.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {topics.length === 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        No topics available
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <TopicSection
+                formData={formData}
+                topics={topics}
+                onFormDataChange={handleFormDataChange}
+              />
 
-              {/* Tags */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Hash className="h-4 w-4" />
-                    Tags
-                  </CardTitle>
-                  <CardDescription>
-                    Add tags (max {MAX_TAG_LENGTH} characters each)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label>Add Tags</Label>
-                      <Input
-                        placeholder={`Enter tag (max ${MAX_TAG_LENGTH} chars) and press Enter`}
-                        maxLength={MAX_TAG_LENGTH}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const value = (e.target as HTMLInputElement).value.trim();
-                            if (value) {
-                              addTag(value);
-                              (e.target as HTMLInputElement).value = '';
-                            }
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Press Enter to add a tag. Maximum 10 tags allowed.
-                      </p>
-                    </div>
+              <TagsSection
+                formData={formData}
+                maxTagLength={MAX_TAG_LENGTH}
+                onAddTag={addTag}
+                onRemoveTag={removeTag}
+              />
 
-                    {/* Display current tags */}
-                    {formData.tags.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">Current Tags</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {formData.tags.map((tag, index) => (
-                            <Badge
-                              key={index}
-                              variant="secondary"
-                              className="flex items-center gap-1"
-                            >
-                              {tag}
-                              <button
-                                type="button"
-                                onClick={() => removeTag(index)}
-                                className="ml-1 hover:text-destructive"
-                              >
-                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Post Settings */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Post Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isPinned"
-                        checked={formData.isPinned}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPinned: checked as boolean }))}
-                      />
-                      <Label htmlFor="isPinned" className="cursor-pointer">
-                        Pin Post
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isLocked"
-                        checked={formData.isLocked}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isLocked: checked as boolean }))}
-                      />
-                      <Label htmlFor="isLocked" className="cursor-pointer">
-                        Lock Post
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isFeatured"
-                        checked={formData.isFeatured}
-                        onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked as boolean }))}
-                      />
-                      <Label htmlFor="isFeatured" className="cursor-pointer">
-                        Feature Post
-                      </Label>
-                    </div>
-                  </div>
-
-                  {formData.author && (
-                    <div className="space-y-2">
-                      <Label>Author</Label>
-                      <Input
-                        value={formData.author}
-                        onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                        placeholder="Author name"
-                        maxLength={100}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <PostSettingsSection
+                formData={formData}
+                onFormDataChange={handleFormDataChange}
+              />
             </div>
           </div>
 
           {/* Submit Actions */}
-          <div className="sticky z-40 bottom-0 -mb-8 px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
+          <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground" suppressHydrationWarning>
                 {contentLength > 0 && (
                   <span>
-                    {contentLength} / {MAX_CONTENT_LENGTH} characters
+                    {contentLength} / {MAX_CONTENT_LENGTH} {t('community_posts_page.edit_page.basic_info.characters')}
                   </span>
                 )}
               </div>
@@ -686,13 +521,13 @@ export default function EditCommunityPostPage() {
                 <Button variant="outline" type="button" size="lg" asChild>
                   <Link href={`/auth/community/community-posts/${postId}`}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
-                    Cancel
+                    <span suppressHydrationWarning>{t('cancel')}</span>
                   </Link>
                 </Button>
                 <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   <Save className="h-4 w-4 mr-2" />
-                  Save
+                  <span suppressHydrationWarning>{t('save')}</span>
                 </Button>
               </div>
             </div>

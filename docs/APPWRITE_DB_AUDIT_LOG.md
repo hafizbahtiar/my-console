@@ -267,10 +267,38 @@ For high-traffic applications:
 3. **Archive old logs** to separate collections
 4. **Add more specific indexes** based on query patterns
 
+## User-Specific Audit Logs
+
+### Personal Activity Timeline
+
+The audit logging system supports user-specific log retrieval for displaying personal activity timelines on the profile page.
+
+**Implementation**: `lib/audit-log.ts`
+- `getUserAuditLogs(userId, limit, offset)`: Fetches audit logs for a specific user
+- Client-side filtering and sorting (due to Appwrite query limitations)
+- Pagination support for large activity histories
+
+**UI Component**: `components/app/auth/profile/personal-activity-timeline.tsx`
+- Visual timeline UI with continuous vertical line and activity nodes
+- Activity icons and badges for different event types
+- Expandable view with pagination
+- Real-time updates from audit logging system
+
+**Supported Events**:
+- `USER_LOGIN`, `USER_LOGOUT`
+- `PROFILE_UPDATE`
+- `EMAIL_VERIFIED`, `VERIFICATION_EMAIL_SENT`
+- `PASSWORD_RESET`, `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_FAILED`
+- `SETTINGS_CHANGE`
+- `SESSION_TERMINATED`
+- All other audit events
+
 ## Related Documentation
 
-- [Appwrite Setup Guide](../APPWRITE_SETUP.md) - Main Appwrite configuration
-- [Architecture Overview](../ARCHITECTURE.md) - System architecture details
+- [Appwrite Setup Guide](./APPWRITE_SETUP.md) - Main Appwrite configuration
+- [Architecture Overview](./ARCHITECTURE.md) - System architecture details
+- [Authentication System](./AUTHENTICATION.md) - Authentication and security features
+- [User Profile Schema](./APPWRITE_DB_USERS.md) - User profile database schema
 - [Audit Logging Implementation](../../lib/audit-log.ts) - Source code implementation
 
 ## Next Steps

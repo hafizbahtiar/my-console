@@ -148,27 +148,23 @@ export class AuditLogger {
     }
 
     try {
-      const response = await tablesDB.listRows({
-        databaseId: DATABASE_ID,
-        tableId: AUDIT_COLLECTION_ID,
-        queries: [
-          `limit(${limit})`,
-          `offset(${offset})`,
-          `orderDesc("$createdAt")`
-        ]
-      })
-
       // Filter and sort on client side to avoid query syntax issues
-      // Note: We still need to filter by userId client-side since Appwrite queries don't support complex filtering
+      // Note: Appwrite queries don't support complex filtering, so we fetch all and filter client-side
       const allLogs = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: AUDIT_COLLECTION_ID
       })
 
-      const userLogs = allLogs.rows
+      // Filter by userId and sort by date (newest first)
+      const userLogs = (allLogs.rows || [])
         .filter((log: any) => log.userId === userId)
-        .sort((a: any, b: any) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime())
+        .sort((a: any, b: any) => {
+          const dateA = new Date(a.$createdAt || 0).getTime()
+          const dateB = new Date(b.$createdAt || 0).getTime()
+          return dateB - dateA
+        })
 
+      // Apply pagination
       const paginatedLogs = userLogs.slice(offset, offset + limit)
 
       return {

@@ -20,6 +20,9 @@ import {
 interface AuditFiltersProps {
   searchTerm: string
   setSearchTerm: (value: string) => void
+  searchField: string
+  setSearchField: (value: string) => void
+  searchHistory: string[]
   actionFilter: string
   setActionFilter: (value: string) => void
   resourceFilter: string
@@ -42,6 +45,9 @@ interface AuditFiltersProps {
 export function AuditFilters({
   searchTerm,
   setSearchTerm,
+  searchField,
+  setSearchField,
+  searchHistory,
   actionFilter,
   setActionFilter,
   resourceFilter,
@@ -87,6 +93,7 @@ export function AuditFilters({
               <SelectContent>
                 <SelectItem value="csv">CSV</SelectItem>
                 <SelectItem value="json">JSON</SelectItem>
+                <SelectItem value="pdf">PDF</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={onExport} disabled={filteredLogsCount === 0} size="sm" className="flex-1 sm:flex-initial">
@@ -111,10 +118,37 @@ export function AuditFilters({
                 placeholder={t('audit_page.filters.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-sm"
+                className="pl-10 pr-10 text-sm"
+                list="search-history"
               />
+              {searchHistory.length > 0 && (
+                <datalist id="search-history">
+                  {searchHistory.map((item, idx) => (
+                    <option key={idx} value={item} />
+                  ))}
+                </datalist>
+              )}
             </div>
+            <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
+              {t('audit_page.filters.search_hint')}
+            </p>
           </div>
+
+          <Select value={searchField} onValueChange={setSearchField}>
+            <SelectTrigger className="w-full sm:w-40 text-sm">
+              <SelectValue placeholder={t('audit_page.filters.search_field')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" suppressHydrationWarning>{t('audit_page.filters.all_fields')}</SelectItem>
+              <SelectItem value="action" suppressHydrationWarning>{t('audit_page.filters.field_action')}</SelectItem>
+              <SelectItem value="resource" suppressHydrationWarning>{t('audit_page.filters.field_resource')}</SelectItem>
+              <SelectItem value="userId" suppressHydrationWarning>{t('audit_page.filters.field_user_id')}</SelectItem>
+              <SelectItem value="ipAddress" suppressHydrationWarning>{t('audit_page.filters.field_ip')}</SelectItem>
+              <SelectItem value="userAgent" suppressHydrationWarning>{t('audit_page.filters.field_user_agent')}</SelectItem>
+              <SelectItem value="resourceId" suppressHydrationWarning>{t('audit_page.filters.field_resource_id')}</SelectItem>
+              <SelectItem value="sessionId" suppressHydrationWarning>{t('audit_page.filters.field_session_id')}</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select value={actionFilter} onValueChange={setActionFilter}>
             <SelectTrigger className="w-full sm:w-40 text-sm">

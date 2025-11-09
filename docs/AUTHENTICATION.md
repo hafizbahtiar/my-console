@@ -49,7 +49,18 @@ User → Login Form → Auth Context → Appwrite Auth → Session Created
   - Automatic login after registration
   - User profile creation
 
-#### 4. User Profile Management (`lib/user-profile.ts`)
+#### 4. Profile Page (`/auth/profile` - `app/auth/profile/page.tsx`)
+- **Component**: `components/app/auth/profile/`
+- **Features**:
+  - User profile overview and editing
+  - Account settings integration
+  - Teams display
+  - Session statistics
+  - **Email Verification**: Resend verification emails with callback handling
+  - **Password Reset**: Forgot password flow (initiated from login page)
+  - **Personal Activity Timeline**: Visual timeline of user-specific audit logs
+
+#### 5. User Profile Management (`lib/user-profile.ts`)
 - **Purpose**: Extended user profile operations
 - **Features**:
   - Profile creation on first login/registration
@@ -57,7 +68,49 @@ User → Login Form → Auth Context → Appwrite Auth → Session Created
   - Activity tracking
   - Graceful handling of missing users table
 
+#### 6. Password Reset (`/reset-password` - `app/reset-password/page.tsx`)
+- **Features**:
+  - Secure token-based password reset
+  - URL parameters: `userId`, `secret`, `expire`
+  - Password validation and confirmation
+  - Audit logging for password reset events (success and failure)
+  - Automatic redirect to login after success
+
+#### 7. Personal Activity Timeline (`components/app/auth/profile/personal-activity-timeline.tsx`)
+- **Purpose**: Display user-specific audit logs in a visual timeline format
+- **Features**:
+  - Fetches user-specific audit logs using `auditLogger.getUserAuditLogs()`
+  - Visual timeline UI with continuous vertical line and activity nodes
+  - Activity icons for different event types (login, logout, profile, email, password, security)
+  - Badge variants based on action type
+  - Expandable view (shows 5 by default, expandable to all)
+  - Pagination with "load more" functionality
+  - Tooltips for activity details and timestamps
+  - Empty state with helpful messaging
+  - Loading states with skeleton UI
+  - Uses shadcn UI components (Card, ScrollArea, Badge, Avatar, Tooltip, Empty, etc.)
+
 ## Authentication Features
+
+### Email Verification
+- **Resend Verification**: Users can resend verification emails from the profile page
+- **Verification Callback**: Handles email verification links with `userId` and `secret` parameters
+- **Error Handling**: Comprehensive error handling for invalid/expired tokens, already verified accounts, and SMTP configuration issues
+- **Audit Logging**: All verification events logged (`VERIFICATION_EMAIL_SENT`, `EMAIL_VERIFIED`)
+
+### Password Reset
+- **Forgot Password**: Users can request password reset from the login page
+- **Reset Flow**: Secure token-based reset using Appwrite's recovery system
+- **Reset Page**: Dedicated page (`/reset-password`) for completing password reset
+- **Audit Logging**: All password reset events logged (`PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET`, `PASSWORD_RESET_FAILED`)
+- **Error Handling**: User-friendly error messages for invalid/expired tokens
+
+### Personal Activity Timeline
+- **User-Specific Logs**: Displays only the current user's audit log activities
+- **Visual Timeline**: Proper timeline UI with continuous vertical line and activity nodes
+- **Activity Types**: Supports all audit event types (login, logout, profile updates, email verification, password reset, security events)
+- **Interactive UI**: Expandable view, pagination, tooltips, and hover effects
+- **Real-Time Updates**: Fetches latest activities on component mount and page changes
 
 ### Login Process
 

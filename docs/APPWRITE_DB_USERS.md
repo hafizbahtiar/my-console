@@ -531,6 +531,13 @@ async function migrateExistingUsers(): Promise<void> {
 - Show activity stats (login count, last login)
 - Allow profile updates (name, bio, preferences)
 - Show user's content (blog posts, community posts)
+- **Personal Activity Timeline**: Visual timeline displaying user-specific audit logs with:
+  - Timeline UI with continuous vertical line and nodes
+  - Activity icons and badges for different event types
+  - Expandable view with "show all/less" functionality
+  - Pagination with "load more" for large activity histories
+  - Hover effects and tooltips for better UX
+  - Integration with audit logging system for real-time updates
 
 ### Admin User Management
 - List all users with filtering

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense, useCallback, useRef, useMemo } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/language-context"
 import { account, teams } from "@/lib/appwrite"
@@ -12,6 +13,7 @@ import { ProfileOverview } from "@/components/app/auth/profile/profile-overview"
 import { AccountSettingsForm } from "@/components/app/auth/profile/account-settings-form"
 import { AccountStatistics } from "@/components/app/auth/profile/account-statistics"
 import { TeamsSection } from "@/components/app/auth/profile/teams-section"
+import { PersonalActivityTimeline } from "@/components/app/auth/profile/personal-activity-timeline"
 import { ProfileFormData } from "@/components/app/auth/profile/types"
 import { DEFAULT_TIMEZONE } from "@/components/app/auth/profile/timezones"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -311,6 +313,212 @@ export default function ProfilePage() {
   }
 
   return (
+    <Suspense fallback={
+      <div className="flex-1 space-y-4 p-4 pt-6">
+        <div>
+          <Skeleton className="h-9 w-32 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    }>
+      <ProfilePageContent
+        user={user}
+        userProfile={userProfile}
+        formData={formData}
+        isUpdating={isUpdating}
+        sessions={sessions}
+        userTeams={userTeams}
+        onInputChange={handleInputChange}
+        onSubmit={handleUpdateProfile}
+        t={t}
+      />
+    </Suspense>
+  )
+}
+
+function ProfilePageContent({
+  user,
+  userProfile,
+  formData,
+  isUpdating,
+  sessions,
+  userTeams,
+  onInputChange,
+  onSubmit,
+  t,
+}: {
+  user: any
+  userProfile: UserProfile | null
+  formData: ProfileFormData
+  isUpdating: boolean
+  sessions: any[]
+  userTeams: any[]
+  onInputChange: (field: string, value: string | boolean) => void
+  onSubmit: (e: React.FormEvent) => Promise<void>
+  t: (key: string) => string
+}) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { checkUser } = useAuth()
+  const [isVerifying, setIsVerifying] = useState(false)
+  const verificationProcessed = useRef(false)
+  
+  // Extract search params values to avoid dependency on searchParams object
+  const userIdParam = useMemo(() => searchParams.get('userId'), [searchParams])
+  const secretParam = useMemo(() => searchParams.get('secret'), [searchParams])
+
+  // Handle email verification callback
+  const handleEmailVerification = useCallback(async (userId: string, secret: string) => {
+    // Validate inputs before proceeding
+    if (!userId || !secret || !user) {
+      router.replace('/auth/profile')
+      return
+    }
+
+    // Only verify if the userId matches the current user
+    if (user.$id !== userId) {
+      toast.error(t('profile_page.verification.user_mismatch'))
+      router.replace('/auth/profile')
+      return
+    }
+
+    try {
+      setIsVerifying(true)
+      
+      // Complete email verification using Appwrite
+      await account.updateVerification(userId, secret)
+      
+      // Refresh user data to get updated verification status
+      await checkUser()
+      
+      toast.success(t('profile_page.verification.success'))
+      
+      // Log critical security event - email verified
+      const userAgent = typeof window !== 'undefined' ? navigator.userAgent : 'unknown'
+      auditLogger.logSecurityEvent(
+        user.$id,
+        'EMAIL_VERIFIED',
+        {
+          email: user.email,
+          userAgent
+        }
+      ).catch(() => {
+        // Silently fail audit logging
+      })
+      
+      // Clean up URL by removing query parameters
+      router.replace('/auth/profile')
+    } catch (error: any) {
+      // Silently handle errors - don't log to console to avoid Next.js detection
+      // Handle specific error types
+      const errorMessage = error?.message || ''
+      const errorCode = error?.code
+      
+      const isInvalidToken = 
+        errorMessage.toLowerCase().includes('invalid token') ||
+        errorMessage.toLowerCase().includes('invalid_token') ||
+        errorCode === 401 ||
+        errorCode === 400 ||
+        errorCode === 401 ||
+        error?.type === 'general_invalid_argument'
+      
+      const isExpired = 
+        errorMessage.toLowerCase().includes('expired') ||
+        errorMessage.toLowerCase().includes('expire') ||
+        errorMessage.toLowerCase().includes('expir')
+      
+      const isAlreadyVerified = 
+        errorCode === 409 ||
+        errorMessage.toLowerCase().includes('already verified') ||
+        errorMessage.toLowerCase().includes('already_verified') ||
+        errorMessage.toLowerCase().includes('verified')
+      
+      // Show user-friendly error messages
+      if (isInvalidToken) {
+        toast.error(t('profile_page.verification.invalid_link'), {
+          description: t('profile_page.verification.invalid_link_description'),
+          duration: 8000,
+        })
+      } else if (isExpired) {
+        toast.error(t('profile_page.verification.expired'), {
+          description: t('profile_page.verification.expired_description'),
+          duration: 8000,
+        })
+      } else if (isAlreadyVerified) {
+        toast.error(t('profile_page.verification.already_verified'))
+      } else {
+        // Generic error - show message but don't expose technical details
+        toast.error(t('profile_page.verification.invalid_link'), {
+          description: t('profile_page.verification.invalid_link_description'),
+          duration: 8000,
+        })
+      }
+      
+      // Clean up URL even on error
+      router.replace('/auth/profile')
+    } finally {
+      setIsVerifying(false)
+      verificationProcessed.current = false
+    }
+  }, [user, router, t, checkUser])
+
+  // Handle email verification callback
+  useEffect(() => {
+    // Only process once and when user is available
+    if (verificationProcessed.current || !user || isVerifying || !userIdParam || !secretParam) {
+      return
+    }
+
+    // Decode URL-encoded parameters safely
+    let decodedUserId: string
+    let decodedSecret: string
+    
+    try {
+      decodedUserId = decodeURIComponent(userIdParam)
+      decodedSecret = decodeURIComponent(secretParam)
+    } catch (decodeError) {
+      // If decoding fails, use original values
+      decodedUserId = userIdParam
+      decodedSecret = secretParam
+    }
+    
+    // Validate decoded values
+    if (!decodedUserId || !decodedSecret || decodedUserId.length === 0 || decodedSecret.length === 0) {
+      // Invalid parameters - clean up silently
+      router.replace('/auth/profile')
+      return
+    }
+
+    // Mark as processed before async operation
+    verificationProcessed.current = true
+    
+    // Call verification handler
+    handleEmailVerification(decodedUserId, decodedSecret).catch(() => {
+      // Error already handled in handleEmailVerification
+      verificationProcessed.current = false
+    })
+  }, [user?.$id, isVerifying, userIdParam, secretParam, handleEmailVerification, router])
+
+  if (isVerifying) {
+    return (
+      <div className="flex-1 space-y-4 p-4 pt-6">
+        <div>
+          <Skeleton className="h-9 w-32 mb-2" />
+          <Skeleton className="h-5 w-96" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
     <div className="flex-1 space-y-4 p-4 pt-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
@@ -326,8 +534,8 @@ export default function ProfilePage() {
         <AccountSettingsForm
           formData={formData}
           isUpdating={isUpdating}
-          onInputChange={handleInputChange}
-          onSubmit={handleUpdateProfile}
+          onInputChange={onInputChange}
+          onSubmit={onSubmit}
         />
         <AccountStatistics
           sessionsCount={sessions.length}
@@ -335,6 +543,7 @@ export default function ProfilePage() {
           userProfile={userProfile}
         />
         <TeamsSection teams={userTeams} />
+        <PersonalActivityTimeline userId={user.$id} />
       </div>
     </div>
   )

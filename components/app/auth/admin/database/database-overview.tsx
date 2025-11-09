@@ -239,7 +239,7 @@ export function DatabaseOverview({ recentActivity, systemHealth, databaseStats }
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Power className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-            {t('database_page.overview.active')}
+            {t('active')}
           </CardTitle>
           <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
             {t('database_page.overview.active_description')}

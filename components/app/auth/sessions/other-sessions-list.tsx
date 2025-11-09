@@ -1,13 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useTranslation } from "@/lib/language-context"
-import { LogOut, Loader2, Trash2 } from "lucide-react"
+import { LogOut, Loader2, Trash2, Eye } from "lucide-react"
 import { Session, getDeviceIcon, formatDate, formatExpirationDate, getSessionStatus, getBrowserName, getDeviceName } from "./session-utils"
+import { SessionDetailsModal } from "./session-details-modal"
 
 interface OtherSessionsListProps {
   sessions: Session[]
@@ -23,6 +25,13 @@ export function OtherSessionsList({
   terminatingSession 
 }: OtherSessionsListProps) {
   const { t } = useTranslation()
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+
+  const handleViewDetails = (session: Session) => {
+    setSelectedSession(session)
+    setDetailsOpen(true)
+  }
 
   if (sessions.length === 0) {
     return null
@@ -174,20 +183,31 @@ export function OtherSessionsList({
                         </div>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onTerminateSession(session.$id)}
-                        disabled={terminatingSession === session.$id}
-                        className="text-destructive hover:text-destructive ml-4"
-                      >
-                        {terminatingSession === session.$id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <LogOut className="h-4 w-4 mr-2" />
-                        )}
-                        <span suppressHydrationWarning>{t('sessions_page.other_sessions.terminate')}</span>
-                      </Button>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(session)}
+                          suppressHydrationWarning
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          <span suppressHydrationWarning>{t('sessions_page.other_sessions.view_details')}</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onTerminateSession(session.$id)}
+                          disabled={terminatingSession === session.$id}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          {terminatingSession === session.$id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <LogOut className="h-4 w-4 mr-2" />
+                          )}
+                          <span suppressHydrationWarning>{t('sessions_page.other_sessions.terminate')}</span>
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -196,6 +216,13 @@ export function OtherSessionsList({
           </div>
         </ScrollArea>
       </CardContent>
+      
+      {/* Session Details Modal */}
+      <SessionDetailsModal
+        session={selectedSession}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </Card>
   )
 }

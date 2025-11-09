@@ -38,8 +38,11 @@ My Console is a full-featured admin dashboard application with:
 - **Secure Login/Logout**: Appwrite-powered authentication with session management
 - **Audit Logging**: Comprehensive activity tracking with predefined events
 - **Rate Limiting**: Built-in protection against brute force attacks
-- **Session Management**: Secure session handling and monitoring
+- **Session Management**: Secure session handling and monitoring with detailed session views
 - **Security Events**: Failed login attempt tracking and alerts
+- **Email Verification**: Resend verification emails and handle verification callbacks
+- **Password Reset**: Forgot password flow with secure token-based reset
+- **Personal Activity Timeline**: User-specific activity timeline on profile page with visual timeline UI
 
 #### 📝 Blog Management System
 - **Rich Text Editor**: TipTap-powered WYSIWYG editor with advanced formatting, tables, images, and math expressions
@@ -157,11 +160,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 - **/**: Login page with authentication form
 - **/auth/dashboard**: Main dashboard with overview and activity
-- **/auth/profile**: User profile management
+- **/auth/profile**: User profile management with personal activity timeline
 - **/auth/admin/database**: Real-time database administration and backup management
 - **/auth/settings**: Application settings and preferences
 - **/auth/audit**: Audit log viewer (admin feature)
-- **/auth/sessions**: Active sessions management
+- **/auth/sessions**: Active sessions management with session details and activity timeline
 - **/auth/blog/blog-posts**: Blog post management with CRUD operations
 - **/auth/blog/blog-posts/create**: Create new blog posts with rich text editor
 - **/auth/blog/blog-posts/[id]**: View blog post with content, comments, and analytics tabs
@@ -187,9 +190,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 #### Audit Logging System (`lib/audit-log.ts`)
 - Singleton pattern for centralized logging
-- Predefined audit events (login, logout, profile updates, security events)
+- Predefined audit events (login, logout, profile updates, security events, email verification, password reset)
 - Rate limiting to prevent log spam (500ms between writes, 1s between reads)
 - Client-side filtering and sorting for performance
+- User-specific audit log retrieval for personal activity timelines
 
 #### Internationalization (`lib/language-context.tsx`)
 - Custom React context-based i18n implementation

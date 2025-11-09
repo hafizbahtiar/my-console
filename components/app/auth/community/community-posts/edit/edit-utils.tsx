@@ -1,10 +1,7 @@
+// Re-export from global slug utility with maxLength option for community posts
+import { generateSlug as generateSlugBase } from '@/lib/slug';
+
 export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim()
-    .substring(0, 200);
+  return generateSlugBase(title, { maxLength: 200 });
 }
 

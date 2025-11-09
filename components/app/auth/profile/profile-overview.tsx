@@ -1,13 +1,18 @@
 "use client"
 
+import { useState } from "react"
 import { Models } from "appwrite"
 import { UserProfile } from "@/lib/user-profile"
 import { useTranslation } from "@/lib/language-context"
+import { account } from "@/lib/appwrite"
+import { auditLogger } from "@/lib/audit-log"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { User, Mail, Calendar, Shield, MapPin, Globe, Clock, Info, Lock } from "lucide-react"
+import { User, Mail, Calendar, Shield, MapPin, Globe, Clock, Info, Lock, Send, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { getInitials, formatDate } from "./utils"
 
 interface ProfileOverviewProps {
@@ -17,6 +22,56 @@ interface ProfileOverviewProps {
 
 export function ProfileOverview({ user, userProfile }: ProfileOverviewProps) {
   const { t } = useTranslation()
+  const [sendingVerification, setSendingVerification] = useState(false)
+
+  const handleResendVerification = async () => {
+    try {
+      setSendingVerification(true)
+      // Get the current URL origin for the redirect URL
+      const redirectUrl = `${window.location.origin}/auth/profile`
+      
+      await account.createVerification(redirectUrl)
+      
+      // Log critical security event - verification email sent
+      if (user?.$id) {
+        const userAgent = typeof window !== 'undefined' ? navigator.userAgent : 'unknown'
+        auditLogger.logSecurityEvent(
+          user.$id,
+          'VERIFICATION_EMAIL_SENT',
+          {
+            email: user.email,
+            userAgent
+          }
+        ).catch(() => {
+          // Silently fail audit logging
+        })
+      }
+      
+      toast.success(t('profile_page.overview.verification_sent'))
+    } catch (error: any) {
+      console.error('Failed to send verification email:', error)
+      
+      // Handle SMTP disabled error specifically
+      // Check for the specific Appwrite error type: 'general_smtp_disabled'
+      const isSmtpDisabled = error.type === 'general_smtp_disabled'
+      
+      if (isSmtpDisabled) {
+        toast.error(t('profile_page.overview.smtp_disabled'), {
+          description: t('profile_page.overview.smtp_disabled_description'),
+          duration: 8000,
+        })
+      } else {
+        // Show the actual error message for other issues (SMTP config errors, network issues, etc.)
+        const errorMessage = error.message || t('profile_page.overview.verification_send_failed')
+        toast.error(errorMessage, {
+          description: error.message ? undefined : t('profile_page.overview.verification_send_failed'),
+          duration: 5000,
+        })
+      }
+    } finally {
+      setSendingVerification(false)
+    }
+  }
 
   return (
     <Card>
@@ -147,13 +202,38 @@ export function ProfileOverview({ user, userProfile }: ProfileOverviewProps) {
 
           <div className="flex items-center gap-3">
             <Shield className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium" suppressHydrationWarning>
-                {t('profile_page.overview.email_verified')}
-              </p>
-              <Badge variant={user.emailVerification ? "default" : "secondary"} suppressHydrationWarning>
-                {user.emailVerification ? t('profile_page.overview.verified') : t('profile_page.overview.unverified')}
-              </Badge>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium" suppressHydrationWarning>
+                    {t('profile_page.overview.email_verified')}
+                  </p>
+                  <Badge variant={user.emailVerification ? "default" : "secondary"} suppressHydrationWarning>
+                    {user.emailVerification ? t('profile_page.overview.verified') : t('profile_page.overview.unverified')}
+                  </Badge>
+                </div>
+                {!user.emailVerification && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleResendVerification}
+                    disabled={sendingVerification}
+                    suppressHydrationWarning
+                  >
+                    {sendingVerification ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        <span suppressHydrationWarning>{t('profile_page.overview.sending')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        <span suppressHydrationWarning>{t('profile_page.overview.resend_verification')}</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

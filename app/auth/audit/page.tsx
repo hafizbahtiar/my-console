@@ -11,6 +11,7 @@ import { AuditStats, AuditFilters, AuditTable } from "@/components/app/auth/audi
 import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { exportAuditLogsToPDF } from "@/lib/audit-export"
 import {
   Pagination,
   PaginationContent,
@@ -51,12 +52,14 @@ export default function AuditPage() {
 
   // Advanced Filters
   const [searchTerm, setSearchTerm] = useState("")
+  const [searchField, setSearchField] = useState<string>("all") // Field-specific search
   const [actionFilter, setActionFilter] = useState<string>("all")
   const [resourceFilter, setResourceFilter] = useState<string>("all")
   const [dateRange, setDateRange] = useState<{ from?: Date, to?: Date }>({})
   const [severityFilter, setSeverityFilter] = useState<string>("all")
   const [exportFormat, setExportFormat] = useState<string>("csv")
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
 
 
   useEffect(() => {
@@ -93,15 +96,76 @@ export default function AuditPage() {
     }
   }
 
+  // Enhanced search function with field-specific search and operators
+  const performSearch = (log: AuditLog, term: string, field: string): boolean => {
+    if (!term) return true
+
+    const lowerTerm = term.toLowerCase()
+    
+    // Parse search operators (AND, OR, NOT)
+    const terms = term.split(/\s+(AND|OR|NOT)\s+/i).filter(t => t.trim())
+    const operators = term.match(/\s+(AND|OR|NOT)\s+/gi) || []
+    
+    // If no operators, use simple search
+    if (operators.length === 0) {
+      return searchInField(log, lowerTerm, field)
+    }
+
+    // Handle operators
+    let result = searchInField(log, terms[0].toLowerCase(), field)
+    for (let i = 0; i < operators.length; i++) {
+      const op = operators[i].trim().toUpperCase()
+      const nextTerm = terms[i + 1]?.toLowerCase() || ''
+      const nextResult = searchInField(log, nextTerm, field)
+      
+      if (op === 'AND') {
+        result = result && nextResult
+      } else if (op === 'OR') {
+        result = result || nextResult
+      } else if (op === 'NOT') {
+        result = result && !nextResult
+      }
+    }
+    
+    return result
+  }
+
+  // Field-specific search
+  const searchInField = (log: AuditLog, term: string, field: string): boolean => {
+    if (!term) return true
+
+    switch (field) {
+      case 'action':
+        return log.action.toLowerCase().includes(term)
+      case 'resource':
+        return log.resource.toLowerCase().includes(term)
+      case 'userId':
+        return log.userId.toLowerCase().includes(term)
+      case 'ipAddress':
+        return log.ipAddress?.toLowerCase().includes(term) || false
+      case 'userAgent':
+        return log.userAgent?.toLowerCase().includes(term) || false
+      case 'resourceId':
+        return log.resourceId?.toLowerCase().includes(term) || false
+      case 'sessionId':
+        return log.sessionId?.toLowerCase().includes(term) || false
+      case 'all':
+      default:
+        return (
+          log.action.toLowerCase().includes(term) ||
+          log.resource.toLowerCase().includes(term) ||
+          log.userId.toLowerCase().includes(term) ||
+          (log.ipAddress?.toLowerCase().includes(term) ?? false) ||
+          (log.userAgent?.toLowerCase().includes(term) ?? false) ||
+          (log.resourceId?.toLowerCase().includes(term) ?? false) ||
+          (log.sessionId?.toLowerCase().includes(term) ?? false)
+        )
+    }
+  }
+
   // Filter all logs first, then paginate
   const filteredAllLogs = (Array.isArray(allLogs) ? allLogs : []).filter(log => {
-    const matchesSearch = searchTerm === "" ||
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (log.ipAddress && log.ipAddress.includes(searchTerm)) ||
-      (log.userAgent && log.userAgent.toLowerCase().includes(searchTerm.toLowerCase()))
-
+    const matchesSearch = performSearch(log, searchTerm, searchField)
     const matchesAction = actionFilter === "all" || log.action === actionFilter
     const matchesResource = resourceFilter === "all" || log.resource === resourceFilter
 
@@ -120,6 +184,21 @@ export default function AuditPage() {
 
     return matchesSearch && matchesAction && matchesResource && matchesDateRange && matchesSeverity
   })
+
+  // Save search to history
+  useEffect(() => {
+    if (searchTerm && searchTerm.length > 2) {
+      const history = JSON.parse(localStorage.getItem('audit_search_history') || '[]') as string[]
+      if (!history.includes(searchTerm)) {
+        const newHistory = [searchTerm, ...history].slice(0, 10) // Keep last 10 searches
+        localStorage.setItem('audit_search_history', JSON.stringify(newHistory))
+        setSearchHistory(newHistory)
+      }
+    } else {
+      const history = JSON.parse(localStorage.getItem('audit_search_history') || '[]') as string[]
+      setSearchHistory(history)
+    }
+  }, [searchTerm])
   
   // Apply pagination to filtered results
   const paginationParams = createPaginationParams(currentPage, pageSize)
@@ -136,15 +215,21 @@ export default function AuditPage() {
     if (currentPage > 1) {
       setCurrentPage(1)
     }
-  }, [searchTerm, actionFilter, resourceFilter, dateRange, severityFilter])
+  }, [searchTerm, searchField, actionFilter, resourceFilter, dateRange, severityFilter])
+
+  // Load search history on mount
+  useEffect(() => {
+    const history = JSON.parse(localStorage.getItem('audit_search_history') || '[]') as string[]
+    setSearchHistory(history)
+  }, [])
 
   // Get unique values for filters (use allLogs for complete list)
   const uniqueActions = [...new Set((Array.isArray(allLogs) ? allLogs : []).map(log => log.action))]
   const uniqueResources = [...new Set((Array.isArray(allLogs) ? allLogs : []).map(log => log.resource))]
 
   // Export functionality
-  const exportLogs = () => {
-    const dataToExport = filteredLogs.map(log => ({
+  const exportLogs = async () => {
+    const dataToExport = filteredAllLogs.map(log => ({
       timestamp: new Date(log.$createdAt).toISOString(),
       userId: log.userId,
       action: log.action,
@@ -161,6 +246,28 @@ export default function AuditPage() {
       exportToCSV(dataToExport)
     } else if (exportFormat === 'json') {
       exportToJSON(dataToExport)
+    } else if (exportFormat === 'pdf') {
+      try {
+        await exportAuditLogsToPDF(
+          filteredAllLogs,
+          {
+            searchTerm,
+            actionFilter: actionFilter !== 'all' ? actionFilter : undefined,
+            resourceFilter: resourceFilter !== 'all' ? resourceFilter : undefined,
+            dateRange,
+            severityFilter: severityFilter !== 'all' ? severityFilter : undefined,
+          },
+          totalFilteredLogs
+        )
+        toast.success(t('audit_page.filters.exported_success', { 
+          count: dataToExport.length.toString(), 
+          format: exportFormat.toUpperCase() 
+        }))
+      } catch (error) {
+        console.error('PDF export failed:', error)
+        toast.error(t('audit_page.filters.export_failed'))
+      }
+      return
     }
 
     toast.success(t('audit_page.filters.exported_success', { 
@@ -332,6 +439,9 @@ export default function AuditPage() {
       <AuditFilters
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        searchField={searchField}
+        setSearchField={setSearchField}
+        searchHistory={searchHistory}
         actionFilter={actionFilter}
         setActionFilter={setActionFilter}
         resourceFilter={resourceFilter}
@@ -346,7 +456,7 @@ export default function AuditPage() {
         setExportFormat={setExportFormat}
         onExport={exportLogs}
         onComplianceReport={generateComplianceReport}
-        filteredLogsCount={filteredLogs.length}
+        filteredLogsCount={filteredAllLogs.length}
         uniqueActions={uniqueActions}
         uniqueResources={uniqueResources}
       />

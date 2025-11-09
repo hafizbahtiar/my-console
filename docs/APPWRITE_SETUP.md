@@ -198,14 +198,17 @@ All routes under `/auth/` require authentication and automatically redirect unau
 - [x] Basic dashboard and navigation
 - [x] Appwrite Tables integration
 - [x] Comprehensive error handling
+- [x] **Email Verification**: Resend verification emails and callback handling
+- [x] **Password Reset**: Email-based password recovery with secure token flow
+- [x] **Personal Activity Timeline**: User-specific activity timeline on profile page
+- [x] **Session Management**: Complete session management with details and activity timeline
 
 ### 🔄 Ready for Implementation
-- [ ] **User Registration**: Add signup functionality to login form
-- [ ] **Password Reset**: Email-based password recovery
-- [ ] **Email Verification**: Account verification workflow
 - [ ] **Social Login**: Google, GitHub OAuth integration
-- [ ] **User Profiles**: Extended profile management with database storage
-- [ ] **Admin Features**: User management, system settings
+- [ ] **Two-Factor Authentication**: Complete 2FA implementation (UI toggle exists)
+- [ ] **Account Deletion**: User account deletion with data export (GDPR compliance)
+- [ ] **Email Change**: Allow users to change their email address
+- [ ] **Avatar Upload**: Profile picture upload functionality
 - [ ] **Real-time Updates**: Live audit log updates
 - [ ] **Advanced Security**: MFA, session management
 

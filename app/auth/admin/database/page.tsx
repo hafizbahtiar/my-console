@@ -28,6 +28,12 @@ import {
   DatabaseCollections,
   DatabaseBackups,
   DatabasePerformance,
+  DatabaseImport,
+  DatabaseCollectionManagement,
+  DatabaseQueryBuilder,
+  DatabaseBackupSchedule,
+  DatabaseIndexManagement,
+  DatabaseMonitoring,
 } from "@/components/app/auth/admin/database";
 import type {
   AppwriteDocument,
@@ -635,6 +641,7 @@ export default function DatabasePage() {
             <RefreshCw className={`mr-2 h-4 w-4 shrink-0 ${isRefreshing ? "animate-spin" : ""}`} />
             <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
           </Button>
+          <DatabaseImport collections={collections} onImportComplete={loadDatabaseData} />
           <Button size="sm" onClick={handleManualBackup} className="flex-1 sm:flex-initial">
             <Download className="mr-2 h-4 w-4 shrink-0" />
             <span className="truncate" suppressHydrationWarning>{t('database_page.manual_backup')}</span>
@@ -727,15 +734,27 @@ export default function DatabasePage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 h-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('database_page.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="collections" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('database_page.tabs.collections')}
           </TabsTrigger>
+          <TabsTrigger value="management" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
+            {t('database_page.tabs.management')}
+          </TabsTrigger>
+          <TabsTrigger value="query" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
+            {t('database_page.tabs.query')}
+          </TabsTrigger>
+          <TabsTrigger value="monitoring" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
+            {t('database_page.tabs.monitoring')}
+          </TabsTrigger>
           <TabsTrigger value="backups" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('database_page.tabs.backups')}
+          </TabsTrigger>
+          <TabsTrigger value="indexes" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
+            {t('database_page.tabs.indexes')}
           </TabsTrigger>
           <TabsTrigger value="performance" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('database_page.tabs.performance')}
@@ -757,11 +776,28 @@ export default function DatabasePage() {
           />
         </TabsContent>
 
+        <TabsContent value="management" className="space-y-4">
+          <DatabaseCollectionManagement collections={collections} />
+        </TabsContent>
+
+        <TabsContent value="query" className="space-y-4">
+          <DatabaseQueryBuilder collections={collections} />
+        </TabsContent>
+
+        <TabsContent value="monitoring" className="space-y-4">
+          <DatabaseMonitoring />
+        </TabsContent>
+
         <TabsContent value="backups" className="space-y-4">
           <DatabaseBackups
             backupHistory={backupHistory}
             onRefresh={handleRefresh}
           />
+          <DatabaseBackupSchedule />
+        </TabsContent>
+
+        <TabsContent value="indexes" className="space-y-4">
+          <DatabaseIndexManagement collections={collections} />
         </TabsContent>
 
         <TabsContent value="performance" className="space-y-4">

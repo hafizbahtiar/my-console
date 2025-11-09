@@ -54,31 +54,17 @@ export async function calculatePostCounts(categories: BlogCategory[]): Promise<B
   }
 }
 
-export function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim();
-}
+import { generateSlug, generateUniqueSlug as generateUniqueSlugBase } from '@/lib/slug';
 
+// Re-export from global slug utility
+export { generateSlug };
+
+// Type-specific wrapper for blog categories
 export function generateUniqueSlug(
   baseSlug: string,
   categories: BlogCategory[],
   excludeId?: string
 ): string {
-  let uniqueSlug = baseSlug;
-  let counter = 1;
-
-  // Check if slug exists in current categories (excluding the one being edited)
-  while (categories.some(cat =>
-    cat.slug === uniqueSlug && cat.$id !== excludeId
-  )) {
-    uniqueSlug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-
-  return uniqueSlug;
+  return generateUniqueSlugBase(baseSlug, categories, excludeId);
 }
 

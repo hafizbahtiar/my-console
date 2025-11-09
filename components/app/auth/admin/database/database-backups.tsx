@@ -17,9 +17,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download, Trash2 } from "lucide-react";
+import { Download, Trash2, RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { BackupRecord } from "@/app/auth/admin/database/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface DatabaseBackupsProps {
   backupHistory: BackupRecord[];
@@ -30,6 +33,11 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
   const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [backupToDelete, setBackupToDelete] = useState<string | null>(null);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+  const [backupToRestore, setBackupToRestore] = useState<string | null>(null);
+  const [restoreFormat, setRestoreFormat] = useState<'sql' | 'bson' | 'excel' | 'auto'>('auto');
+  const [overwrite, setOverwrite] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const handleDeleteBackup = (backupId: string) => {
     setBackupToDelete(backupId);
@@ -40,12 +48,24 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
     if (!backupToDelete) return;
 
     try {
+      // Get CSRF token first
+      const csrfResponse = await fetch('/api/csrf-token');
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      const { token } = await csrfResponse.json();
+
+      // Make delete request with CSRF token
       const response = await fetch(`/api/backups/${backupToDelete}`, {
         method: 'DELETE',
+        headers: {
+          'x-csrf-token': token,
+        },
       });
 
       if (!response.ok) {
-        throw new Error(t('database_page.backups.delete_dialog.delete_failed'));
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || t('database_page.backups.delete_dialog.delete_failed'));
       }
 
       toast.success(t('database_page.backups.delete_dialog.deleted_success'));
@@ -57,6 +77,61 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
     } catch (error) {
       console.error('Failed to delete backup:', error);
       toast.error(error instanceof Error ? error.message : t('database_page.backups.delete_dialog.delete_failed'));
+    }
+  };
+
+  const handleRestoreBackup = (backupId: string) => {
+    setBackupToRestore(backupId);
+    setRestoreDialogOpen(true);
+  };
+
+  const confirmRestoreBackup = async () => {
+    if (!backupToRestore) return;
+
+    setIsRestoring(true);
+    try {
+      // Get CSRF token first
+      const csrfResponse = await fetch('/api/csrf-token');
+      if (!csrfResponse.ok) {
+        throw new Error('Failed to get CSRF token');
+      }
+      const { token } = await csrfResponse.json();
+
+      // Make restore request with CSRF token
+      const response = await fetch(`/api/backups/${backupToRestore}/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': token,
+        },
+        body: JSON.stringify({
+          format: restoreFormat === 'auto' ? undefined : restoreFormat,
+          overwrite,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || t('database_page.backups.restore_dialog.restore_failed'));
+      }
+
+      toast.success(t('database_page.backups.restore_dialog.restored_success', {
+        collections: result.data.collections.toString(),
+        records: result.data.totalRecords.toString(),
+      }));
+
+      // Refresh backup history and database data
+      onRefresh();
+      setRestoreDialogOpen(false);
+      setBackupToRestore(null);
+      setRestoreFormat('auto');
+      setOverwrite(false);
+    } catch (error) {
+      console.error('Failed to restore backup:', error);
+      toast.error(error instanceof Error ? error.message : t('database_page.backups.restore_dialog.restore_failed'));
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -157,6 +232,15 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1 sm:space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRestoreBackup(backup.id)}
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950"
+                            title={t('database_page.backups.restore')}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
                           <Button variant="outline" size="sm" disabled className="h-8 w-8 p-0">
                             <Download className="h-4 w-4" />
                           </Button>
@@ -202,7 +286,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
               {t('database_page.backups.delete_dialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0 px-0 sm:px-0 mt-4 sm:mt-0">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-3 px-0 sm:px-0 mt-4 sm:mt-0">
             <AlertDialogCancel onClick={() => setBackupToDelete(null)} className="w-full sm:w-auto order-2 sm:order-1" suppressHydrationWarning>
               {t('cancel')}
             </AlertDialogCancel>
@@ -212,6 +296,79 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
               suppressHydrationWarning
             >
               {t('delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <AlertDialogContent className="w-[90vw] sm:w-full max-w-md p-4 sm:p-6">
+          <AlertDialogHeader className="px-0 sm:px-0">
+            <AlertDialogTitle className="text-base sm:text-lg" suppressHydrationWarning>
+              {t('database_page.backups.restore_dialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm mt-2" suppressHydrationWarning>
+              {t('database_page.backups.restore_dialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-xs sm:text-sm" suppressHydrationWarning>
+                {t('database_page.backups.restore_dialog.format')}
+              </Label>
+              <Select value={restoreFormat} onValueChange={(value) => setRestoreFormat(value as any)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto" suppressHydrationWarning>
+                    {t('database_page.backups.restore_dialog.auto_detect')}
+                  </SelectItem>
+                  <SelectItem value="sql" suppressHydrationWarning>PostgreSQL (SQL)</SelectItem>
+                  <SelectItem value="bson" suppressHydrationWarning>MongoDB (BSON)</SelectItem>
+                  <SelectItem value="excel" suppressHydrationWarning>Excel (XLSX)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="overwrite"
+                checked={overwrite}
+                onCheckedChange={(checked) => setOverwrite(checked === true)}
+              />
+              <Label htmlFor="overwrite" className="text-xs sm:text-sm cursor-pointer" suppressHydrationWarning>
+                {t('database_page.backups.restore_dialog.overwrite')}
+              </Label>
+            </div>
+          </div>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-3 px-0 sm:px-0 mt-4 sm:mt-0">
+            <AlertDialogCancel
+              onClick={() => {
+                setBackupToRestore(null);
+                setRestoreFormat('auto');
+                setOverwrite(false);
+              }}
+              className="w-full sm:w-auto order-2 sm:order-1"
+              disabled={isRestoring}
+              suppressHydrationWarning
+            >
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRestoreBackup}
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto order-1 sm:order-2"
+              disabled={isRestoring}
+              suppressHydrationWarning
+            >
+              {isRestoring ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('database_page.backups.restore_dialog.restoring')}
+                </>
+              ) : (
+                t('database_page.backups.restore_dialog.restore')
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

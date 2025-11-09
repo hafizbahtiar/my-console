@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { account } from "@/lib/appwrite"
 import { useTranslation } from "@/lib/language-context"
@@ -10,11 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Eye, EyeOff, Lock, Loader2, CheckCircle } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { t } = useTranslation()
@@ -256,6 +257,32 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+          <Card className="w-full max-w-md shadow-lg">
+            <CardHeader className="space-y-1">
+              <Skeleton className="h-8 w-48 mx-auto" />
+              <Skeleton className="h-4 w-64 mx-auto" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <ResetPasswordPageContent />
+    </Suspense>
   )
 }
 

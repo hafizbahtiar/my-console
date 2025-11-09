@@ -176,20 +176,21 @@ export function DatabaseMonitoring() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold" suppressHydrationWarning>
+          <h2 className="text-xl sm:text-2xl font-bold" suppressHydrationWarning>
             {t('database_page.monitoring.title')}
           </h2>
-          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1" suppressHydrationWarning>
             {t('database_page.monitoring.description')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setTimeWindow(timeWindow === 3600000 ? undefined : 3600000)}
+            className="flex-1 sm:flex-initial"
             suppressHydrationWarning
           >
             {timeWindow === 3600000 ? t('database_page.monitoring.all_time') : t('database_page.monitoring.last_hour')}
@@ -199,6 +200,7 @@ export function DatabaseMonitoring() {
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
+            className="flex-1 sm:flex-initial"
             suppressHydrationWarning
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -208,25 +210,26 @@ export function DatabaseMonitoring() {
             variant="outline"
             size="sm"
             onClick={handleClearCache}
+            className="flex-1 sm:flex-initial"
             suppressHydrationWarning
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            {t('database_page.monitoring.clear_cache')}
+            <span suppressHydrationWarning>{t('database_page.monitoring.clear_cache')}</span>
           </Button>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium" suppressHydrationWarning>
+            <CardTitle className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
               {t('database_page.monitoring.total_queries')}
             </CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
+            <Database className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" suppressHydrationWarning>
+            <div className="text-xl sm:text-2xl font-bold" suppressHydrationWarning>
               {stats.totalQueries.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground" suppressHydrationWarning>
@@ -237,13 +240,13 @@ export function DatabaseMonitoring() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium" suppressHydrationWarning>
+            <CardTitle className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
               {t('database_page.monitoring.avg_execution_time')}
             </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${getPerformanceColor(stats.averageExecutionTime)}`} suppressHydrationWarning>
+            <div className={`text-xl sm:text-2xl font-bold ${getPerformanceColor(stats.averageExecutionTime)}`} suppressHydrationWarning>
               {formatTime(stats.averageExecutionTime)}
             </div>
             <p className="text-xs text-muted-foreground" suppressHydrationWarning>
@@ -254,13 +257,13 @@ export function DatabaseMonitoring() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium" suppressHydrationWarning>
+            <CardTitle className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
               {t('database_page.monitoring.slow_queries')}
             </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <AlertTriangle className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" suppressHydrationWarning>
+            <div className="text-xl sm:text-2xl font-bold" suppressHydrationWarning>
               {stats.slowQueries}
             </div>
             <p className="text-xs text-muted-foreground" suppressHydrationWarning>
@@ -271,16 +274,16 @@ export function DatabaseMonitoring() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium" suppressHydrationWarning>
+            <CardTitle className="text-xs sm:text-sm font-medium" suppressHydrationWarning>
               {t('database_page.monitoring.cache_hit_rate')}
             </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="h-4 w-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" suppressHydrationWarning>
+            <div className="text-xl sm:text-2xl font-bold" suppressHydrationWarning>
               {cacheHitRate.toFixed(1)}%
             </div>
-            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
+            <p className="text-xs text-muted-foreground break-words" suppressHydrationWarning>
               {stats.cacheHits} {t('database_page.monitoring.hits')} / {stats.cacheMisses} {t('database_page.monitoring.misses')}
             </p>
           </CardContent>
@@ -299,9 +302,9 @@ export function DatabaseMonitoring() {
           <CardContent>
             <ul className="space-y-2">
               {suggestions.map((suggestion, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm" suppressHydrationWarning>
-                  <span className="text-muted-foreground">•</span>
-                  <span>{suggestion}</span>
+                <li key={index} className="flex items-start gap-2 text-xs sm:text-sm" suppressHydrationWarning>
+                  <span className="text-muted-foreground shrink-0">•</span>
+                  <span className="break-words">{suggestion}</span>
                 </li>
               ))}
             </ul>
@@ -321,22 +324,22 @@ export function DatabaseMonitoring() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-4">
+            <ScrollArea className="h-[250px] sm:h-[300px]">
+              <div className="space-y-3 sm:space-y-4">
                 {Object.entries(stats.queriesByCollection)
                   .sort(([, a], [, b]) => b - a)
                   .map(([collection, count]) => {
                     const avgTime = stats.averageExecutionTimeByCollection[collection] || 0;
                     return (
-                      <div key={collection} className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium" suppressHydrationWarning>{collection}</p>
-                          <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                      <div key={collection} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate" suppressHydrationWarning>{collection}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                             {count} {t('database_page.monitoring.queries')}
                           </p>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <Badge variant={getPerformanceBadge(avgTime)} suppressHydrationWarning>
+                        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                          <Badge variant={getPerformanceBadge(avgTime)} className="text-xs" suppressHydrationWarning>
                             {formatTime(avgTime)}
                           </Badge>
                         </div>
@@ -362,24 +365,24 @@ export function DatabaseMonitoring() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px]">
-              <div className="space-y-4">
+            <ScrollArea className="h-[350px] sm:h-[400px]">
+              <div className="space-y-3 sm:space-y-4">
                 {slowQueries.map((query, index) => (
                   <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm" suppressHydrationWarning>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm" suppressHydrationWarning>
                           {query.collection}
                         </p>
-                        <p className="text-xs text-muted-foreground font-mono" suppressHydrationWarning>
+                        <p className="text-xs text-muted-foreground font-mono break-all" suppressHydrationWarning>
                           {query.query || t('database_page.monitoring.no_query_string')}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="destructive" suppressHydrationWarning>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="destructive" className="text-xs" suppressHydrationWarning>
                           {formatTime(query.executionTime)}
                         </Badge>
-                        <span className="text-xs text-muted-foreground" suppressHydrationWarning>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
                           {formatDate(query.timestamp)}
                         </span>
                       </div>

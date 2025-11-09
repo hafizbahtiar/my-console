@@ -28,28 +28,28 @@ export function AccountStatistics({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="text-center p-4 border rounded-lg">
-            <div className="text-2xl font-bold text-primary">{sessionsCount}</div>
-            <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="text-center p-3 sm:p-4 border rounded-lg">
+            <div className="text-xl sm:text-2xl font-bold text-primary">{sessionsCount}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
               {t('profile_page.statistics.sessions')}
             </div>
           </div>
-          <div className="text-center p-4 border rounded-lg">
-            <div className="text-2xl font-bold text-primary">{teamsCount}</div>
-            <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <div className="text-center p-3 sm:p-4 border rounded-lg">
+            <div className="text-xl sm:text-2xl font-bold text-primary">{teamsCount}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
               {t('profile_page.statistics.teams')}
             </div>
           </div>
-          <div className="text-center p-4 border rounded-lg">
-            <div className="text-2xl font-bold text-primary">{userProfile?.loginCount || 0}</div>
-            <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <div className="text-center p-3 sm:p-4 border rounded-lg">
+            <div className="text-xl sm:text-2xl font-bold text-primary">{userProfile?.loginCount || 0}</div>
+            <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
               {t('profile_page.statistics.login_count')}
             </div>
           </div>
-          <div className="text-center p-4 border rounded-lg">
-            <div className="text-2xl font-bold text-primary">0</div>
-            <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+          <div className="text-center p-3 sm:p-4 border rounded-lg">
+            <div className="text-xl sm:text-2xl font-bold text-primary">0</div>
+            <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
               {t('profile_page.statistics.api_calls')}
             </div>
           </div>

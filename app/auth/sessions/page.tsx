@@ -101,15 +101,15 @@ export default function SessionsPage() {
 
       // Log the mass session termination before logout
       try {
-        await auditLogger.logSecurityEvent(
-          user.$id,
-          'ALL_SESSIONS_TERMINATED',
-          {
-            terminatedBy: 'user',
+      await auditLogger.logSecurityEvent(
+        user.$id,
+        'ALL_SESSIONS_TERMINATED',
+        {
+          terminatedBy: 'user',
             includeCurrentSession: true,
-            timestamp: new Date().toISOString()
-          }
-        )
+          timestamp: new Date().toISOString()
+        }
+      )
       } catch (auditError) {
         console.warn('Failed to log session termination:', auditError)
       }
@@ -140,14 +140,14 @@ export default function SessionsPage() {
   // Show skeleton while translations or sessions data is loading
   if (translationLoading || loading) {
     return (
-      <div className="flex-1 space-y-4 p-4 pt-6">
+      <div className="flex-1 space-y-4 p-3 sm:p-4 sm:pt-6">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="space-y-2">
-            <Skeleton className="h-9 w-48" />
-            <Skeleton className="h-5 w-80" />
+            <Skeleton className="h-8 sm:h-9 w-32 sm:w-48" />
+            <Skeleton className="h-4 sm:h-5 w-64 sm:w-80" />
           </div>
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-full sm:w-32" />
         </div>
 
         {/* Alert Skeleton */}
@@ -205,18 +205,18 @@ export default function SessionsPage() {
   const otherSessions = sessions.filter(session => !session.current)
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
+    <div className="flex-1 space-y-4 p-3 sm:p-4 sm:pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" suppressHydrationWarning>
             {t('sessions_page.title')}
           </h1>
-          <p className="text-muted-foreground" suppressHydrationWarning>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1" suppressHydrationWarning>
             {t('sessions_page.description')}
           </p>
         </div>
-        <Button onClick={loadSessions} disabled={refreshing}>
+        <Button onClick={loadSessions} disabled={refreshing} className="w-full sm:w-auto">
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           <span suppressHydrationWarning>{t('refresh')}</span>
         </Button>

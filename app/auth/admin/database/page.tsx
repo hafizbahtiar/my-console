@@ -534,7 +534,7 @@ export default function DatabasePage() {
               <Button variant="outline" size="sm" onClick={() => router.push('/auth/dashboard')} className="w-full sm:w-auto">
                 <span suppressHydrationWarning>{t('back')}</span>
               </Button>
-          </div>
+            </div>
           </AlertDescription>
         </Alert>
       </div>
@@ -706,10 +706,10 @@ export default function DatabasePage() {
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold capitalize" suppressHydrationWarning>
               {stats?.backupStatus === 'healthy' ? t('database_page.stats.healthy') :
-               stats?.backupStatus === 'warning' ? t('database_page.stats.warning') :
-               stats?.backupStatus === 'critical' ? t('database_page.stats.critical') :
-               stats?.backupStatus === 'no-backups' ? t('database_page.stats.no_backups_status') :
-               t('database_page.stats.unknown')}
+                stats?.backupStatus === 'warning' ? t('database_page.stats.warning') :
+                  stats?.backupStatus === 'critical' ? t('database_page.stats.critical') :
+                    stats?.backupStatus === 'no-backups' ? t('database_page.stats.no_backups_status') :
+                      t('database_page.stats.unknown')}
             </div>
             <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
               {t('database_page.stats.last_backup')} {stats?.lastBackup ? new Date(stats.lastBackup).toLocaleDateString() : t('database_page.stats.no_backups')}

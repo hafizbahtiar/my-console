@@ -606,7 +606,8 @@
         "title": "Padam Sandaran",
         "description": "Anda pasti mahu memadam sandaran ini? Tindakan tidak boleh dibatalkan.",
         "deleted_success": "Sandaran dipadam",
-        "delete_failed": "Gagal memadam sandaran"
+        "delete_failed": "Gagal memadam sandaran",
+        "deleting": "Memadam..."
       },
       "restore_dialog": {
         "title": "Pulihkan dari Sandaran",

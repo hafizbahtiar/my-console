@@ -17,33 +17,33 @@ export function CurrentSessionCard({ session }: CurrentSessionCardProps) {
   return (
     <Card className="border-primary/50 bg-primary/5">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 shrink-0">
               {getDeviceIcon(session.clientType, session.deviceModel)}
             </div>
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2" suppressHydrationWarning>
-                {t('sessions_page.current_session.title')}
-                <Badge variant="default" className="text-xs">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2" suppressHydrationWarning>
+                <span className="truncate">{t('sessions_page.current_session.title')}</span>
+                <Badge variant="default" className="text-xs shrink-0">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   {t('active')}
                 </Badge>
               </CardTitle>
-              <CardDescription suppressHydrationWarning>
+              <CardDescription className="text-xs sm:text-sm break-words" suppressHydrationWarning>
                 {getDeviceName(session.deviceName, session.deviceModel, session.deviceBrand, t)} •
                 {getBrowserName(session.clientName, session.clientEngine, t)} •
-                {session.ip}
+                <span className="font-mono">{session.ip}</span>
               </CardDescription>
             </div>
           </div>
-          <Badge variant="secondary" suppressHydrationWarning>
+          <Badge variant="secondary" className="shrink-0 self-start sm:self-auto" suppressHydrationWarning>
             {t('sessions_page.current_session.this_device')}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
           <div>
             <span className="text-muted-foreground" suppressHydrationWarning>
               {t('sessions_page.current_session.started')}

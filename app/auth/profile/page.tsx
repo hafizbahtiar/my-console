@@ -519,17 +519,17 @@ function ProfilePageContent({
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
+    <div className="flex-1 space-y-4 p-3 sm:p-4 sm:pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" suppressHydrationWarning>
           {t('profile_page.title')}
         </h1>
-        <p className="text-muted-foreground" suppressHydrationWarning>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1" suppressHydrationWarning>
           {t('profile_page.description')}
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <ProfileOverview user={user} userProfile={userProfile} />
         <AccountSettingsForm
           formData={formData}

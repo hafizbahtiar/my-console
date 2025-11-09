@@ -31,41 +31,6 @@ print_section() {
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 }
 
-# Function to check if command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
-
-# Function to check required tools
-check_requirements() {
-    print_section "🔍 Checking Requirements"
-    
-    local missing_tools=()
-    
-    if ! command_exists bun; then
-        missing_tools+=("bun")
-    else
-        echo -e "${GREEN}✅ Bun is installed${NC} ($(bun --version))"
-    fi
-    
-    if ! command_exists git; then
-        missing_tools+=("git")
-    else
-        echo -e "${GREEN}✅ Git is installed${NC} ($(git --version | cut -d' ' -f3))"
-    fi
-    
-    if ! command_exists pm2; then
-        missing_tools+=("pm2")
-    else
-        echo -e "${GREEN}✅ PM2 is installed${NC} ($(pm2 --version))"
-    fi
-    
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        echo -e "${RED}❌ Missing required tools: ${missing_tools[*]}${NC}"
-        exit 1
-    fi
-}
-
 # Function to check environment file
 check_env_file() {
     if [ ! -f "$PROJECT_DIR/.env.local" ] && [ ! -f "$PROJECT_DIR/.env" ]; then
@@ -91,10 +56,7 @@ echo -e "${GREEN}║         🚀 My Console Deployment Script 🚀            �
 echo -e "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
 echo -e "${BLUE}Started at: $(date '+%Y-%m-%d %H:%M:%S')${NC}"
 
-# Step 1: Check requirements
-check_requirements
-
-# Step 2: Change to project directory
+# Step 1: Change to project directory
 print_section "📁 Project Directory"
 echo -e "${YELLOW}Changing to project directory: ${PROJECT_DIR}${NC}"
 cd "$PROJECT_DIR" || {
@@ -103,10 +65,10 @@ cd "$PROJECT_DIR" || {
 }
 echo -e "${GREEN}✅ Current directory: $(pwd)${NC}"
 
-# Step 3: Check environment file
+# Step 2: Check environment file
 check_env_file
 
-# Step 4: Check git status
+# Step 3: Check git status
 print_section "📥 Git Operations"
 echo -e "${YELLOW}Checking git status...${NC}"
 if [ -d ".git" ]; then
@@ -133,7 +95,7 @@ else
     exit 1
 fi
 
-# Step 5: Clean previous build
+# Step 4: Clean previous build
 print_section "🧹 Cleanup"
 echo -e "${YELLOW}Cleaning previous build artifacts...${NC}"
 if [ -d ".next" ]; then
@@ -145,7 +107,7 @@ if [ -d "node_modules/.cache" ]; then
     echo -e "${GREEN}✅ Cleared node_modules cache${NC}"
 fi
 
-# Step 6: Install dependencies
+# Step 5: Install dependencies
 print_section "📦 Installing Dependencies"
 echo -e "${YELLOW}Installing dependencies with Bun...${NC}"
 INSTALL_START=$(date +%s)
@@ -165,7 +127,7 @@ else
     exit 1
 fi
 
-# Step 7: Build the application
+# Step 6: Build the application
 print_section "🔨 Building Application"
 echo -e "${YELLOW}Building application with Next.js...${NC}"
 BUILD_START=$(date +%s)
@@ -185,7 +147,7 @@ else
     exit 1
 fi
 
-# Step 8: Reload PM2
+# Step 7: Reload PM2
 print_section "🔄 PM2 Reload"
 echo -e "${YELLOW}Reloading PM2 process...${NC}"
 if pm2 reload ecosystem.config.cjs 2>&1; then

@@ -250,22 +250,22 @@ export function PersonalActivityTimeline({ userId }: PersonalActivityTimelinePro
       </CardHeader>
       <CardContent>
         <ScrollArea className={expanded ? "h-[500px]" : "h-[300px]"} type="auto">
-          <div className="relative pl-10 pr-2">
+          <div className="relative pl-6 sm:pl-10 pr-2">
             {/* Main continuous timeline line */}
-            <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-border via-border to-border" />
+            <div className="absolute left-2 sm:left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-border via-border to-border" />
             
             <div className="space-y-0">
               {displayedActivities.map((activity, index) => (
                 <div key={activity.$id} className="group relative">
-                  <div className="flex gap-4 pb-8 last:pb-0">
+                  <div className="flex gap-2 sm:gap-4 pb-6 sm:pb-8 last:pb-0">
                     {/* Timeline node container */}
-                    <div className="relative flex flex-col items-center shrink-0 -ml-2">
+                    <div className="relative flex flex-col items-center shrink-0 -ml-1 sm:-ml-2">
                       {/* Timeline dot with icon */}
-                      <div className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background border-2 border-primary/30 shadow-sm group-hover:border-primary/60 group-hover:shadow-md transition-all duration-200">
+                      <div className="relative z-10 flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-background border-2 border-primary/30 shadow-sm group-hover:border-primary/60 group-hover:shadow-md transition-all duration-200">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted/50 group-hover:bg-muted transition-colors">
+                              <div className="flex h-5 w-5 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-muted/50 group-hover:bg-muted transition-colors">
                                 {getActivityIcon(activity.action)}
                               </div>
                             </TooltipTrigger>
@@ -278,28 +278,28 @@ export function PersonalActivityTimeline({ userId }: PersonalActivityTimelinePro
                       
                       {/* Connector line to next item (only if not last) */}
                       {index < displayedActivities.length - 1 && (
-                        <div className="absolute top-9 left-1/2 -translate-x-1/2 w-0.5 h-full bg-border" />
+                        <div className="absolute top-7 sm:top-9 left-1/2 -translate-x-1/2 w-0.5 h-full bg-border" />
                       )}
                     </div>
                     
                     {/* Content card */}
                     <div className="flex-1 space-y-2 min-w-0 pt-0.5">
-                      <div className="rounded-lg border border-border/50 bg-card/50 p-3 group-hover:border-border group-hover:bg-card transition-all duration-200">
+                      <div className="rounded-lg border border-border/50 bg-card/50 p-2 sm:p-3 group-hover:border-border group-hover:bg-card transition-all duration-200">
                         <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-semibold leading-tight">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <p className="text-xs sm:text-sm font-semibold leading-tight">
                               {getActionDescription(activity)}
                             </p>
                             <Badge 
                               variant={getActionBadgeVariant(activity.action)} 
-                              className="text-xs px-2 py-0.5 h-auto font-medium shrink-0"
+                              className="text-xs px-1.5 sm:px-2 py-0.5 h-auto font-medium shrink-0 self-start"
                             >
                               {formatAction(activity.action)}
                             </Badge>
                           </div>
                           
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="secondary" className="text-xs px-2 py-0.5 h-auto capitalize font-normal">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <Badge variant="secondary" className="text-xs px-1.5 sm:px-2 py-0.5 h-auto capitalize font-normal shrink-0 self-start">
                               {activity.resource.replace(/_/g, ' ')}
                             </Badge>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

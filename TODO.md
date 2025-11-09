@@ -279,7 +279,7 @@ Comprehensive invoice management system for creating, managing, and tracking inv
 **Status**: Core Features Complete, Missing Advanced Account Management
 **Priority**: Medium
 
-**✅ Implemented**: 
+**✅ Implemented**:
 - Profile view/edit with extended fields
 - Settings integration
 - Teams display
@@ -319,7 +319,7 @@ Comprehensive invoice management system for creating, managing, and tracking inv
 **Status**: Core Features Complete, Missing Advanced Features
 **Priority**: Low
 
-**✅ Implemented**: 
+**✅ Implemented**:
 - Session listing with current session display
 - Individual session revocation
 - Revoke all sessions with confirmation dialog and auto-logout

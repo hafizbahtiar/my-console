@@ -606,7 +606,8 @@
         "title": "Delete Backup",
         "description": "Are you sure you want to delete this backup? This action cannot be undone.",
         "deleted_success": "Backup deleted successfully",
-        "delete_failed": "Failed to delete backup"
+        "delete_failed": "Failed to delete backup",
+        "deleting": "Deleting..."
       },
       "restore_dialog": {
         "title": "Restore from Backup",

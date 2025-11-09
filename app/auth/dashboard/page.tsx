@@ -15,9 +15,7 @@ import {
   WelcomeHeader,
   StatsCards,
   UserProfileCard,
-  QuickActionsCard,
-  ActivityChart,
-  ContentDistributionChart
+  QuickActionsCard
 } from "@/components/app/auth/dashboard"
 
 interface DashboardStats {
@@ -29,20 +27,6 @@ interface DashboardStats {
   myCommunityPosts: number
 }
 
-interface ChartData {
-  date: string
-  blogPosts: number
-  communityPosts: number
-  users: number
-}
-
-interface ContentDistribution {
-  name: string
-  value: number
-  color: string
-}
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth()
@@ -58,8 +42,6 @@ export default function Dashboard() {
     myBlogPosts: 0,
     myCommunityPosts: 0
   })
-  const [chartData, setChartData] = useState<ChartData[]>([])
-  const [contentDistribution, setContentDistribution] = useState<ContentDistribution[]>([])
   const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [userProfile, setUserProfile] = useState<any>(null)
 
@@ -156,70 +138,6 @@ export default function Dashboard() {
         })
 
         setUserProfile(profile)
-
-        // Generate chart data (last 7 days)
-        const chartDataArray: ChartData[] = []
-        const now = new Date()
-
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(now)
-          date.setDate(date.getDate() - i)
-          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-
-          const dayStart = new Date(date)
-          dayStart.setHours(0, 0, 0, 0)
-          const dayEnd = new Date(date)
-          dayEnd.setHours(23, 59, 59, 999)
-
-          const blogCount = blogPosts.filter((post: any) => {
-            const postDate = new Date(post.$createdAt)
-            return postDate >= dayStart && postDate <= dayEnd
-          }).length
-
-          const communityCount = communityPosts.filter((post: any) => {
-            const postDate = new Date(post.$createdAt)
-            return postDate >= dayStart && postDate <= dayEnd
-          }).length
-
-          const userCount = users.filter((u: any) => {
-            if (!u.$createdAt) return false
-            const userDate = new Date(u.$createdAt)
-            return userDate >= dayStart && userDate <= dayEnd
-          }).length
-
-          chartDataArray.push({
-            date: dateStr,
-            blogPosts: blogCount,
-            communityPosts: communityCount,
-            users: isSuperAdmin || isAdmin ? userCount : 0
-          })
-        }
-
-        setChartData(chartDataArray)
-
-        // Content distribution
-        const distribution: ContentDistribution[] = [
-          {
-            name: 'Blog Posts',
-            value: blogPosts.length,
-            color: COLORS[0]
-          },
-          {
-            name: 'Community Posts',
-            value: communityPosts.length,
-            color: COLORS[1]
-          }
-        ]
-
-        if (isSuperAdmin || isAdmin) {
-          distribution.push({
-            name: 'Users',
-            value: users.length,
-            color: COLORS[2]
-          })
-        }
-
-        setContentDistribution(distribution.filter(d => d.value > 0))
       } catch (error) {
         console.error('Failed to load dashboard stats:', error)
         toast.error('Failed to load dashboard statistics')
@@ -300,15 +218,12 @@ export default function Dashboard() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-2 h-auto">
           <TabsTrigger value="overview" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('dashboard_page.tabs.overview')}
           </TabsTrigger>
           <TabsTrigger value="activity" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
             {t('dashboard_page.tabs.activity')}
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs sm:text-sm py-2 px-2 sm:px-4" suppressHydrationWarning>
-            {t('dashboard_page.tabs.analytics')}
           </TabsTrigger>
         </TabsList>
 
@@ -329,21 +244,6 @@ export default function Dashboard() {
 
         <TabsContent value="activity" className="space-y-4">
           <AuditActivity />
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-            <ActivityChart
-              chartData={chartData}
-              isLoadingStats={isLoadingStats}
-              isSuperAdmin={isSuperAdmin}
-              isAdmin={isAdmin}
-            />
-            <ContentDistributionChart
-              contentDistribution={contentDistribution}
-              isLoadingStats={isLoadingStats}
-            />
-          </div>
         </TabsContent>
       </Tabs>
     </div>

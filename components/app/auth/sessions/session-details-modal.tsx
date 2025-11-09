@@ -34,7 +34,7 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh] w-[95vw] sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2" suppressHydrationWarning>
             <Shield className="h-5 w-5" />
@@ -49,24 +49,24 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
           <div className="space-y-6">
             {/* Session Overview */}
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-muted shrink-0">
                   {getDeviceIcon(session.clientType, session.deviceModel)}
                 </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold">
+                <div className="flex-1 space-y-2 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-semibold truncate">
                       {getDeviceName(session.deviceName, session.deviceModel, session.deviceBrand, t)}
                     </h3>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${sessionStatus.textColor} border-current`}
+                      className={`text-xs ${sessionStatus.textColor} border-current shrink-0`}
                     >
                       <div className={`w-2 h-2 rounded-full ${sessionStatus.color} mr-1`} />
                       {sessionStatus.status}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words">
                     {getBrowserName(session.clientName, session.clientEngine, t)}
                   </p>
                 </div>
@@ -81,34 +81,34 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
                 <Info className="h-4 w-4" />
                 {t('sessions_page.details.session_info')}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                     {t('sessions_page.details.session_id')}
                   </p>
-                  <p className="text-sm font-mono break-all">{session.$id}</p>
+                  <p className="text-xs sm:text-sm font-mono break-all">{session.$id}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                     {t('sessions_page.details.status')}
                   </p>
-                  <Badge variant="outline" className={sessionStatus.textColor}>
+                  <Badge variant="outline" className={`text-xs ${sessionStatus.textColor}`}>
                     {sessionStatus.status}
                   </Badge>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
                     <Calendar className="h-3 w-3" />
                     {t('sessions_page.details.created')}
                   </p>
-                  <p className="text-sm">{formatDate(session.$createdAt, t)}</p>
+                  <p className="text-xs sm:text-sm">{formatDate(session.$createdAt, t)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
                     <Clock className="h-3 w-3" />
                     {t('sessions_page.details.expires')}
                   </p>
-                  <p className="text-sm">{formatExpirationDate(session.expire, t)}</p>
+                  <p className="text-xs sm:text-sm">{formatExpirationDate(session.expire, t)}</p>
                 </div>
               </div>
             </div>
@@ -120,37 +120,37 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
               <h4 className="font-semibold" suppressHydrationWarning>
                 {t('sessions_page.details.device_info')}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {session.deviceName && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.device_name')}
                     </p>
-                    <p className="text-sm">{session.deviceName}</p>
+                    <p className="text-xs sm:text-sm">{session.deviceName}</p>
                   </div>
                 )}
                 {session.deviceBrand && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.device_brand')}
                     </p>
-                    <p className="text-sm">{session.deviceBrand}</p>
+                    <p className="text-xs sm:text-sm">{session.deviceBrand}</p>
                   </div>
                 )}
                 {session.deviceModel && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.details.model')}
                     </p>
-                    <p className="text-sm">{session.deviceModel}</p>
+                    <p className="text-xs sm:text-sm">{session.deviceModel}</p>
                   </div>
                 )}
                 {session.osName && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.operating_system')}
                     </p>
-                    <p className="text-sm">{session.osName} {session.osVersion}</p>
+                    <p className="text-xs sm:text-sm">{session.osName} {session.osVersion}</p>
                   </div>
                 )}
               </div>
@@ -163,28 +163,28 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
               <h4 className="font-semibold" suppressHydrationWarning>
                 {t('sessions_page.details.browser_info')}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {session.clientName && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.browser')}
                     </p>
-                    <p className="text-sm">{session.clientName} {session.clientVersion}</p>
+                    <p className="text-xs sm:text-sm">{session.clientName} {session.clientVersion}</p>
                   </div>
                 )}
                 {session.clientEngine && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.engine')}
                     </p>
-                    <p className="text-sm">{session.clientEngine} {session.clientEngineVersion}</p>
+                    <p className="text-xs sm:text-sm">{session.clientEngine} {session.clientEngineVersion}</p>
                   </div>
                 )}
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                     {t('sessions_page.current_session.client_type')}
                   </p>
-                  <p className="text-sm">{session.clientType}</p>
+                  <p className="text-xs sm:text-sm">{session.clientType}</p>
                 </div>
               </div>
             </div>
@@ -197,27 +197,27 @@ export function SessionDetailsModal({ session, open, onOpenChange }: SessionDeta
                 <MapPin className="h-4 w-4" />
                 {t('sessions_page.details.location_info')}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1" suppressHydrationWarning>
                     <Globe className="h-3 w-3" />
                     {t('sessions_page.current_session.ip_address')}
                   </p>
-                  <p className="text-sm font-mono">{session.ip}</p>
+                  <p className="text-xs sm:text-sm font-mono break-all">{session.ip}</p>
                 </div>
                 {session.countryName && (
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                       {t('sessions_page.current_session.location')}
                     </p>
-                    <p className="text-sm">{session.countryName} {session.countryCode && `(${session.countryCode})`}</p>
+                    <p className="text-xs sm:text-sm">{session.countryName} {session.countryCode && `(${session.countryCode})`}</p>
                   </div>
                 )}
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                  <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                     {t('sessions_page.current_session.provider')}
                   </p>
-                  <p className="text-sm">{session.provider}</p>
+                  <p className="text-xs sm:text-sm">{session.provider}</p>
                 </div>
               </div>
             </div>

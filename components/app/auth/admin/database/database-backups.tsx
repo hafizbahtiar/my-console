@@ -38,6 +38,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
   const [restoreFormat, setRestoreFormat] = useState<'sql' | 'bson' | 'excel' | 'auto'>('auto');
   const [overwrite, setOverwrite] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteBackup = (backupId: string) => {
     setBackupToDelete(backupId);
@@ -47,6 +48,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
   const confirmDeleteBackup = async () => {
     if (!backupToDelete) return;
 
+    setIsDeleting(true);
     try {
       // Get CSRF token first
       const csrfResponse = await fetch('/api/csrf-token');
@@ -77,6 +79,9 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
     } catch (error) {
       console.error('Failed to delete backup:', error);
       toast.error(error instanceof Error ? error.message : t('database_page.backups.delete_dialog.delete_failed'));
+      // Keep dialog open on error so user can retry
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -292,10 +297,18 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteBackup}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto order-1 sm:order-2"
+              className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto order-1 sm:order-2"
+              disabled={isDeleting}
               suppressHydrationWarning
             >
-              {t('delete')}
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {t('database_page.backups.delete_dialog.deleting')}
+                </>
+              ) : (
+                t('delete')
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -357,7 +370,7 @@ export function DatabaseBackups({ backupHistory, onRefresh }: DatabaseBackupsPro
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRestoreBackup}
-              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto order-1 sm:order-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto order-1 sm:order-2"
               disabled={isRestoring}
               suppressHydrationWarning
             >

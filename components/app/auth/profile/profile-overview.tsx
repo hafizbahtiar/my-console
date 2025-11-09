@@ -84,32 +84,32 @@ export function ProfileOverview({ user, userProfile }: ProfileOverviewProps) {
           {t('profile_page.overview.description')}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
+      <CardContent className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <Avatar className="h-16 w-16 sm:h-20 sm:w-20 shrink-0">
             <AvatarImage src={userProfile?.avatar} />
-            <AvatarFallback className="text-lg">
+            <AvatarFallback className="text-base sm:text-lg">
               {getInitials(user.email)}
             </AvatarFallback>
           </Avatar>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold" suppressHydrationWarning>
+          <div className="space-y-1 flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg sm:text-xl font-semibold truncate" suppressHydrationWarning>
                 {user.name || t('profile_page.overview.user')}
               </h3>
               {userProfile?.role && (
-                <Badge variant={userProfile.role === 'admin' ? 'default' : 'secondary'}>
+                <Badge variant={userProfile.role === 'admin' ? 'default' : 'secondary'} className="shrink-0">
                   {userProfile.role}
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground">{user.email}</p>
-            <div className="flex items-center gap-2">
-              <Badge variant={userProfile?.status === 'active' ? 'default' : 'secondary'}>
+            <p className="text-sm sm:text-base text-muted-foreground truncate">{user.email}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={userProfile?.status === 'active' ? 'default' : 'secondary'} className="shrink-0">
                 {userProfile?.status || t('active')}
               </Badge>
               {userProfile?.twoFactorEnabled && (
-                <Badge variant="outline" className="gap-1">
+                <Badge variant="outline" className="gap-1 shrink-0">
                   <Lock className="h-3 w-3" />
                   {t('profile_page.overview.two_factor')}
                 </Badge>
@@ -200,15 +200,15 @@ export function ProfileOverview({ user, userProfile }: ProfileOverviewProps) {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <Shield className="h-4 w-4 text-muted-foreground" />
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium" suppressHydrationWarning>
+          <div className="flex items-start gap-3">
+            <Shield className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium mb-1" suppressHydrationWarning>
                     {t('profile_page.overview.email_verified')}
                   </p>
-                  <Badge variant={user.emailVerification ? "default" : "secondary"} suppressHydrationWarning>
+                  <Badge variant={user.emailVerification ? "default" : "secondary"} suppressHydrationWarning className="shrink-0">
                     {user.emailVerification ? t('profile_page.overview.verified') : t('profile_page.overview.unverified')}
                   </Badge>
                 </div>
@@ -218,17 +218,20 @@ export function ProfileOverview({ user, userProfile }: ProfileOverviewProps) {
                     size="sm"
                     onClick={handleResendVerification}
                     disabled={sendingVerification}
+                    className="w-full sm:w-auto shrink-0"
                     suppressHydrationWarning
                   >
                     {sendingVerification ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        <span suppressHydrationWarning>{t('profile_page.overview.sending')}</span>
+                        <span className="hidden sm:inline" suppressHydrationWarning>{t('profile_page.overview.sending')}</span>
+                        <span className="sm:hidden" suppressHydrationWarning>{t('profile_page.overview.sending')}</span>
                       </>
                     ) : (
                       <>
                         <Send className="h-4 w-4 mr-2" />
-                        <span suppressHydrationWarning>{t('profile_page.overview.resend_verification')}</span>
+                        <span className="hidden sm:inline" suppressHydrationWarning>{t('profile_page.overview.resend_verification')}</span>
+                        <span className="sm:hidden" suppressHydrationWarning>{t('profile_page.overview.resend')}</span>
                       </>
                     )}
                   </Button>

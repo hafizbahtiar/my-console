@@ -87,7 +87,7 @@ export function AccountSettingsForm({
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="location" suppressHydrationWarning>
                 {t('profile_page.account_settings.location')} <span className="text-muted-foreground">({t('optional')})</span>
@@ -126,7 +126,7 @@ export function AccountSettingsForm({
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="timezone" suppressHydrationWarning>
                 {t('profile_page.account_settings.timezone')} <span className="text-muted-foreground">({t('optional')})</span>

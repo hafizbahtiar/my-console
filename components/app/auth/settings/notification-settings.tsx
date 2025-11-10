@@ -25,7 +25,7 @@ export function NotificationSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.notifications.push_notifications')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -35,12 +35,13 @@ export function NotificationSettings() {
           <Switch
             checked={notifications}
             onCheckedChange={setNotifications}
+            className="shrink-0"
           />
         </div>
 
         <Separator />
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.notifications.email_updates')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -50,6 +51,7 @@ export function NotificationSettings() {
           <Switch
             checked={emailUpdates}
             onCheckedChange={setEmailUpdates}
+            className="shrink-0"
           />
         </div>
       </CardContent>

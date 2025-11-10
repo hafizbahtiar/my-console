@@ -29,7 +29,7 @@ export function PostsFilters({
 
   return (
     <Card className="border-dashed">
-      <CardHeader className="pb-4 p-4 sm:p-6">
+      <CardHeader className="pb-2 p-4 sm:p-6">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2" suppressHydrationWarning>
           <Search className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
           {t('blog_posts_page.filters.title')}

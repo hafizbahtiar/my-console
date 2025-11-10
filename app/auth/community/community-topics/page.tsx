@@ -373,17 +373,19 @@ export default function CommunityTopicsPage() {
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
+                            size="sm"
                             onClick={loadTopics}
                             disabled={isRefreshing}
+                            className="shrink-0"
                         >
-                            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            <span suppressHydrationWarning>{t('refresh')}</span>
+                            <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+                            <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
                         </Button>
                         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                             <DialogTrigger asChild>
-                                <Button>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    <span suppressHydrationWarning>{t('add')}</span>
+                                <Button variant="outline" size="sm" className="shrink-0">
+                                    <Plus className="h-4 w-4 mr-2 shrink-0" />
+                                    <span className="truncate" suppressHydrationWarning>{t('add_item', {item: t('topic')})}</span>
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-y-auto">
@@ -407,7 +409,7 @@ export default function CommunityTopicsPage() {
                                     </Button>
                                     <Button onClick={handleCreateTopic} disabled={isSubmitting}>
                                         {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                                        <span suppressHydrationWarning>{t('add')}</span>
+                                        <span suppressHydrationWarning>{t('add_item', {item: t('topic')})}</span>
                                     </Button>
                                 </DialogFooter>
                             </DialogContent>

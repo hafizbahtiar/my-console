@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useTranslation } from "@/lib/language-context";
 import { Clock, Save, RefreshCw, Info, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getCSRFHeaders } from "@/lib/csrf-utils";
 
 interface ScheduleConfig {
   cron: string;
@@ -91,11 +92,10 @@ export function DatabaseBackupSchedule() {
     if (!localConfig) return;
     setSaving(true);
     try {
+      const headers = await getCSRFHeaders();
       const response = await fetch('/api/backup/schedule', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(localConfig),
       });
 

@@ -216,9 +216,9 @@ export default function SessionsPage() {
             {t('sessions_page.description')}
           </p>
         </div>
-        <Button onClick={loadSessions} disabled={refreshing} className="w-full sm:w-auto">
-          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          <span suppressHydrationWarning>{t('refresh')}</span>
+        <Button variant="outline" size="sm" onClick={loadSessions} disabled={refreshing} className="w-full sm:w-auto shrink-0">
+          <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
         </Button>
       </div>
 

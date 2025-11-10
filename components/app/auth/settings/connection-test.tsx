@@ -68,7 +68,7 @@ export function ConnectionTest() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.connection_test.test_button')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -79,17 +79,18 @@ export function ConnectionTest() {
             onClick={handlePing}
             disabled={pingStatus === 'loading'}
             variant={pingStatus === 'success' ? 'default' : pingStatus === 'error' ? 'destructive' : 'outline'}
+            className="w-full sm:w-auto shrink-0"
           >
             {pingStatus === 'loading' ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />
             ) : pingStatus === 'success' ? (
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <CheckCircle className="h-4 w-4 mr-2 shrink-0" />
             ) : pingStatus === 'error' ? (
-              <XCircle className="h-4 w-4 mr-2" />
+              <XCircle className="h-4 w-4 mr-2 shrink-0" />
             ) : (
-              <Zap className="h-4 w-4 mr-2" />
+              <Zap className="h-4 w-4 mr-2 shrink-0" />
             )}
-            <span suppressHydrationWarning>
+            <span suppressHydrationWarning className="whitespace-nowrap">
               {pingStatus === 'loading' ? t('settings_page.connection_test.testing') :
                 pingStatus === 'success' ? t('settings_page.connection_test.connected') :
                   pingStatus === 'error' ? t('settings_page.connection_test.connection_failed') : t('settings_page.connection_test.test_button')}
@@ -98,16 +99,16 @@ export function ConnectionTest() {
         </div>
 
         {/* Project Info */}
-        <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground" suppressHydrationWarning>{t('settings_page.connection_test.endpoint')}</Label>
-            <p className="text-xs font-mono break-all">
+            <p className="text-xs font-mono break-all break-words">
               {process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}
             </p>
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-muted-foreground" suppressHydrationWarning>{t('settings_page.connection_test.project_id')}</Label>
-            <p className="text-xs font-mono break-all">
+            <p className="text-xs font-mono break-all break-words">
               {process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}
             </p>
           </div>
@@ -118,20 +119,20 @@ export function ConnectionTest() {
           <div className="space-y-2">
             <Label className="text-sm" suppressHydrationWarning>{t('settings_page.connection_test.connection_logs')} ({pingLogs.length})</Label>
             <ScrollArea className="h-48 w-full rounded-md border">
-              <div className="p-4">
+              <div className="p-2 sm:p-4">
                 {pingLogs.map((log, index) => (
                   <div key={index} className="mb-4 last:mb-0">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                      <span>{log.date.toLocaleString()}</span>
-                      <Badge variant={log.status >= 400 ? "destructive" : "default"} className="text-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground mb-1">
+                      <span className="break-words">{log.date.toLocaleString()}</span>
+                      <Badge variant={log.status >= 400 ? "destructive" : "default"} className="text-xs shrink-0">
                         {log.status}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-sm mb-1">
-                      <Badge variant="outline" className="text-xs">{log.method}</Badge>
-                      <span className="font-mono text-xs">{log.path}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm mb-1">
+                      <Badge variant="outline" className="text-xs shrink-0 w-fit">{log.method}</Badge>
+                      <span className="font-mono text-xs break-all">{log.path}</span>
                     </div>
-                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                    <pre className="text-xs bg-muted p-2 rounded overflow-x-auto whitespace-pre-wrap break-words">
                       {log.response}
                     </pre>
                   </div>

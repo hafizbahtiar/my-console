@@ -10,6 +10,7 @@ import { useTranslation } from "@/lib/language-context";
 import { Upload, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import type { CollectionInfo } from "@/app/auth/admin/database/types";
+import { getCSRFHeaders } from "@/lib/csrf-utils";
 
 interface DatabaseImportProps {
   collections: CollectionInfo[];
@@ -61,11 +62,10 @@ export function DatabaseImport({ collections, onImportComplete }: DatabaseImport
         fileData = await file.arrayBuffer();
       }
 
+      const headers = await getCSRFHeaders();
       const response = await fetch('/api/import', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           data: format === 'excel' 
             ? Buffer.from(fileData as ArrayBuffer).toString('base64')

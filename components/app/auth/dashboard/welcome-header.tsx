@@ -28,7 +28,7 @@ export function WelcomeHeader({ user, isSuperAdmin, isAdmin }: WelcomeHeaderProp
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800" suppressHydrationWarning>
             <CheckCircle className="h-3 w-3 mr-1" />
-            {t('database_page.status.online')}
+            {t('online')}
           </Badge>
           {(isSuperAdmin || isAdmin) && (
             <Badge variant="default" suppressHydrationWarning>

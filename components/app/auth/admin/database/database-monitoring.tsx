@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
 import { toast } from "sonner";
+import { getCSRFToken } from "@/lib/csrf-utils";
 
 interface QueryStats {
   totalQueries: number;
@@ -93,8 +94,12 @@ export function DatabaseMonitoring() {
 
   const handleClearCache = async () => {
     try {
+      const token = await getCSRFToken();
       const response = await fetch('/api/database/monitoring', {
         method: 'DELETE',
+        headers: {
+          'x-csrf-token': token,
+        },
       });
 
       if (!response.ok) {

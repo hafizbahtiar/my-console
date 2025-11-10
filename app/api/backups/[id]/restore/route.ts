@@ -3,20 +3,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
 import { createProtectedPOST } from '@/lib/api-protection';
-import { Client, TablesDB } from 'appwrite';
+import { tablesDB, DATABASE_ID } from '@/lib/appwrite';
+import { TablesDB } from 'appwrite';
 import * as XLSX from 'xlsx';
 import { BSON } from 'bson';
 import { auditLogger } from '@/lib/audit-log';
-
-// Initialize Appwrite client
-function initAppwriteClient() {
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '');
-
-  const tablesDB = new TablesDB(client);
-  return { tablesDB };
-}
 
 interface RestoreOptions {
   format?: 'sql' | 'bson' | 'excel';
@@ -52,8 +43,6 @@ export async function POST(
 
       // Read backup metadata
       const backupMetadata = JSON.parse(fs.readFileSync(logFile, 'utf-8'));
-      const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db';
-      const { tablesDB } = initAppwriteClient();
 
       const restoreResults: Array<{
         collection: string;
@@ -103,7 +92,7 @@ export async function POST(
               recordsRestored = await restoreFromExcel(
                 path.join(dailyDir, excelFile),
                 collectionId,
-                databaseId,
+                DATABASE_ID,
                 tablesDB,
                 options.overwrite || false
               );
@@ -114,7 +103,7 @@ export async function POST(
               recordsRestored = await restoreFromBSON(
                 path.join(dailyDir, bsonFile),
                 collectionId,
-                databaseId,
+                DATABASE_ID,
                 tablesDB,
                 options.overwrite || false
               );
@@ -126,7 +115,7 @@ export async function POST(
               recordsRestored = await restoreFromSQL(
                 path.join(dailyDir, sqlFile),
                 collectionId,
-                databaseId,
+                DATABASE_ID,
                 tablesDB,
                 options.overwrite || false
               );

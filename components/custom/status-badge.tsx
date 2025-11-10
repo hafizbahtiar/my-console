@@ -26,6 +26,7 @@ export type StatusType =
   | 'database-collection'
   | 'backup'
   | 'system-health'
+  | 'customer'
   | 'generic';
 
 export type StatusValue =
@@ -281,6 +282,40 @@ const statusConfigs = {
     },
   },
 
+  // Customer statuses (labels will be translated in component)
+  'customer': {
+    active: {
+      label: '', // Will be translated in component
+      variant: 'default' as const,
+      colors: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200 dark:bg-green-900 dark:text-green-200 dark:border-green-800',
+      icon: CheckCircle,
+    },
+    inactive: {
+      label: '', // Will be translated in component
+      variant: 'secondary' as const,
+      colors: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
+      icon: Pause,
+    },
+    lead: {
+      label: '', // Will be translated in component
+      variant: 'default' as const,
+      colors: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-800',
+      icon: AlertCircle,
+    },
+    prospect: {
+      label: '', // Will be translated in component
+      variant: 'default' as const,
+      colors: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-800',
+      icon: AlertTriangle,
+    },
+    archived: {
+      label: '', // Will be translated in component
+      variant: 'outline' as const,
+      colors: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700',
+      icon: Archive,
+    },
+  },
+
   // Generic fallback
   'generic': {
     default: {
@@ -318,6 +353,21 @@ export function StatusBadge({
       rejected: t('rejected'),
       archived: t('archived'),
       deleted: t('deleted'),
+    };
+    finalConfig = {
+      ...finalConfig,
+      label: statusTranslations[status as string] || finalConfig.label,
+    };
+  }
+
+  // Translate customer statuses
+  if (type === 'customer') {
+    const statusTranslations: Record<string, string> = {
+      active: t('active'),
+      inactive: t('inactive'),
+      lead: t('customers_page.status.lead'),
+      prospect: t('customers_page.status.prospect'),
+      archived: t('archived'),
     };
     finalConfig = {
       ...finalConfig,

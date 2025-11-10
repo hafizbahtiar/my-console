@@ -2,8 +2,12 @@
   "title": "Tajuk",
   "description": "Deskripsi",
   "content": "Kandungan",
+  "online": "Dalam Talian",
+  "offline": "Luar Talian",
   "add": "Tambah",
   "add_item": "Tambah {{item}}",
+  "create": "Cipta",
+  "create_item": "Cipta {{item}}",
   "remove": "Buang",
   "remove_item": "Buang {{item}}",
   "cancel": "Batal",
@@ -79,6 +83,11 @@
   "dark": "Gelap",
   "system": "Sistem",
   "language": "Bahasa",
+  "post": "Catatan",
+  "category": "Kategori",
+  "tag": "Tag",
+  "topic": "Topik",
+  "customer": "Pelanggan",
   "authentication": "Pengesahan",
   "login_page": {
     "welcome_back": "Selamat Kembali",
@@ -151,6 +160,8 @@
     "blog_posts": "Catatan Blog",
     "community_posts": "Catatan Komuniti",
     "community_topics": "Topik Komuniti",
+    "customer_management": "Pengurusan Pelanggan",
+    "customers": "Pelanggan",
     "api_keys": "Kunci API",
     "documentation": "Dokumentasi"
   },
@@ -776,7 +787,6 @@
     "title": "Kategori Blog",
     "description": "Urus kategori blog",
     "failed_to_load": "Gagal memuat kategori blog",
-    "add_category": "Tambah Kategori",
     "create_category": "Cipta Kategori",
     "create_category_description": "Cipta kategori blog baharu",
     "edit_category_description": "Kemaskini maklumat kategori",
@@ -810,7 +820,6 @@
     "failed_to_load": "Gagal memuat tag blog",
     "access_denied": "Akses ditolak. Super Admin diperlukan.",
     "failed_to_verify": "Gagal mengesahkan akses",
-    "add_tag": "Tambah Tag",
     "create_tag": "Cipta Tag",
     "create_tag_description": "Cipta tag blog baru",
     "edit_tag_description": "Kemaskini maklumat tag",
@@ -841,7 +850,6 @@
     "total_posts": "{{count}} siaran keseluruhan",
     "published": "diterbitkan",
     "drafts": "draf",
-    "create": "Cipta",
     "create_first_post": "Cipta Siaran Pertama",
     "filters": {
       "title": "Cari & Tapis",
@@ -994,9 +1002,11 @@
         "invalid_image_url": "URL imej tidak sah"
       },
       "submit": {
-        "create": "Cipta Siaran",
         "words": "{{count}} perkataan"
-      }
+      },
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan"
     },
     "edit_page": {
       "title": "Edit Siaran Blog",
@@ -1014,7 +1024,10 @@
       "submit": {
         "update": "Kemaskini Siaran",
         "words": "{{count}} perkataan"
-      }
+      },
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan"
     },
     "view_page": {
       "breadcrumb": "Siaran Blog",
@@ -1231,7 +1244,10 @@
         "tag_too_long": "Tag mestilah kurang daripada {{max}} aksara setiap satu",
         "tag_exists": "Tag sudah wujud",
         "max_tags": "Maksimum 10 tag dibenarkan"
-      }
+      },
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan"
     },
     "create_page": {
       "title": "Cipta Catatan Komuniti",
@@ -1280,9 +1296,9 @@
         "tag_exists": "Tag sudah wujud",
         "max_tags": "Maksimum 10 tag dibenarkan"
       },
-      "submit": {
-        "create": "Cipta Catatan"
-      }
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan"
     },
     "view_page": {
       "updated": "Dikemaskini",
@@ -1397,6 +1413,166 @@
       "unblocked_success": "Alamat IP berjaya dinyahsekat",
       "load_failed": "Gagal memuatkan data keselamatan",
       "error": "Ralat"
+    }
+  },
+  "customers_page": {
+    "title": "Pelanggan",
+    "description": "Urus maklumat dan profil pelanggan anda",
+    "failed_to_load": "Gagal memuat pelanggan",
+    "filters": {
+      "title": "Cari & Tapis",
+      "description": "Cari pelanggan berdasarkan nama, e-mel, telefon, atau syarikat. Tapis berdasarkan status.",
+      "search_label": "Cari Pelanggan",
+      "search_placeholder": "Cari nama, e-mel, telefon, atau syarikat...",
+      "status_filter": "Tapis Status",
+      "status_placeholder": "Tapis status",
+      "all_status": "Semua Status",
+      "clear_filters": "Kosongkan Tapis"
+    },
+    "table": {
+      "title": "Pelanggan ({{count}})",
+      "description": "Urus pelanggan anda - Papar {{current}} daripada {{total}} entri (Jumlah: {{total}})",
+      "total_revenue": "Jumlah Hasil",
+      "no_customers_filtered": "Laraskan tapis anda untuk lebih banyak hasil",
+      "no_customers_empty": "Cipta profil pelanggan pertama anda untuk bermula",
+      "empty_title": "Tiada pelanggan lagi",
+      "empty_description": "Mula dengan mencipta profil pelanggan pertama anda. Ini akan membantu anda mengurus dan menjejaki maklumat pelanggan anda.",
+      "empty_title_filtered": "Tiada pelanggan dijumpai",
+      "empty_description_filtered": "Tiada pelanggan yang sepadan dengan kriteria carian atau penapis semasa anda. Cuba laraskan penapis anda untuk melihat lebih banyak hasil."
+    },
+    "view_dialog": {
+      "contact_info": "Maklumat Hubungan",
+      "address": "Alamat",
+      "business_info": "Maklumat Perniagaan",
+      "statistics": "Statistik",
+      "dates": "Tarikh Penting",
+      "website": "Laman Web",
+      "job_title": "Jawatan",
+      "customer_type": "Jenis Pelanggan",
+      "industry": "Industri",
+      "source": "Sumber",
+      "currency": "Mata Wang",
+      "total_revenue": "Jumlah Hasil",
+      "total_invoices": "Jumlah Invois",
+      "last_contact": "Hubungan Terakhir",
+      "next_follow_up": "Tindakan Susulan Seterusnya"
+    },
+    "delete_dialog": {
+      "title": "Padam Pelanggan",
+      "description": "Adakah anda pasti mahu memadam pelanggan \"{{name}}\"? Tindakan ini tidak boleh dibatalkan.",
+      "deleted_success": "Pelanggan berjaya dipadam"
+    },
+    "status": {
+      "lead": "Prospek",
+      "prospect": "Calon"
+    },
+    "customer_type": {
+      "individual": "Individu",
+      "company": "Syarikat",
+      "non-profit": "Bukan Untung",
+      "government": "Kerajaan"
+    },
+    "source": {
+      "website": "Laman Web",
+      "referral": "Rujukan",
+      "social_media": "Media Sosial",
+      "advertising": "Pengiklanan",
+      "trade_show": "Pameran",
+      "cold_call": "Panggilan Dingin",
+      "email_campaign": "Kempen E-mel",
+      "other": "Lain-lain"
+    },
+    "create_page": {
+      "title": "Cipta Pelanggan",
+      "description": "Cipta profil pelanggan anda",
+      "already_exists": "Anda sudah mempunyai profil pelanggan. Mengalihkan ke halaman edit...",
+      "already_exists_title": "Profil Pelanggan Wujud",
+      "already_exists_description": "Anda sudah mempunyai profil pelanggan. Anda boleh mengeditnya.",
+      "created_success": "Pelanggan berjaya dicipta",
+      "submitting": "Mencipta...",
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan",
+      "cancel_tooltip": "Batal membuat pelanggan dan kembali ke senarai",
+      "create_tooltip": "Buat rekod pelanggan baru",
+      "submitting_tooltip": "Membuat pelanggan...",
+      "basic_info": {
+        "title": "Maklumat Asas",
+        "description": "Maklumat hubungan dan peribadi penting",
+        "name_placeholder": "Masukkan nama penuh",
+        "email_placeholder": "Masukkan alamat e-mel",
+        "phone_placeholder": "Masukkan nombor telefon",
+        "company_placeholder": "Masukkan nama syarikat",
+        "job_title": "Jawatan",
+        "job_title_placeholder": "Masukkan jawatan",
+        "website": "Laman Web",
+        "website_placeholder": "https://contoh.com"
+      },
+      "address": {
+        "title": "Maklumat Alamat",
+        "description": "Butiran lokasi dan alamat",
+        "address": "Alamat Jalan",
+        "address_placeholder": "Masukkan alamat jalan",
+        "city": "Bandar",
+        "city_placeholder": "Masukkan bandar",
+        "state": "Negeri/Wilayah",
+        "state_placeholder": "Masukkan negeri atau wilayah",
+        "zip_code": "Poskod",
+        "zip_code_placeholder": "Masukkan poskod",
+        "country": "Negara",
+        "country_placeholder": "Masukkan negara"
+      },
+      "business_info": {
+        "title": "Maklumat Perniagaan",
+        "description": "Butiran perniagaan dan profesional",
+        "customer_type": "Jenis Pelanggan",
+        "source": "Sumber",
+        "industry": "Industri",
+        "industry_placeholder": "Masukkan jenis industri",
+        "currency": "Mata Wang",
+        "language": "Bahasa"
+      },
+      "notes": {
+        "title": "Nota",
+        "description": "Nota dan maklumat tambahan",
+        "label": "Nota",
+        "placeholder": "Masukkan sebarang nota tambahan..."
+      },
+      "validation": {
+        "name_required": "Nama diperlukan",
+        "invalid_email": "Format e-mel tidak sah",
+        "email_exists": "Pelanggan dengan e-mel ini sudah wujud"
+      }
+    },
+    "view_page": {
+      "title": "Butiran Pelanggan",
+      "customer_not_found": "Pelanggan tidak dijumpai",
+      "failed_to_load": "Gagal memuat data pelanggan",
+      "permission_denied": "Anda tidak mempunyai kebenaran untuk melihat pelanggan ini",
+      "back_to_customers": "Kembali ke Pelanggan",
+      "notes": "Nota",
+      "edit_tooltip": "Edit maklumat pelanggan",
+      "tabs": {
+        "overview": "Gambaran Keseluruhan",
+        "details": "Butiran",
+        "details_description": "Butiran tambahan pelanggan dan metadata",
+        "notes": "Nota"
+      }
+    },
+    "edit_page": {
+      "title": "Edit Pelanggan",
+      "description": "Kemaskini maklumat pelanggan anda",
+      "customer_not_found": "Pelanggan tidak dijumpai",
+      "permission_denied": "Anda tidak mempunyai kebenaran untuk mengedit pelanggan ini",
+      "back_to_customers": "Kembali ke Pelanggan",
+      "updated_success": "Pelanggan berjaya dikemaskini",
+      "updating": "Mengemaskini...",
+      "unsaved_changes_title": "Perubahan Tidak Disimpan",
+      "unsaved_changes_description": "Anda mempunyai perubahan yang tidak disimpan. Adakah anda pasti mahu meninggalkan halaman ini? Semua perubahan anda akan hilang.",
+      "leave_without_saving": "Tinggalkan Tanpa Menyimpan",
+      "cancel_tooltip": "Batal mengedit dan kembali ke paparan pelanggan",
+      "save_tooltip": "Simpan perubahan kepada maklumat pelanggan",
+      "updating_tooltip": "Menyimpan perubahan anda..."
     }
   }
 }

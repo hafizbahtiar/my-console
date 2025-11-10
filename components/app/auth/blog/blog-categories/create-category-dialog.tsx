@@ -49,10 +49,10 @@ export function CreateCategoryDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button className="w-full sm:w-auto shrink-0">
+        <Button variant="outline" size="sm" className="w-full sm:w-auto shrink-0">
           <Plus className="h-4 w-4 mr-2 shrink-0" />
           <span className="truncate" suppressHydrationWarning>
-            {t('blog_categories_page.add_category')}
+            {t('add_item', {item: t('category')})}
           </span>
         </Button>
       </DialogTrigger>
@@ -161,7 +161,7 @@ export function CreateCategoryDialog({
           <Button onClick={onSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" /> : null}
             <span className="truncate" suppressHydrationWarning>
-              {t('blog_categories_page.create_category')}
+              {t('create_item', {item: t('category')})}
             </span>
           </Button>
         </DialogFooter>

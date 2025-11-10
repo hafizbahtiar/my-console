@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { CommunityPost, CommunityPostFormData } from "../../types";
@@ -8,6 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Loader2,
@@ -50,6 +60,10 @@ export default function EditCommunityPostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentLength, setContentLength] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [initialFormData, setInitialFormData] = useState<CommunityPostFormData | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState<CommunityPostFormData>({
@@ -118,6 +132,90 @@ export default function EditCommunityPostPage() {
     loadData();
   }, [user, authLoading, postId, router, t]);
 
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialFormData || isFormSubmitted) return false;
+    
+    // Compare form data with initial data
+    const compareValues = (a: any, b: any): boolean => {
+      if (a === b) return true;
+      if (a == null || b == null) return a === b;
+      if (typeof a !== typeof b) return false;
+      
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false;
+        return JSON.stringify(a.sort()) === JSON.stringify(b.sort());
+      }
+      
+      if (typeof a === 'object') {
+        // Compare topic objects by $id
+        if (a.$id && b.$id) {
+          return a.$id === b.$id;
+        }
+        return JSON.stringify(a) === JSON.stringify(b);
+      }
+      
+      return a === b;
+    };
+
+    return (
+      formData.title.trim() !== initialFormData.title.trim() ||
+      formData.slug.trim() !== initialFormData.slug.trim() ||
+      formData.content.trim() !== initialFormData.content.trim() ||
+      (formData.excerpt || '').trim() !== (initialFormData.excerpt || '').trim() ||
+      formData.status !== initialFormData.status ||
+      formData.isPinned !== initialFormData.isPinned ||
+      formData.isLocked !== initialFormData.isLocked ||
+      formData.isFeatured !== initialFormData.isFeatured ||
+      JSON.stringify(formData.tags.sort()) !== JSON.stringify(initialFormData.tags.sort()) ||
+      !compareValues(formData.communityTopics, initialFormData.communityTopics)
+    );
+  }, [formData, initialFormData, isFormSubmitted]);
+
+  // Handle navigation with unsaved changes check
+  const handleNavigation = useCallback((path: string) => {
+    if (hasUnsavedChanges()) {
+      setPendingNavigation(path);
+      setShowUnsavedDialog(true);
+    } else {
+      router.push(path);
+    }
+  }, [hasUnsavedChanges, router]);
+
+  // Browser back/forward and beforeunload handlers
+  useEffect(() => {
+    if (!initialFormData) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    // Handle browser back/forward buttons using history API
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges() && !isFormSubmitted) {
+        // Prevent navigation
+        window.history.pushState(null, '', window.location.pathname);
+        setPendingNavigation(document.referrer || '/auth/community/community-posts');
+        setShowUnsavedDialog(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Push state to enable back button detection
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, initialFormData, isFormSubmitted]);
+
   const loadPost = async () => {
     try {
       const postData = await tablesDB.getRow({
@@ -130,7 +228,7 @@ export default function EditCommunityPostPage() {
       setPost(post);
 
       // Populate form with post data
-      setFormData({
+      const initialData: CommunityPostFormData = {
         title: post.title,
         slug: post.slug,
         content: post.content,
@@ -148,7 +246,9 @@ export default function EditCommunityPostPage() {
         downvotes: post.downvotes,
         replyCount: post.replyCount,
         tags: Array.isArray(post.tags) ? post.tags : [],
-      });
+      };
+      setFormData(initialData);
+      setInitialFormData(initialData);
 
       // Calculate content length
       const textContent = post.content.replace(/<[^>]*>/g, '');
@@ -248,6 +348,7 @@ export default function EditCommunityPostPage() {
         }
       });
 
+      setIsFormSubmitted(true);
       toast.success(t('community_posts_page.edit_page.success'));
       router.push(`/auth/community/community-posts/${postId}`);
     } catch (error: any) {
@@ -436,21 +537,52 @@ export default function EditCommunityPostPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Breadcrumb Navigation */}
-      <EditBreadcrumbNav postId={postId} post={post} />
+      <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 sm:px-6 py-2 sm:py-3">
+          <nav className="flex items-center space-x-2 text-xs sm:text-sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => handleNavigation('/auth/community/community-posts')}
+            >
+              <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
+              <span className="truncate" suppressHydrationWarning>
+                {t('community_posts_page.title')}
+              </span>
+            </Button>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => handleNavigation(`/auth/community/community-posts/${postId}`)}
+            >
+              <span className="truncate">
+                {post ? post.title : t('community_posts_page.edit_page.unknown_post')}
+              </span>
+            </Button>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="text-foreground font-medium truncate" suppressHydrationWarning>
+              {t('edit')}
+            </span>
+          </nav>
+        </div>
+      </div>
 
       {/* Header */}
       <div className="sticky top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight" suppressHydrationWarning>
-                {t('community_posts_page.edit_page.title')}
-              </h1>
-              <p className="text-sm text-muted-foreground" suppressHydrationWarning>
-                {t('community_posts_page.edit_page.description')}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight" suppressHydrationWarning>
+                  {t('community_posts_page.edit_page.title')}
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
+                  {t('community_posts_page.edit_page.description')}
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 shrink-0">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className={`w-2 h-2 rounded-full ${
                   formData.status === 'approved' ? 'bg-green-500' : 
@@ -509,31 +641,74 @@ export default function EditCommunityPostPage() {
 
           {/* Submit Actions */}
           <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground" suppressHydrationWarning>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+              <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                 {contentLength > 0 && (
                   <span>
                     {contentLength} / {MAX_CONTENT_LENGTH} {t('community_posts_page.edit_page.basic_info.characters')}
                   </span>
                 )}
               </div>
-              <div className="flex gap-3">
-                <Button variant="outline" type="button" size="lg" asChild>
-                  <Link href={`/auth/community/community-posts/${postId}`}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    <span suppressHydrationWarning>{t('cancel')}</span>
-                  </Link>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  onClick={() => handleNavigation(`/auth/community/community-posts/${postId}`)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>{t('cancel')}</span>
                 </Button>
-                <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg">
-                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  <Save className="h-4 w-4 mr-2" />
-                  <span suppressHydrationWarning>{t('save')}</span>
+                <Button type="submit" disabled={isSubmitting || contentLength > MAX_CONTENT_LENGTH} size="lg" className="w-full sm:w-auto">
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />}
+                  <Save className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>{t('save')}</span>
                 </Button>
               </div>
             </div>
           </div>
         </form>
       </div>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle suppressHydrationWarning>
+              {t('community_posts_page.edit_page.unsaved_changes_title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription suppressHydrationWarning>
+              {t('community_posts_page.edit_page.unsaved_changes_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedDialog(false);
+              setPendingNavigation(null);
+            }} suppressHydrationWarning>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const navPath = pendingNavigation;
+                setShowUnsavedDialog(false);
+                setPendingNavigation(null);
+                setIsFormSubmitted(true);
+                // Use setTimeout to ensure state updates complete before navigation
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (navPath) {
+                  router.push(navPath);
+                }
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+              suppressHydrationWarning
+            >
+              {t('community_posts_page.edit_page.leave_without_saving')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -298,22 +298,25 @@ export default function CommunityPostsPage() {
                         </span>
                     </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <Button
                         variant="outline"
+                        size="sm"
                         onClick={loadPosts}
                         disabled={isRefreshing}
-                        className="shrink-0"
-                        suppressHydrationWarning
+                        className="w-full sm:w-auto shrink-0"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {t('refresh')}
+                        <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
                     </Button>
-                    <Button asChild className="shrink-0">
-                        <Link href="/auth/community/community-posts/create">
-                            <Plus className="h-4 w-4 mr-2" />
-                            <span suppressHydrationWarning>{t('add')}</span>
-                        </Link>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto shrink-0"
+                        onClick={() => router.push('/auth/community/community-posts/create')}
+                    >
+                        <Plus className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate" suppressHydrationWarning>{t('add_item', {item: t('post')})}</span>
                     </Button>
                 </div>
             </div>

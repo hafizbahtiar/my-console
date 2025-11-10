@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createProtectedPOST } from '@/lib/api-protection';
-import { Client, TablesDB } from 'appwrite';
+import { tablesDB, DATABASE_ID } from '@/lib/appwrite';
 import * as XLSX from 'xlsx';
 import { auditLogger } from '@/lib/audit-log';
-
-// Initialize Appwrite client
-function initAppwriteClient() {
-  const client = new Client()
-    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
-    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '');
-
-  const tablesDB = new TablesDB(client);
-  return { tablesDB };
-}
 
 interface ImportOptions {
   collectionId: string;
@@ -32,8 +22,6 @@ export const POST = createProtectedPOST(
       );
     }
 
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db';
-    const { tablesDB } = initAppwriteClient();
 
     let parsedData: any[] = [];
     let errors: string[] = [];
@@ -60,15 +48,15 @@ export const POST = createProtectedPOST(
       if (options.overwrite) {
         try {
           const existing = await tablesDB.listRows({
-            databaseId,
+            databaseId: DATABASE_ID,
             tableId: options.collectionId,
           });
           for (const row of existing.rows) {
-            await tablesDB.deleteRow({
-              databaseId,
-              tableId: options.collectionId,
-              rowId: row.$id,
-            });
+          await tablesDB.deleteRow({
+            databaseId: DATABASE_ID,
+            tableId: options.collectionId,
+            rowId: row.$id,
+          });
           }
         } catch (error) {
           console.warn(`Could not clear existing data:`, error);
@@ -83,7 +71,7 @@ export const POST = createProtectedPOST(
           const rowId = id || $id || _id || 'unique()';
 
           await tablesDB.createRow({
-            databaseId,
+            databaseId: DATABASE_ID,
             tableId: options.collectionId,
             rowId: rowId === 'unique()' ? 'unique()' : String(rowId),
             data: cleanData,

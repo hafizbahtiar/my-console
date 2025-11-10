@@ -7,6 +7,16 @@ import { BlogPostFormData, BlogTag } from "../types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Loader2,
   Save,
@@ -22,6 +32,7 @@ import {
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
+import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
 import {
   BreadcrumbNav,
   ProgressIndicator,
@@ -53,6 +64,10 @@ export default function CreateBlogPostPage() {
   const [tagInputValue, setTagInputValue] = useState('');
   const [isTagInputFocused, setIsTagInputFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialFormData, setInitialFormData] = useState<BlogPostFormData | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
   // Memoize content change handler to prevent unnecessary TipTap re-renders
   const handleContentChange = useCallback((value: string) => {
@@ -63,17 +78,6 @@ export default function CreateBlogPostPage() {
       readTime: readTime
     }));
   }, []); // Empty deps - calculateReadTime is a pure function, setFormData is stable
-
-  // Helper to get CSRF token
-  const getCSRFToken = async (): Promise<string> => {
-    try {
-      const response = await fetch('/api/csrf-token');
-      const data = await response.json();
-      return data.token || '';
-    } catch {
-      return '';
-    }
-  };
 
   // AI Title Generation
   const generateTitleWithAI = async () => {
@@ -90,13 +94,10 @@ export default function CreateBlogPostPage() {
 
     setIsGeneratingTitle(true);
     try {
-      const csrfToken = await getCSRFToken();
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/generate-title', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
+        headers,
         body: JSON.stringify({
           content: formData.content,
         }),
@@ -123,19 +124,16 @@ export default function CreateBlogPostPage() {
   // SEO Suggestions
   const generateSEOSuggestions = async () => {
     if (!formData.title.trim() || !formData.content.trim()) {
-      toast.error('Title and content are required');
+      toast.error(t('blog_posts_page.create_page.validation.title_required') + ' and ' + t('blog_posts_page.create_page.validation.content_required'));
       return;
     }
 
     setIsGeneratingSEOSuggestions(true);
     try {
-      const csrfToken = await getCSRFToken();
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/seo-suggestions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken,
-        },
+        headers,
         body: JSON.stringify({
           title: formData.title,
           content: formData.content,
@@ -153,7 +151,7 @@ export default function CreateBlogPostPage() {
       if (data.suggestions) {
         setSeoSuggestions(data.suggestions);
         setShowSEOSuggestions(true);
-        toast.success('SEO suggestions generated!');
+        toast.success(t('blog_posts_page.create_page.seo.suggestions_title') + ' generated!');
       }
     } catch (error: any) {
       console.error('Failed to generate SEO suggestions:', error);
@@ -180,11 +178,10 @@ export default function CreateBlogPostPage() {
 
     setIsGeneratingExcerpt(true);
     try {
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/generate-excerpt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           title: formData.title.trim(),
           content: formData.content.trim(),
@@ -231,11 +228,10 @@ export default function CreateBlogPostPage() {
 
     setIsImprovingContent(true);
     try {
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/improve-content', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           content: formData.content.trim(),
           action,
@@ -315,11 +311,32 @@ export default function CreateBlogPostPage() {
       }
 
       // Initialize form with user data
-      setFormData(prev => ({
-        ...prev,
+      const initialData: BlogPostFormData = {
+        title: '',
+        slug: '',
+        excerpt: '',
+        content: '',
         author: user.name || user.email || '',
         authorId: user.$id || '',
-      }));
+        blogCategories: null as any,
+        blogTags: [],
+        readTime: '',
+        featuredImage: '',
+        featuredImageAlt: '',
+        status: 'draft',
+        publishedAt: undefined,
+        views: 0,
+        likes: 0,
+        commentCount: 0,
+        isFeatured: false,
+        allowComments: true,
+        seoTitle: '',
+        seoDescription: '',
+        seoKeywords: [],
+        relatedPosts: [],
+      };
+      setFormData(initialData);
+      setInitialFormData(initialData);
 
       await Promise.all([loadCategories(), loadTags()]);
       setIsLoading(false);
@@ -327,6 +344,74 @@ export default function CreateBlogPostPage() {
 
     loadData();
   }, [user, authLoading, router]);
+
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialFormData || isFormSubmitted) return false;
+    
+    // For create page, compare against initial form data
+    // Only check fields that the user can actually modify (not auto-filled user data)
+    const hasChanges = 
+      formData.title.trim() !== initialFormData.title.trim() ||
+      formData.content.trim() !== initialFormData.content.trim() ||
+      (formData.excerpt || '').trim() !== (initialFormData.excerpt || '').trim() ||
+      (formData.featuredImage || '').trim() !== (initialFormData.featuredImage || '').trim() ||
+      (formData.featuredImageAlt || '').trim() !== (initialFormData.featuredImageAlt || '').trim() ||
+      (formData.seoTitle || '').trim() !== (initialFormData.seoTitle || '').trim() ||
+      (formData.seoDescription || '').trim() !== (initialFormData.seoDescription || '').trim() ||
+      JSON.stringify(formData.seoKeywords.sort()) !== JSON.stringify((initialFormData.seoKeywords || []).sort()) ||
+      (formData.blogCategories?.$id || formData.blogCategories) !== (initialFormData.blogCategories?.$id || initialFormData.blogCategories) ||
+      JSON.stringify(formData.blogTags.map((tag: any) => tag.$id || tag).sort()) !== JSON.stringify((initialFormData.blogTags || []).map((tag: any) => tag.$id || tag).sort()) ||
+      formData.status !== initialFormData.status ||
+      formData.isFeatured !== initialFormData.isFeatured ||
+      formData.allowComments !== initialFormData.allowComments;
+    
+    return hasChanges;
+  }, [formData, initialFormData, isFormSubmitted]);
+
+  // Handle navigation with unsaved changes check
+  const handleNavigation = useCallback((path: string) => {
+    if (hasUnsavedChanges()) {
+      setPendingNavigation(path);
+      setShowUnsavedDialog(true);
+    } else {
+      router.push(path);
+    }
+  }, [hasUnsavedChanges, router]);
+
+  // Browser back/forward and beforeunload handlers
+  useEffect(() => {
+    if (!initialFormData) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    // Handle browser back/forward buttons using history API
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges() && !isFormSubmitted) {
+        // Prevent navigation
+        window.history.pushState(null, '', window.location.pathname);
+        setPendingNavigation(document.referrer || '/auth/blog/blog-posts');
+        setShowUnsavedDialog(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Push state to enable back button detection
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, initialFormData, isFormSubmitted]);
 
   const loadCategories = async () => {
     try {
@@ -503,6 +588,7 @@ export default function CreateBlogPostPage() {
         }
       });
 
+      setIsFormSubmitted(true);
       toast.success(t('blog_posts_page.create_page.created_success'));
       router.push('/auth/blog/blog-posts');
     } catch (error) {
@@ -562,7 +648,27 @@ export default function CreateBlogPostPage() {
   return (
     <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
       {/* Breadcrumb Navigation */}
-      <BreadcrumbNav />
+      <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 sm:px-6 py-2 sm:py-3">
+          <nav className="flex items-center space-x-2 text-xs sm:text-sm">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => handleNavigation('/auth/blog/blog-posts')}
+            >
+              <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
+              <span className="truncate" suppressHydrationWarning>
+                {t('blog_posts_page.create_page.breadcrumb')}
+              </span>
+            </Button>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="text-foreground font-medium truncate" suppressHydrationWarning>
+              {t('blog_posts_page.create_page.title')}
+            </span>
+          </nav>
+        </div>
+      </div>
 
       {/* Header */}
       <div className="sticky top-[80px] sm:top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -665,19 +771,23 @@ export default function CreateBlogPostPage() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                <Button variant="outline" type="button" size="lg" asChild className="w-full sm:w-auto">
-                  <Link href="/auth/blog/blog-posts">
-                    <ArrowLeft className="h-4 w-4 mr-2 shrink-0" />
-                    <span className="truncate" suppressHydrationWarning>
-                      {t('cancel')}
-                    </span>
-                  </Link>
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  size="lg" 
+                  className="w-full sm:w-auto"
+                  onClick={() => handleNavigation('/auth/blog/blog-posts')}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>
+                    {t('cancel')}
+                  </span>
                 </Button>
                 <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />}
                   <Save className="h-4 w-4 mr-2 shrink-0" />
                   <span className="truncate" suppressHydrationWarning>
-                    {t('blog_posts_page.create_page.submit.create')}
+                    {t('create_item', {item: t('post')})}
                   </span>
                 </Button>
               </div>
@@ -685,6 +795,45 @@ export default function CreateBlogPostPage() {
           </div>
         </form>
       </div>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle suppressHydrationWarning>
+              {t('blog_posts_page.create_page.unsaved_changes_title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription suppressHydrationWarning>
+              {t('blog_posts_page.create_page.unsaved_changes_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedDialog(false);
+              setPendingNavigation(null);
+            }} suppressHydrationWarning>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const navPath = pendingNavigation;
+                setShowUnsavedDialog(false);
+                setPendingNavigation(null);
+                setIsFormSubmitted(true);
+                // Use setTimeout to ensure state updates complete before navigation
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (navPath) {
+                  router.push(navPath);
+                }
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+              suppressHydrationWarning
+            >
+              {t('blog_posts_page.create_page.leave_without_saving')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -28,6 +28,7 @@ My Console is a full-featured admin dashboard application with:
 - **📱 Responsive Design**: Mobile-first approach with adaptive layouts
 - **📦 Automated Backups**: Cron-based data exports with daily replacement strategy
 - **📝 Blog Management**: Full-featured CMS with rich text editor, SEO optimization, and content analytics
+- **👥 Customer Management**: Self-service CRM module for managing customer profiles, interactions, and relationships
 - **🔍 SEO Optimized**: Comprehensive metadata, OpenGraph tags, Twitter Cards, and structured data
 - **⚡ Auto-save Settings**: Immediate settings updates without save buttons
 - **⚡ Optimized Pagination**: Smart server-side/client-side pagination for efficient data loading
@@ -55,6 +56,17 @@ My Console is a full-featured admin dashboard application with:
 - **Content Preview**: Dynamic view dialogs with full content rendering and metadata display
 - **AI Content Enhancement**: Five AI-powered improvement options (improve, rephrase, shorten, expand, fix grammar)
 - **Comments Display**: Threaded comment system with hierarchical display, author information, engagement metrics, and visual indentation for nested replies
+
+#### 👥 Customer Management System
+- **Self-Service Model**: Users own and manage their own customer records
+- **Customer Profiles**: Complete customer information management (contact, address, business details, notes)
+- **Customer Listing**: Paginated table with search, filters, and status management
+- **Customer Views**: Tabbed interface (overview, details, notes) with organized information display
+- **Customer Forms**: Create and edit forms with validation and unsaved changes detection
+- **Status Management**: Customer status tracking (active, inactive, lead, prospect, archived)
+- **Empty States**: Beautiful shadcn UI empty states with create button when list is empty
+- **Mobile Responsive**: Fully responsive design with mobile-optimized layouts
+- **Internationalization**: Complete English and Malay support for all customer pages
 
 #### 🌍 Internationalization
 - **Multi-language Support**: Complete English and Malay (Bahasa Melayu) support across all 19 pages
@@ -145,11 +157,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 2. **Database Administration**: Read `docs/DATABASE_ADMIN.md` for backup and monitoring features
 3. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
 4. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
-5. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
-6. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
-7. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
-8. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-9. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+5. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md`, `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
+6. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
+7. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
+8. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
+9. **Development Tasks**: Check `TODO.md` for current development priorities and progress
+10. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -176,6 +189,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **/auth/community/community-posts/[id]**: View community post details
 - **/auth/community/community-posts/[id]/edit**: Edit community posts
 - **/auth/community/community-topics**: Community topic management (admin only)
+- **/auth/customers**: Customer management with listing, search, and filters
+- **/auth/customers/create**: Create new customer profile
+- **/auth/customers/[id]**: View customer details with tabs (overview, details, notes)
+- **/auth/customers/[id]/edit**: Edit customer information
 - **/auth/admin/security**: Security management with IP blocking and event monitoring
 
 ## 🏗️ Application Architecture
@@ -590,6 +607,10 @@ npx shadcn@latest add toast
 │   │   │   │   └── create/      # Create blog post
 │   │   │   ├── blog-categories/ # Category management
 │   │   │   └── blog-tags/       # Tag management
+│   │   ├── customers/           # Customer management system
+│   │   │   ├── [id]/            # View customer (overview, details, notes)
+│   │   │   │   └── edit/       # Edit customer
+│   │   │   └── create/          # Create customer
 │   │   ├── dashboard/           # Main dashboard
 │   │   ├── layout.tsx           # Auth layout with sidebar
 │   │   ├── profile/             # User profile management
@@ -629,6 +650,9 @@ npx shadcn@latest add toast
 │   ├── APPWRITE_DB_BLOG_COMMENTS.md # Blog comments schema (threaded)
 │   ├── APPWRITE_DB_BLOG_VIEWS.md # Blog views analytics schema
 │   ├── APPWRITE_DB_BLOG_LIKES.md # Blog likes engagement schema
+│   ├── APPWRITE_DB_CUSTOMERS.md # Customer management schema
+│   ├── APPWRITE_DB_CUSTOMER_INTERACTIONS.md # Customer interactions schema
+│   ├── APPWRITE_DB_CUSTOMER_NOTES.md # Customer notes schema
 │   ├── TIPTAP_COMPONENTS.md     # Rich text editor guide
 │   ├── NICE_TO_HAVE.md          # Future enhancements roadmap
 │   ├── APPWRITE_DB_AUDIT_LOG.md # Audit logging setup

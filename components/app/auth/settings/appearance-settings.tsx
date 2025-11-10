@@ -103,7 +103,7 @@ export function AppearanceSettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.appearance.theme')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -111,7 +111,7 @@ export function AppearanceSettings() {
             </p>
           </div>
           <Select value={mounted ? (theme || 'system') : 'system'} onValueChange={setTheme}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder={getThemeLabel(theme)} />
             </SelectTrigger>
             <SelectContent>
@@ -124,7 +124,7 @@ export function AppearanceSettings() {
 
         <Separator />
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('language')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -132,9 +132,9 @@ export function AppearanceSettings() {
             </p>
           </div>
           <Select value={mounted ? language : 'en'} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full sm:w-40">
               <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4" />
+                <Globe className="h-4 w-4 shrink-0" />
                 <SelectValue />
               </div>
             </SelectTrigger>
@@ -151,7 +151,7 @@ export function AppearanceSettings() {
 
         <Separator />
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.appearance.primary_color')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
@@ -162,7 +162,7 @@ export function AppearanceSettings() {
             value={mounted ? (primaryColor || 'default') : 'default'}
             onValueChange={handlePrimaryColorChange}
           >
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <div className="flex items-center gap-2">
                 {mounted && (() => {
                   const selectedColor = colorOptions.find(c => c.name === primaryColor)

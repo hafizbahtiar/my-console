@@ -8,6 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   ArrowLeft,
   Loader2,
   Save,
@@ -24,6 +34,7 @@ import {
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
+import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
 import {
   EditBreadcrumbNav,
   ProgressIndicator,
@@ -53,9 +64,16 @@ export default function EditBlogPostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
+  const [isGeneratingSEOSuggestions, setIsGeneratingSEOSuggestions] = useState(false);
+  const [seoSuggestions, setSeoSuggestions] = useState<any>(null);
+  const [showSEOSuggestions, setShowSEOSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tagInputValue, setTagInputValue] = useState('');
   const [isTagInputFocused, setIsTagInputFocused] = useState(false);
+  const [initialFormData, setInitialFormData] = useState<BlogPostFormData | null>(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState<BlogPostFormData>({
@@ -93,6 +111,46 @@ export default function EditBlogPostPage() {
     }));
   }, []); // Empty deps - calculateReadTime is a pure function, setFormData is stable
 
+  // SEO Suggestions
+  const generateSEOSuggestions = async () => {
+    if (!formData.title.trim() || !formData.content.trim()) {
+      toast.error(t('blog_posts_page.create_page.validation.title_required') + ' and ' + t('blog_posts_page.create_page.validation.content_required'));
+      return;
+    }
+
+    setIsGeneratingSEOSuggestions(true);
+    try {
+      const headers = await getCSRFHeadersAlt();
+      const response = await fetch('/api/ai/seo-suggestions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          title: formData.title,
+          content: formData.content,
+          description: formData.seoDescription,
+          keywords: formData.seoKeywords,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate SEO suggestions');
+      }
+
+      const data = await response.json();
+      if (data.suggestions) {
+        setSeoSuggestions(data.suggestions);
+        setShowSEOSuggestions(true);
+        toast.success(t('blog_posts_page.create_page.seo.suggestions_title') + ' generated!');
+      }
+    } catch (error: any) {
+      console.error('Failed to generate SEO suggestions:', error);
+      toast.error(error.message || 'Failed to generate SEO suggestions');
+    } finally {
+      setIsGeneratingSEOSuggestions(false);
+    }
+  };
+
   // AI Excerpt Generation
   const generateExcerptWithAI = async () => {
     // Validate that both title and content are provided
@@ -110,11 +168,10 @@ export default function EditBlogPostPage() {
 
     setIsGeneratingExcerpt(true);
     try {
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/generate-excerpt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           title: formData.title.trim(),
           content: formData.content.trim(),
@@ -161,11 +218,10 @@ export default function EditBlogPostPage() {
 
     setIsImprovingContent(true);
     try {
+      const headers = await getCSRFHeadersAlt();
       const response = await fetch('/api/ai/improve-content', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           content: formData.content.trim(),
           action,
@@ -231,6 +287,146 @@ export default function EditBlogPostPage() {
     loadData();
   }, [user, authLoading, postId, router, t]);
 
+  // Fix category selection after both post and categories are loaded
+  useEffect(() => {
+    if (post && categories.length > 0) {
+      // Only fix if blogCategories exists but might be in wrong format
+      if (formData.blogCategories) {
+        let categoryObj: any | null = null;
+
+        // Check if blogCategories is a string ID instead of an object
+        if (typeof formData.blogCategories === 'string') {
+          categoryObj = categories.find(cat => cat.$id === formData.blogCategories) || null;
+        }
+        // Check if blogCategories is an object but might not have the right structure
+        else if (typeof formData.blogCategories === 'object') {
+          // If it already has $id and matches a category, use it as is
+          if ((formData.blogCategories as any).$id) {
+            categoryObj = categories.find(cat => cat.$id === (formData.blogCategories as any).$id) || null;
+            // If found, use the full category object from the list (to ensure consistency)
+            if (categoryObj) {
+              // Only update if the structure is different
+              if (JSON.stringify(formData.blogCategories) !== JSON.stringify(categoryObj)) {
+                setFormData(prev => ({
+                  ...prev,
+                  blogCategories: categoryObj
+                }));
+              }
+              return; // Already correct format
+            }
+          }
+          // Try to find by other ID properties
+          const categoryId = (formData.blogCategories as any).id || (formData.blogCategories as any)._id || (formData.blogCategories as any).$id;
+          if (categoryId) {
+            categoryObj = categories.find(cat => cat.$id === categoryId) || null;
+          }
+        }
+
+        // Update formData if we found a matching category object
+        if (categoryObj && (!formData.blogCategories || typeof formData.blogCategories === 'string' || (formData.blogCategories as any).$id !== categoryObj.$id)) {
+          setFormData(prev => ({
+            ...prev,
+            blogCategories: categoryObj
+          }));
+        }
+      }
+    }
+  }, [post, categories]);
+
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    if (!initialFormData || isFormSubmitted) return false;
+
+    // Compare form data with initial data
+    const compareValues = (a: any, b: any): boolean => {
+      if (a === b) return true;
+      if (a == null || b == null) return a === b;
+      if (typeof a !== typeof b) return false;
+
+      if (Array.isArray(a) && Array.isArray(b)) {
+        if (a.length !== b.length) return false;
+        // Compare tag arrays by $id
+        if (a.length > 0 && a[0]?.$id) {
+          const aIds = a.map((item: any) => item.$id).sort();
+          const bIds = b.map((item: any) => item.$id).sort();
+          return JSON.stringify(aIds) === JSON.stringify(bIds);
+        }
+        return JSON.stringify(a) === JSON.stringify(b);
+      }
+
+      if (typeof a === 'object') {
+        // Compare category objects by $id
+        if (a.$id && b.$id) {
+          return a.$id === b.$id;
+        }
+        return JSON.stringify(a) === JSON.stringify(b);
+      }
+
+      return a === b;
+    };
+
+    return (
+      formData.title !== initialFormData.title ||
+      formData.slug !== initialFormData.slug ||
+      formData.excerpt !== initialFormData.excerpt ||
+      formData.content !== initialFormData.content ||
+      formData.status !== initialFormData.status ||
+      formData.featuredImage !== initialFormData.featuredImage ||
+      formData.featuredImageAlt !== initialFormData.featuredImageAlt ||
+      formData.isFeatured !== initialFormData.isFeatured ||
+      formData.allowComments !== initialFormData.allowComments ||
+      formData.seoTitle !== initialFormData.seoTitle ||
+      formData.seoDescription !== initialFormData.seoDescription ||
+      JSON.stringify(formData.seoKeywords) !== JSON.stringify(initialFormData.seoKeywords) ||
+      !compareValues(formData.blogCategories, initialFormData.blogCategories) ||
+      !compareValues(formData.blogTags, initialFormData.blogTags)
+    );
+  }, [formData, initialFormData, isFormSubmitted]);
+
+  // Handle navigation with unsaved changes check
+  const handleNavigation = useCallback((path: string) => {
+    if (hasUnsavedChanges()) {
+      setPendingNavigation(path);
+      setShowUnsavedDialog(true);
+    } else {
+      router.push(path);
+    }
+  }, [hasUnsavedChanges, router]);
+
+  // Browser back/forward and beforeunload handlers
+  useEffect(() => {
+    if (!initialFormData) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    // Handle browser back/forward buttons using history API
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges() && !isFormSubmitted) {
+        // Prevent navigation
+        window.history.pushState(null, '', window.location.pathname);
+        setPendingNavigation(document.referrer || '/auth/blog/blog-posts');
+        setShowUnsavedDialog(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Push state to enable back button detection
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, initialFormData, isFormSubmitted]);
+
   const loadPost = async () => {
     try {
       const postData = await tablesDB.getRow({
@@ -243,7 +439,7 @@ export default function EditBlogPostPage() {
       setPost(post);
 
       // Populate form with post data
-      setFormData({
+      const initialData: BlogPostFormData = {
         title: post.title,
         slug: post.slug,
         excerpt: post.excerpt,
@@ -266,7 +462,9 @@ export default function EditBlogPostPage() {
         allowComments: post.allowComments,
         commentCount: post.commentCount,
         relatedPosts: [...post.relatedPosts],
-      });
+      };
+      setFormData(initialData);
+      setInitialFormData(initialData);
     } catch (error) {
       console.error('Failed to load post:', error);
       throw error;
@@ -411,7 +609,7 @@ export default function EditBlogPostPage() {
     try {
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
-      
+
       const updatedPost = {
         ...formData,
         content: sanitizeHTMLForStorage(formData.content), // Sanitize HTML content
@@ -447,6 +645,7 @@ export default function EditBlogPostPage() {
         }
       });
 
+      setIsFormSubmitted(true);
       toast.success(t('blog_posts_page.edit_page.updated_success'));
       router.push(`/auth/blog/blog-posts/${postId}`);
     } catch (error) {
@@ -471,7 +670,7 @@ export default function EditBlogPostPage() {
       <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
         {/* Breadcrumb Skeleton */}
         <Skeleton className="h-10 w-full" />
-        
+
         {/* Header Skeleton */}
         <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
@@ -516,7 +715,7 @@ export default function EditBlogPostPage() {
           <Link href="/auth/blog/blog-posts" suppressHydrationWarning>
             {t('blog_posts_page.edit_page.back_to_posts')}
           </Link>
-            </Button>
+        </Button>
       </div>
     );
   }
@@ -524,7 +723,38 @@ export default function EditBlogPostPage() {
   return (
     <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
       {/* Breadcrumb Navigation */}
-      <EditBreadcrumbNav postId={postId} post={post} />
+      <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="px-4 sm:px-6 py-2 sm:py-3">
+          <nav className="flex items-center space-x-2 text-xs sm:text-sm">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => handleNavigation('/auth/blog/blog-posts')}
+            >
+              <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
+              <span className="truncate" suppressHydrationWarning>
+                {t('blog_posts_page.edit_page.breadcrumb')}
+              </span>
+            </Button>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={() => handleNavigation(`/auth/blog/blog-posts/${postId}`)}
+            >
+              <span className="truncate">
+                {post ? post.title : t('blog_posts_page.edit_page.unknown_post')}
+              </span>
+            </Button>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="text-foreground font-medium truncate" suppressHydrationWarning>
+              {t('blog_posts_page.edit_page.edit')}
+            </span>
+          </nav>
+        </div>
+      </div>
 
       {/* Header */}
       <div className="sticky top-[80px] sm:top-28 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -572,7 +802,7 @@ export default function EditBlogPostPage() {
                 isGeneratingTitle={false}
                 isGeneratingExcerpt={isGeneratingExcerpt}
                 isImprovingContent={isImprovingContent}
-                onGenerateTitle={() => {}}
+                onGenerateTitle={() => { }}
                 onGenerateExcerpt={generateExcerptWithAI}
                 onImproveContent={improveContentWithAI}
               />
@@ -595,28 +825,28 @@ export default function EditBlogPostPage() {
                 onTagInputFocus={() => setIsTagInputFocused(true)}
                 onTagInputBlur={() => setTimeout(() => setIsTagInputFocused(false), 200)}
                 onTagInputKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const value = tagInputValue.trim();
-                              if (value) {
-                                await addTag(value);
-                                setTagInputValue('');
-                                setIsTagInputFocused(false);
-                              }
-                            }
-                          }}
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = tagInputValue.trim();
+                    if (value) {
+                      await addTag(value);
+                      setTagInputValue('');
+                      setIsTagInputFocused(false);
+                    }
+                  }
+                }}
                 onAddTag={addTag}
                 onRemoveTag={removeTag}
               />
 
               <SEOSettings
                 formData={formData}
-                seoSuggestions={null}
-                showSEOSuggestions={false}
-                isGeneratingSEOSuggestions={false}
+                seoSuggestions={seoSuggestions}
+                showSEOSuggestions={showSEOSuggestions}
+                isGeneratingSEOSuggestions={isGeneratingSEOSuggestions}
                 onFormDataChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
-                onGenerateSEOSuggestions={() => {}}
-                onCloseSuggestions={() => {}}
+                onGenerateSEOSuggestions={generateSEOSuggestions}
+                onCloseSuggestions={() => setShowSEOSuggestions(false)}
               />
             </div>
           </div>
@@ -632,13 +862,17 @@ export default function EditBlogPostPage() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                <Button variant="outline" type="button" size="lg" asChild className="w-full sm:w-auto">
-                  <Link href={`/auth/blog/blog-posts/${postId}`}>
-                    <ArrowLeft className="h-4 w-4 mr-2 shrink-0" />
-                    <span className="truncate" suppressHydrationWarning>
-                      {t('cancel')}
-                    </span>
-                  </Link>
+                <Button
+                  variant="outline"
+                  type="button"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                  onClick={() => handleNavigation(`/auth/blog/blog-posts/${postId}`)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>
+                    {t('cancel')}
+                  </span>
                 </Button>
                 <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />}
@@ -652,6 +886,45 @@ export default function EditBlogPostPage() {
           </div>
         </form>
       </div>
+
+      {/* Unsaved Changes Confirmation Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle suppressHydrationWarning>
+              {t('blog_posts_page.edit_page.unsaved_changes_title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription suppressHydrationWarning>
+              {t('blog_posts_page.edit_page.unsaved_changes_description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUnsavedDialog(false);
+              setPendingNavigation(null);
+            }} suppressHydrationWarning>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const navPath = pendingNavigation;
+                setShowUnsavedDialog(false);
+                setPendingNavigation(null);
+                setIsFormSubmitted(true);
+                // Use setTimeout to ensure state updates complete before navigation
+                await new Promise(resolve => setTimeout(resolve, 0));
+                if (navPath) {
+                  router.push(navPath);
+                }
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+              suppressHydrationWarning
+            >
+              {t('blog_posts_page.edit_page.leave_without_saving')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

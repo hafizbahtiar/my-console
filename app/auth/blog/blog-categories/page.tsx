@@ -375,6 +375,7 @@ export default function BlogCategoriesPage() {
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button
             variant="outline"
+            size="sm"
             onClick={loadCategories}
             disabled={isRefreshing}
             className="w-full sm:w-auto shrink-0"

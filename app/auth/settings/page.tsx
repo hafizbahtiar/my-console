@@ -135,17 +135,17 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6">
+    <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight" suppressHydrationWarning>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" suppressHydrationWarning>
           {t('settings_page.title')}
         </h1>
-        <p className="text-muted-foreground" suppressHydrationWarning>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1" suppressHydrationWarning>
           {t('settings_page.description')}
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 sm:gap-6">
         <AppearanceSettings />
         <NotificationSettings />
         <SecuritySettings />

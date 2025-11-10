@@ -2,8 +2,12 @@
   "title": "Title",
   "description": "Description",
   "content": "Content",
+  "online": "Online",
+  "offline": "Offline",
   "add": "Add",
   "add_item": "Add {{item}}",
+  "create": "Create",
+  "create_item": "Create {{item}}",
   "remove": "Remove",
   "remove_item": "Remove {{item}}",
   "cancel": "Cancel",
@@ -79,6 +83,11 @@
   "dark": "Dark",
   "system": "System",
   "language": "Language",
+  "post": "Post",
+  "category": "Category",
+  "tag": "Tag",
+  "topic": "Topic",
+  "customer": "Customer",
   "authentication": "Authentication",
   "login_page": {
     "welcome_back": "Welcome back",
@@ -151,6 +160,8 @@
     "blog_posts": "Blog Posts",
     "community_posts": "Community Posts",
     "community_topics": "Community Topics",
+    "customer_management": "Customer Management",
+    "customers": "Customers",
     "api_keys": "API Keys",
     "documentation": "Documentation"
   },
@@ -776,7 +787,6 @@
     "title": "Blog Categories",
     "description": "Manage blog post categories",
     "failed_to_load": "Failed to load blog categories",
-    "add_category": "Add Category",
     "create_category": "Create Category",
     "create_category_description": "Create a new blog category",
     "edit_category_description": "Update the category information",
@@ -810,7 +820,6 @@
     "failed_to_load": "Failed to load blog tags",
     "access_denied": "Access denied. Super Admin access required.",
     "failed_to_verify": "Failed to verify access",
-    "add_tag": "Add Tag",
     "create_tag": "Create Tag",
     "create_tag_description": "Create a new blog tag",
     "edit_tag_description": "Update the tag information",
@@ -841,7 +850,6 @@
     "total_posts": "{{count}} total posts",
     "published": "published",
     "drafts": "drafts",
-    "create": "Create",
     "create_first_post": "Create First Post",
     "filters": {
       "title": "Search & Filter",
@@ -994,9 +1002,11 @@
         "invalid_image_url": "Invalid image URL"
       },
       "submit": {
-        "create": "Create Post",
         "words": "{{count}} words"
-      }
+      },
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving"
     },
     "edit_page": {
       "title": "Edit Blog Post",
@@ -1014,7 +1024,10 @@
       "submit": {
         "update": "Update Post",
         "words": "{{count}} words"
-      }
+      },
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving"
     },
     "view_page": {
       "breadcrumb": "Blog Posts",
@@ -1231,7 +1244,10 @@
         "tag_too_long": "Tags must be less than {{max}} characters each",
         "tag_exists": "Tag already exists",
         "max_tags": "Maximum 10 tags allowed"
-      }
+      },
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving"
     },
     "create_page": {
       "title": "Create Community Post",
@@ -1280,9 +1296,9 @@
         "tag_exists": "Tag already exists",
         "max_tags": "Maximum 10 tags allowed"
       },
-      "submit": {
-        "create": "Create Post"
-      }
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving"
     },
     "view_page": {
       "updated": "Updated",
@@ -1397,6 +1413,166 @@
       "unblocked_success": "IP address unblocked successfully",
       "load_failed": "Failed to load security data",
       "error": "Error"
+    }
+  },
+  "customers_page": {
+    "title": "Customers",
+    "description": "Manage your customer information and profiles",
+    "failed_to_load": "Failed to load customers",
+    "filters": {
+      "title": "Search & Filter",
+      "description": "Search customers by name, email, phone, or company. Filter by status.",
+      "search_label": "Search Customers",
+      "search_placeholder": "Search by name, email, phone, or company...",
+      "status_filter": "Status Filter",
+      "status_placeholder": "Filter by status",
+      "all_status": "All Status",
+      "clear_filters": "Clear Filters"
+    },
+    "table": {
+      "title": "Customers ({{count}})",
+      "description": "Manage your customers - Showing {{current}} of {{total}} entries (Total: {{total}})",
+      "total_revenue": "Total Revenue",
+      "no_customers_filtered": "Try adjusting your filters to see more results",
+      "no_customers_empty": "Create your first customer profile to get started",
+      "empty_title": "No customers yet",
+      "empty_description": "Get started by creating your first customer profile. This will help you manage and track your customer information.",
+      "empty_title_filtered": "No customers found",
+      "empty_description_filtered": "No customers match your current search or filter criteria. Try adjusting your filters to see more results."
+    },
+    "view_dialog": {
+      "contact_info": "Contact Information",
+      "address": "Address",
+      "business_info": "Business Information",
+      "statistics": "Statistics",
+      "dates": "Important Dates",
+      "website": "Website",
+      "job_title": "Job Title",
+      "customer_type": "Customer Type",
+      "industry": "Industry",
+      "source": "Source",
+      "currency": "Currency",
+      "total_revenue": "Total Revenue",
+      "total_invoices": "Total Invoices",
+      "last_contact": "Last Contact",
+      "next_follow_up": "Next Follow-up"
+    },
+    "delete_dialog": {
+      "title": "Delete Customer",
+      "description": "Are you sure you want to delete customer \"{{name}}\"? This action cannot be undone.",
+      "deleted_success": "Customer deleted successfully"
+    },
+    "status": {
+      "lead": "Lead",
+      "prospect": "Prospect"
+    },
+    "customer_type": {
+      "individual": "Individual",
+      "company": "Company",
+      "non-profit": "Non-profit",
+      "government": "Government"
+    },
+    "source": {
+      "website": "Website",
+      "referral": "Referral",
+      "social_media": "Social Media",
+      "advertising": "Advertising",
+      "trade_show": "Trade Show",
+      "cold_call": "Cold Call",
+      "email_campaign": "Email Campaign",
+      "other": "Other"
+    },
+    "create_page": {
+      "title": "Create Customer",
+      "description": "Create your customer profile",
+      "already_exists": "You already have a customer profile. Redirecting to edit page...",
+      "already_exists_title": "Customer Profile Exists",
+      "already_exists_description": "You already have a customer profile. You can edit it instead.",
+      "created_success": "Customer created successfully",
+      "submitting": "Creating...",
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving",
+      "cancel_tooltip": "Cancel creating customer and return to list",
+      "create_tooltip": "Create new customer record",
+      "submitting_tooltip": "Creating customer...",
+      "basic_info": {
+        "title": "Basic Information",
+        "description": "Essential contact and personal information",
+        "name_placeholder": "Enter full name",
+        "email_placeholder": "Enter email address",
+        "phone_placeholder": "Enter phone number",
+        "company_placeholder": "Enter company name",
+        "job_title": "Job Title",
+        "job_title_placeholder": "Enter job title",
+        "website": "Website",
+        "website_placeholder": "https://example.com"
+      },
+      "address": {
+        "title": "Address Information",
+        "description": "Location and address details",
+        "address": "Street Address",
+        "address_placeholder": "Enter street address",
+        "city": "City",
+        "city_placeholder": "Enter city",
+        "state": "State/Province",
+        "state_placeholder": "Enter state or province",
+        "zip_code": "ZIP/Postal Code",
+        "zip_code_placeholder": "Enter ZIP or postal code",
+        "country": "Country",
+        "country_placeholder": "Enter country"
+      },
+      "business_info": {
+        "title": "Business Information",
+        "description": "Business and professional details",
+        "customer_type": "Customer Type",
+        "source": "Source",
+        "industry": "Industry",
+        "industry_placeholder": "Enter industry type",
+        "currency": "Currency",
+        "language": "Language"
+      },
+      "notes": {
+        "title": "Notes",
+        "description": "Additional notes and information",
+        "label": "Notes",
+        "placeholder": "Enter any additional notes..."
+      },
+      "validation": {
+        "name_required": "Name is required",
+        "invalid_email": "Invalid email format",
+        "email_exists": "A customer with this email already exists"
+      }
+    },
+    "view_page": {
+      "title": "Customer Details",
+      "customer_not_found": "Customer not found",
+      "failed_to_load": "Failed to load customer data",
+      "permission_denied": "You don't have permission to view this customer",
+      "back_to_customers": "Back to Customers",
+      "notes": "Notes",
+      "edit_tooltip": "Edit customer information",
+      "tabs": {
+        "overview": "Overview",
+        "details": "Details",
+        "details_description": "Additional customer details and metadata",
+        "notes": "Notes"
+      }
+    },
+    "edit_page": {
+      "title": "Edit Customer",
+      "description": "Update your customer information",
+      "customer_not_found": "Customer not found",
+      "permission_denied": "You don't have permission to edit this customer",
+      "back_to_customers": "Back to Customers",
+      "updated_success": "Customer updated successfully",
+      "updating": "Updating...",
+      "unsaved_changes_title": "Unsaved Changes",
+      "unsaved_changes_description": "You have unsaved changes. Are you sure you want to leave? All your changes will be lost.",
+      "leave_without_saving": "Leave Without Saving",
+      "cancel_tooltip": "Cancel editing and return to customer view",
+      "save_tooltip": "Save changes to customer information",
+      "updating_tooltip": "Saving your changes..."
     }
   }
 }

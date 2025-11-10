@@ -420,7 +420,7 @@ export default function AuditPage() {
             {t('audit_page.description')}
           </p>
         </div>
-        <Button onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto">
+        <Button variant="outline" size="sm" onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto shrink-0">
           <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
           <span className="truncate" suppressHydrationWarning>{t('audit_page.refresh')}</span>
         </Button>

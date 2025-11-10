@@ -131,6 +131,15 @@ export function SidebarNav() {
     },
   ]
 
+  const customerItems = [
+    {
+      title: t('sidebar.customers'),
+      url: "/auth/customers",
+      icon: Users,
+      requiresSuperAdmin: false,
+    },
+  ]
+
   const developerItems = [
     {
       title: t('sidebar.api_keys'),
@@ -255,6 +264,16 @@ export function SidebarNav() {
       return isSuperAdmin
     }
     // Other community items are available to all authenticated users
+    return true
+  })
+
+  // Filter customer items based on Super Admin access
+  const filteredCustomerItems = customerItems.filter(item => {
+    // Customer items that require Super Admin access
+    if (item.requiresSuperAdmin) {
+      return isSuperAdmin
+    }
+    // Other customer items are available to all authenticated users
     return true
   })
 
@@ -475,6 +494,30 @@ export function SidebarNav() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {filteredCustomerItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.customer_management')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredCustomerItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url || pathname?.startsWith(item.url)}
+                      tooltip={item.title}
+                    >
+                      <Link href={item.url} onClick={handleNavClick}>
+                        <item.icon className="h-4 w-4" />
+                        <span suppressHydrationWarning>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         <SidebarGroup>
           <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.developer')}</SidebarGroupLabel>

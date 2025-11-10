@@ -642,7 +642,7 @@ export default function DatabasePage() {
             <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
           </Button>
           <DatabaseImport collections={collections} onImportComplete={loadDatabaseData} />
-          <Button size="sm" onClick={handleManualBackup} className="flex-1 sm:flex-initial">
+          <Button variant="outline" size="sm" onClick={handleManualBackup} className="flex-1 sm:flex-initial">
             <Download className="mr-2 h-4 w-4 shrink-0" />
             <span className="truncate" suppressHydrationWarning>{t('database_page.manual_backup')}</span>
           </Button>

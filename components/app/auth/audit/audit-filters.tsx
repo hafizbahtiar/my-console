@@ -70,7 +70,7 @@ export function AuditFilters({
 
   return (
     <Card>
-      <CardHeader className="p-4 sm:p-6">
+      <CardHeader className="pb-2 p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg" suppressHydrationWarning>
             <Filter className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
@@ -110,7 +110,7 @@ export function AuditFilters({
       </CardHeader>
       <CardContent className="space-y-4 p-4 sm:p-6 pt-0">
         {/* Basic Filters */}
-        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground shrink-0" />

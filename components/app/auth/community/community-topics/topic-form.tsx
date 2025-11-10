@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/language-context";
+import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
 import { IconPicker } from "./icon-picker";
 import { TopicFormData, CommunityTopic } from "./types";
 import { generateSlug, generateUniqueSlug, getAvailableParents } from "./utils";
@@ -62,11 +63,10 @@ export function TopicForm({
 
         setIsGeneratingDescription(true);
         try {
+            const headers = await getCSRFHeadersAlt();
             const response = await fetch('/api/ai/generate-excerpt', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     title: formData.name.trim(),
                     content: `Topic: ${formData.name.trim()}. Generate a brief description for this community discussion topic.`,

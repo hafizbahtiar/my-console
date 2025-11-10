@@ -315,15 +315,19 @@ export default function BlogPostsPage() {
                         onClick={loadPosts}
                         disabled={isRefreshing}
                         className="w-full sm:w-auto shrink-0"
+                        size="sm"
                     >
                         <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${isRefreshing ? 'animate-spin' : ''}`} />
                         <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
                     </Button>
-                    <Button asChild className="w-full sm:w-auto shrink-0">
-                        <Link href="/auth/blog/blog-posts/create">
-                            <Plus className="h-4 w-4 mr-2 shrink-0" />
-                            <span className="truncate" suppressHydrationWarning>{t('blog_posts_page.create')}</span>
-                        </Link>
+                    <Button
+                        variant="outline"
+                        className="w-full sm:w-auto shrink-0"
+                        size="sm"
+                        onClick={() => router.push('/auth/blog/blog-posts/create')}
+                    >
+                        <Plus className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="truncate" suppressHydrationWarning>{t('create_item', {item: t('post')})}</span>
                     </Button>
                 </div>
             </div>

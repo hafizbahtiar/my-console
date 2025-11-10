@@ -153,14 +153,14 @@ export function SecuritySettings() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-0.5">
             <Label suppressHydrationWarning>{t('settings_page.security.two_factor_auth')}</Label>
             <p className="text-sm text-muted-foreground" suppressHydrationWarning>
               {t('settings_page.security.two_factor_auth_description')}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Switch
               checked={twoFactor}
               onCheckedChange={setTwoFactor}
@@ -185,7 +185,7 @@ export function SecuritySettings() {
                 <span suppressHydrationWarning>{t('settings_page.security.change_password')}</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="w-[95vw] sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle suppressHydrationWarning>{t('settings_page.security.change_password_dialog_title')}</DialogTitle>
                 <DialogDescription suppressHydrationWarning>
@@ -280,26 +280,28 @@ export function SecuritySettings() {
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setPasswordDialogOpen(false)}
                   disabled={passwordLoading}
+                  className="w-full sm:w-auto"
                 >
                   <span suppressHydrationWarning>{t('cancel')}</span>
                 </Button>
                 <Button
                   onClick={handlePasswordChange}
                   disabled={passwordLoading}
+                  className="w-full sm:w-auto"
                 >
                   {passwordLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />
                       <span suppressHydrationWarning>{t('settings_page.security.updating')}</span>
                     </>
                   ) : (
                     <>
-                      <Key className="h-4 w-4 mr-2" />
+                      <Key className="h-4 w-4 mr-2 shrink-0" />
                       <span suppressHydrationWarning>{t('settings_page.security.change_password')}</span>
                     </>
                   )}

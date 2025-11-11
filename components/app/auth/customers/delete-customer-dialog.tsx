@@ -11,7 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useTranslation } from "@/lib/language-context";
-import { Customer } from "@/app/auth/customers/types";
+import { Customer } from "@/app/auth/customers/customers/types";
 
 interface DeleteCustomerDialogProps {
   open: boolean;

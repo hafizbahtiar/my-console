@@ -61,9 +61,14 @@ My Console is a full-featured admin dashboard application with:
 - **Self-Service Model**: Users own and manage their own customer records
 - **Customer Profiles**: Complete customer information management (contact, address, business details, notes)
 - **Customer Listing**: Paginated table with search, filters, and status management
-- **Customer Views**: Tabbed interface (overview, details, notes) with organized information display
+- **Customer Views**: Tabbed interface (overview, details, notes, interactions, activity timeline) with organized information display
 - **Customer Forms**: Create and edit forms with validation and unsaved changes detection
 - **Status Management**: Customer status tracking (active, inactive, lead, prospect, archived)
+- **Customer Tags**: Metadata-based tagging system for customer categorization and organization
+- **Customer Notes**: Full CRUD interface for customer notes with pinning, importance flags, and tags
+- **Customer Interactions**: Comprehensive interaction logging (calls, emails, meetings, tasks, etc.)
+- **Activity Timeline**: Combined timeline view showing notes and interactions chronologically
+- **Import/Export**: Full data import/export functionality (CSV, JSON, Excel formats) with validation
 - **Empty States**: Beautiful shadcn UI empty states with create button when list is empty
 - **Mobile Responsive**: Fully responsive design with mobile-optimized layouts
 - **Internationalization**: Complete English and Malay support for all customer pages
@@ -157,12 +162,13 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 2. **Database Administration**: Read `docs/DATABASE_ADMIN.md` for backup and monitoring features
 3. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
 4. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
-5. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md`, `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
+5. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md` (includes import/export and tags documentation), `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
 6. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
 7. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
 8. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
 9. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-10. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+10. **Security Audit**: Review `docs/SECURITY_AUDIT.md` for security analysis and recommendations
+11. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -189,10 +195,10 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **/auth/community/community-posts/[id]**: View community post details
 - **/auth/community/community-posts/[id]/edit**: Edit community posts
 - **/auth/community/community-topics**: Community topic management (admin only)
-- **/auth/customers**: Customer management with listing, search, and filters
-- **/auth/customers/create**: Create new customer profile
-- **/auth/customers/[id]**: View customer details with tabs (overview, details, notes)
-- **/auth/customers/[id]/edit**: Edit customer information
+- **/auth/customers/customers**: Customer management with listing, search, filters, and import/export
+- **/auth/customers/customers/create**: Create new customer profile with tags
+- **/auth/customers/customers/[id]**: View customer details with tabs (overview, details, notes, interactions, activity timeline)
+- **/auth/customers/customers/[id]/edit**: Edit customer information with tags
 - **/auth/admin/security**: Security management with IP blocking and event monitoring
 
 ## 🏗️ Application Architecture
@@ -597,6 +603,10 @@ npx shadcn@latest add toast
 │   │   ├── ai/                  # AI-powered features
 │   │   │   ├── generate-excerpt # Excerpt generation API
 │   │   │   └── improve-content  # Content improvement API
+│   │   ├── customers/           # Customer management APIs
+│   │   │   ├── export/          # Customer export (CSV, JSON, Excel)
+│   │   │   ├── import/          # Customer import (CSV, JSON, Excel)
+│   │   │   └── [id]/            # Customer CRUD APIs
 │   │   └── [other-api-routes]   # Other API endpoints
 │   ├── auth/                     # Protected application pages
 │   │   ├── audit/               # Audit log viewer
@@ -657,7 +667,8 @@ npx shadcn@latest add toast
 │   ├── NICE_TO_HAVE.md          # Future enhancements roadmap
 │   ├── APPWRITE_DB_AUDIT_LOG.md # Audit logging setup
 │   ├── ARCHITECTURE.md          # System architecture overview
-│   └── I18N_SETUP.md            # Internationalization setup
+│   ├── I18N_SETUP.md            # Internationalization setup
+│   └── SECURITY_AUDIT.md        # Security audit report and recommendations
 ├── hooks/                       # Custom React hooks
 ├── components.json              # shadcn/ui configuration
 ├── TODO.md                      # Development tasks and roadmap
@@ -685,6 +696,13 @@ Built-in protection against abuse:
 - **Error Handling**: Comprehensive error handling without information leakage
 - **Input Validation**: Type-safe inputs with Zod validation
 - **Environment Security**: Sensitive data stored in environment variables
+- **CSRF Protection**: All state-changing operations protected
+- **Rate Limiting**: Comprehensive rate limiting on API routes
+- **Audit Logging**: Comprehensive activity tracking
+- **Security Headers**: Applied via middleware
+- **Input Sanitization**: HTML sanitization for user content
+
+**Security Audit**: See `docs/SECURITY_AUDIT.md` for detailed security analysis, vulnerabilities, and recommendations.
 
 ## 🚀 Deployment
 

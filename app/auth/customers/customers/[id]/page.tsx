@@ -32,6 +32,9 @@ import {
   Calendar,
   DollarSign,
   FileText,
+  StickyNote,
+  MessageSquare,
+  Activity,
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -41,6 +44,7 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
+import { CustomerNotes, CustomerInteractions } from "@/components/app/auth/customers";
 
 export default function ViewCustomerPage() {
   const { user, loading: authLoading } = useAuth();
@@ -154,7 +158,7 @@ export default function ViewCustomerPage() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/auth/customers">
+              <Link href="/auth/customers/customers">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span suppressHydrationWarning>{t('customers_page.view_page.back_to_customers')}</span>
               </Link>
@@ -177,7 +181,7 @@ export default function ViewCustomerPage() {
               className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
               asChild
             >
-              <Link href="/auth/customers">
+              <Link href="/auth/customers/customers">
                 <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
                 <span className="truncate" suppressHydrationWarning>
                   {t('customers_page.title')}
@@ -231,7 +235,7 @@ export default function ViewCustomerPage() {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button onClick={() => router.push(`/auth/customers/${customer.$id}/edit`)} className="shrink-0">
+                  <Button onClick={() => router.push(`/auth/customers/customers/${customer.$id}/edit`)} className="shrink-0">
                     <Edit className="h-4 w-4 mr-2" />
                     {t('edit')}
                   </Button>
@@ -255,11 +259,18 @@ export default function ViewCustomerPage() {
             <TabsTrigger value="details" suppressHydrationWarning>
               {t('customers_page.view_page.tabs.details')}
             </TabsTrigger>
-            {customer.notes && (
-              <TabsTrigger value="notes" suppressHydrationWarning>
-                {t('customers_page.view_page.tabs.notes')}
-              </TabsTrigger>
-            )}
+            <TabsTrigger value="notes" suppressHydrationWarning>
+              <StickyNote className="h-4 w-4 mr-2" />
+              Notes
+            </TabsTrigger>
+            <TabsTrigger value="interactions" suppressHydrationWarning>
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Interactions
+            </TabsTrigger>
+            <TabsTrigger value="activity" suppressHydrationWarning>
+              <Activity className="h-4 w-4 mr-2" />
+              Activity Timeline
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -515,23 +526,20 @@ export default function ViewCustomerPage() {
             </Card>
           </TabsContent>
 
-          {customer.notes && (
-            <TabsContent value="notes" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle suppressHydrationWarning>{t('customers_page.view_page.notes')}</CardTitle>
-                </CardHeader>
-                <Separator />
-                <CardContent className="pt-6">
-                  <ScrollArea className="h-[400px]">
-                    <div className="prose prose-sm max-w-none pr-4">
-                      <p className="text-sm whitespace-pre-wrap">{customer.notes}</p>
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
+          <TabsContent value="notes" className="space-y-6">
+            <CustomerNotes customerId={customer.$id} />
+          </TabsContent>
+
+          <TabsContent value="interactions" className="space-y-6">
+            <CustomerInteractions customerId={customer.$id} />
+          </TabsContent>
+
+          <TabsContent value="activity" className="space-y-6">
+            <div className="space-y-4">
+              <CustomerNotes customerId={customer.$id} />
+              <CustomerInteractions customerId={customer.$id} />
+            </div>
+          </TabsContent>
         </Tabs>
       </div>
     </div>

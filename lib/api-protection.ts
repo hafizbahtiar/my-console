@@ -9,6 +9,8 @@ import { rateLimitMiddleware, rateLimitConfigs, checkRateLimit } from '@/middlew
 import { csrfProtection, validateCSRFToken } from '@/middlewares/csrf';
 import { applySecurityHeaders } from '@/middlewares/security-headers';
 import { sanitize } from '@/lib/validation';
+import { logger } from '@/lib/logger';
+import { handleAPIError, generateRequestId, APIError, APIErrorCode } from '@/lib/api-error-handler';
 
 export interface APIHandlerOptions {
   /** Rate limit configuration */
@@ -23,6 +25,8 @@ export interface APIHandlerOptions {
   schema?: z.ZodSchema;
   /** Whether to sanitize input (default: true) */
   sanitizeInput?: boolean;
+  /** Maximum request body size in bytes (default: 10MB) */
+  maxBodySize?: number;
   /** Custom error handler */
   onError?: (error: Error, request: NextRequest) => NextResponse;
 }
@@ -69,18 +73,78 @@ export async function protectedAPI(
       }
     }
 
-    // 3. Parse and sanitize request body (if applicable)
+    // 3. Check request size and parse body (if applicable)
     let body: any = {};
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
+      const contentLength = request.headers.get('content-length');
+      const maxBodySize = options.maxBodySize || 10 * 1024 * 1024; // Default 10MB
+
+      if (contentLength && parseInt(contentLength, 10) > maxBodySize) {
+        logger.warn(
+          `Request body too large: ${contentLength} bytes (max: ${maxBodySize})`,
+          'api-protection',
+          undefined,
+          { contentLength, maxBodySize, url: request.url }
+        );
+        return applySecurityHeaders(
+          NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: APIErrorCode.PAYLOAD_TOO_LARGE,
+                message: `Request body exceeds maximum size of ${Math.round(maxBodySize / 1024 / 1024)}MB`,
+              },
+            },
+            { status: 413 }
+          )
+        );
+      }
+
       try {
         const rawBody = await request.json();
+        
+        // Double-check size after parsing (for cases where content-length header is missing)
+        const bodySize = JSON.stringify(rawBody).length;
+        if (bodySize > maxBodySize) {
+          logger.warn(
+            `Request body too large after parsing: ${bodySize} bytes (max: ${maxBodySize})`,
+            'api-protection',
+            undefined,
+            { bodySize, maxBodySize, url: request.url }
+          );
+          return applySecurityHeaders(
+            NextResponse.json(
+              {
+                success: false,
+                error: {
+                  code: APIErrorCode.PAYLOAD_TOO_LARGE,
+                  message: `Request body exceeds maximum size of ${Math.round(maxBodySize / 1024 / 1024)}MB`,
+                },
+              },
+              { status: 413 }
+            )
+          );
+        }
+
         body = options.sanitizeInput !== false ? sanitize.object(rawBody) : rawBody;
       } catch (error) {
         // Body might be empty or invalid JSON
         if (request.headers.get('content-type')?.includes('application/json')) {
+          logger.warn(
+            'Invalid JSON in request body',
+            'api-protection',
+            error,
+            { url: request.url }
+          );
           return applySecurityHeaders(
             NextResponse.json(
-              { error: 'Invalid JSON in request body' },
+              {
+                success: false,
+                error: {
+                  code: APIErrorCode.BAD_REQUEST,
+                  message: 'Invalid JSON in request body',
+                },
+              },
               { status: 400 }
             )
           );
@@ -92,17 +156,30 @@ export async function protectedAPI(
     if (options.schema) {
       const validation = options.schema.safeParse(body);
       if (!validation.success) {
+        logger.warn(
+          'Request validation failed',
+          'api-protection',
+          undefined,
+          {
+            url: request.url,
+            issues: validation.error.issues,
+          }
+        );
         return applySecurityHeaders(
           NextResponse.json(
             {
-              error: 'Validation failed',
-              details: validation.error.issues.map((err: any) => ({
-                path: err.path.join('.'),
-                message: err.message,
-                code: err.code,
-              })),
+              success: false,
+              error: {
+                code: APIErrorCode.VALIDATION_ERROR,
+                message: 'Validation failed',
+                details: validation.error.issues.map((err: any) => ({
+                  path: err.path.join('.'),
+                  message: err.message,
+                  code: err.code,
+                })),
+              },
             },
-            { status: 400 }
+            { status: 422 }
           )
         );
       }
@@ -116,47 +193,52 @@ export async function protectedAPI(
     // For now, we'll extract from URL pathname if needed
 
     // 6. Execute the handler
+    const requestId = generateRequestId();
     const context: APIHandlerContext = {
       request,
       body,
       params,
     };
 
-    const response = await handler(context);
+    try {
+      const response = await handler(context);
 
-    // 7. Add rate limit headers to successful responses
-    const rateLimitInfo = checkRateLimit(request, rateLimitConfig);
-    const newHeaders = new Headers(response.headers);
-    Object.entries(rateLimitInfo.headers).forEach(([key, value]) => {
-      newHeaders.set(key, value);
-    });
+      // 7. Add rate limit headers to successful responses
+      const rateLimitInfo = checkRateLimit(request, rateLimitConfig);
+      const newHeaders = new Headers(response.headers);
+      Object.entries(rateLimitInfo.headers).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
+      newHeaders.set('X-Request-ID', requestId);
 
-    // 8. Apply security headers
-    return applySecurityHeaders(
-      new NextResponse(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-      })
-    );
+      // 8. Apply security headers
+      return applySecurityHeaders(
+        new NextResponse(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders,
+        })
+      );
+    } catch (handlerError) {
+      // Handle errors from the handler
+      return handleAPIError(handlerError, 'api-handler', requestId);
+    }
   } catch (error) {
-    console.error('API protection error:', error);
+    const requestId = generateRequestId();
+    logger.error(
+      'API protection error',
+      'api-protection',
+      error,
+      { url: request.url, method: request.method, requestId }
+    );
 
     // Use custom error handler if provided
     if (options.onError) {
       return options.onError(error as Error, request);
     }
 
-    // Default error response
-    return applySecurityHeaders(
-      NextResponse.json(
-        {
-          error: 'Internal server error',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        { status: 500 }
-      )
-    );
+    // Default error response using standardized error handler
+    return handleAPIError(error, 'api-protection', requestId);
   }
 }
 

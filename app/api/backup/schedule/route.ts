@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { createProtectedGET, createProtectedPOST } from '@/lib/api-protection';
 import config from '../../../../scripts/backup/config';
 
@@ -31,7 +32,7 @@ export const GET = createProtectedGET(
         },
       });
     } catch (error) {
-      console.error('Failed to get backup schedule:', error);
+      logger.error('Failed to get backup schedule', 'api/backup/schedule', error);
       return NextResponse.json(
         {
           success: false,
@@ -67,7 +68,7 @@ export const POST = createProtectedPOST(
         },
       });
     } catch (error) {
-      console.error('Failed to update backup schedule:', error);
+      logger.error('Failed to update backup schedule', 'api/backup/schedule', error);
       return NextResponse.json(
         {
           success: false,

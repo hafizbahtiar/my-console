@@ -474,6 +474,8 @@ export default function BlogTagsPage() {
         onPageChange={setCurrentPage}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
+        onCreate={() => setCreateDialogOpen(true)}
+        isLoading={isLoading}
       />
 
       <EditTagDialog

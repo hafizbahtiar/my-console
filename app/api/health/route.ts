@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createProtectedGET } from '@/lib/api-protection'
 import { tablesDB, DATABASE_ID, AUDIT_COLLECTION_ID } from '@/lib/appwrite'
+import { logger } from '@/lib/logger'
 
 interface HealthCheck {
   status: 'healthy' | 'unhealthy' | 'degraded'
@@ -66,7 +67,7 @@ async function checkStorageHealth(): Promise<'healthy' | 'unhealthy'> {
 
     return 'healthy'
   } catch (error) {
-    console.error('Storage health check failed:', error)
+    logger.error('Storage health check failed', 'api/health', error)
     return 'unhealthy'
   }
 }
@@ -88,7 +89,7 @@ async function checkAuthHealth(): Promise<'healthy' | 'unhealthy'> {
       throw authError
     }
   } catch (error) {
-    console.error('Authentication health check failed:', error)
+    logger.error('Authentication health check failed', 'api/health', error)
     return 'unhealthy'
   }
 }
@@ -162,7 +163,7 @@ async function getActiveUsersCount(): Promise<number> {
     // For now, return a simulated count based on recent activity
     return Math.floor(Math.random() * 50) + 10 // 10-60 active users
   } catch (error) {
-    console.error('Failed to get active users count:', error)
+    logger.error('Failed to get active users count', 'api/health', error)
     return 0
   }
 }
@@ -174,7 +175,7 @@ async function getTotalUsersCount(): Promise<number> {
     // For now, return a simulated count
     return Math.floor(Math.random() * 500) + 100 // 100-600 total users
   } catch (error) {
-    console.error('Failed to get total users count:', error)
+    logger.error('Failed to get total users count', 'api/health', error)
     return 0
   }
 }
@@ -195,7 +196,7 @@ async function getRecentLoginsCount(since: Date): Promise<number> {
 
     return recentLogins
   } catch (error) {
-    console.error('Failed to get recent logins count:', error)
+    logger.error('Failed to get recent logins count', 'api/health', error)
     return Math.floor(Math.random() * 20) + 5 // 5-25 recent logins
   }
 }
@@ -207,7 +208,7 @@ async function getApiCallsCount(): Promise<number> {
     // For now, return simulated data
     return Math.floor(Math.random() * 1000) + 500 // 500-1500 API calls
   } catch (error) {
-    console.error('Failed to get API calls count:', error)
+    logger.error('Failed to get API calls count', 'api/health', error)
     return 0
   }
 }
@@ -219,7 +220,7 @@ async function getStorageUsage(): Promise<number> {
     // For now, return simulated data
     return Math.floor(Math.random() * 50) + 10 // 10-60 MB used
   } catch (error) {
-    console.error('Failed to get storage usage:', error)
+    logger.error('Failed to get storage usage', 'api/health', error)
     return 0
   }
 }
@@ -309,7 +310,7 @@ export const GET = createProtectedGET(
   {
     rateLimit: 'health',
     onError: (error) => {
-      console.error('Health check failed:', error)
+      logger.error('Health check failed', 'api/health', error)
       const errorHealthCheck: HealthCheck = {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),

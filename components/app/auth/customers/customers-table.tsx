@@ -17,6 +17,7 @@ import {
 import { Edit, Trash2, Eye, Building2, Mail, Phone, MapPin, Plus } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
 import { useRouter } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Pagination,
   PaginationContent,
@@ -27,7 +28,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { getTotalPages } from "@/lib/pagination";
-import { Customer } from "@/app/auth/customers/types";
+import { Customer } from "@/app/auth/customers/customers/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface CustomersTableProps {
@@ -43,6 +44,8 @@ interface CustomersTableProps {
   searchTerm: string;
   statusFilter: string;
   onCreate?: () => void;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 export function CustomersTable({
@@ -58,12 +61,33 @@ export function CustomersTable({
   searchTerm,
   statusFilter,
   onCreate,
+  selectedIds = [],
+  onSelectionChange,
 }: CustomersTableProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const totalPages = getTotalPages(totalCustomers, pageSize);
   const hasFilters = searchTerm.trim().length > 0 || statusFilter !== 'all';
   const isEmpty = customers.length === 0 && !isLoading;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectionChange) {
+      onSelectionChange(checked ? customers.map(c => c.$id) : []);
+    }
+  };
+
+  const handleSelectOne = (customerId: string, checked: boolean) => {
+    if (onSelectionChange) {
+      if (checked) {
+        onSelectionChange([...selectedIds, customerId]);
+      } else {
+        onSelectionChange(selectedIds.filter(id => id !== customerId));
+      }
+    }
+  };
+
+  const allSelected = customers.length > 0 && customers.every(c => selectedIds.includes(c.$id));
+  const someSelected = selectedIds.length > 0 && !allSelected;
 
   if (isLoading) {
     return (
@@ -118,7 +142,7 @@ export function CustomersTable({
                     if (onCreate) {
                       onCreate();
                     } else {
-                      router.push('/auth/customers/create');
+                      router.push('/auth/customers/customers/create');
                     }
                   }}
                   size="sm"
@@ -150,6 +174,15 @@ export function CustomersTable({
           <Table>
             <TableHeader>
               <TableRow>
+                {onSelectionChange && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label={t('select_all')}
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="w-[200px]">{t('name')}</TableHead>
                 <TableHead className="hidden sm:table-cell">{t('email')}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('phone')}</TableHead>
@@ -162,6 +195,15 @@ export function CustomersTable({
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={customer.$id}>
+                  {onSelectionChange && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(customer.$id)}
+                        onCheckedChange={(checked) => handleSelectOne(customer.$id, checked as boolean)}
+                        aria-label={t('select_item', { item: customer.name })}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     <div className="flex flex-col gap-1">
                       <span className="truncate max-w-[200px]">{customer.name}</span>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createProtectedDELETE } from '@/lib/api-protection';
@@ -57,14 +58,14 @@ export async function DELETE(
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
             deletedCount++;
-            console.log(`Deleted backup file: ${filePath}`);
+            logger.info(`Deleted backup file: ${filePath}`, 'api/backups/[id]');
           }
         } catch (error) {
-          console.warn(`Failed to delete file ${filePath}:`, error);
+          logger.warn(`Failed to delete file ${filePath}`, 'api/backups/[id]', error, { filePath });
         }
       }
 
-      console.log(`Successfully deleted ${deletedCount} backup files for ${backupId}`);
+      logger.info(`Successfully deleted ${deletedCount} backup files for ${backupId}`, 'api/backups/[id]', { deletedCount, backupId });
 
       return NextResponse.json({
         success: true,

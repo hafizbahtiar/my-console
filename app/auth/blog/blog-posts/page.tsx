@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BlogPost } from "./types";
@@ -56,27 +56,7 @@ export default function BlogPostsPage() {
     const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
     const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
-    // Load data on component mount - must be called before conditional returns
-    useEffect(() => {
-        const loadData = async () => {
-            // Wait for auth to finish loading before proceeding
-            if (authLoading) {
-                return;
-            }
-
-            // If auth finished loading and no user, don't redirect, just set loading to false
-            if (!user) {
-                setIsLoading(false);
-                return;
-            }
-
-            await Promise.all([loadPosts(), loadCategories(), loadTags()]);
-        };
-
-        loadData();
-    }, [user, authLoading, currentPage, pageSize, searchTerm, statusFilter, t]);
-
-    const loadPosts = async () => {
+    const loadPosts = useCallback(async () => {
         try {
             setIsRefreshing(true);
 
@@ -139,9 +119,9 @@ export default function BlogPostsPage() {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    };
+    }, [searchTerm, statusFilter, currentPage, pageSize, t]);
 
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         try {
             const categoriesData = await tablesDB.listRows({
                 databaseId: DATABASE_ID,
@@ -151,9 +131,9 @@ export default function BlogPostsPage() {
         } catch (error) {
             console.error('Failed to load categories:', error);
         }
-    };
+    }, []);
 
-    const loadTags = async () => {
+    const loadTags = useCallback(async () => {
         try {
             const tagsData = await tablesDB.listRows({
                 databaseId: DATABASE_ID,
@@ -163,7 +143,27 @@ export default function BlogPostsPage() {
         } catch (error) {
             console.error('Failed to load tags:', error);
         }
-    };
+    }, []);
+
+    // Load data on component mount - must be called before conditional returns
+    useEffect(() => {
+        const loadData = async () => {
+            // Wait for auth to finish loading before proceeding
+            if (authLoading) {
+                return;
+            }
+
+            // If auth finished loading and no user, don't redirect, just set loading to false
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
+
+            await Promise.all([loadPosts(), loadCategories(), loadTags()]);
+        };
+
+        loadData();
+    }, [user, authLoading, loadPosts, loadCategories, loadTags]);
 
 
 
@@ -301,11 +301,11 @@ export default function BlogPostsPage() {
                         </span>
                         <span className="flex items-center gap-1 shrink-0" suppressHydrationWarning>
                             <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 shrink-0" />
-                            {allPosts.filter(p => p.status === 'published').length} {t('blog_posts_page.published')}
+                            {(needsClientSideFiltering ? allPosts : posts).filter(p => p.status === 'published').length} {t('blog_posts_page.published')}
                         </span>
                         <span className="flex items-center gap-1 shrink-0" suppressHydrationWarning>
                             <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 shrink-0" />
-                            {allPosts.filter(p => p.status === 'draft').length} {t('blog_posts_page.drafts')}
+                            {(needsClientSideFiltering ? allPosts : posts).filter(p => p.status === 'draft').length} {t('blog_posts_page.drafts')}
                         </span>
                     </div>
                 </div>
@@ -327,7 +327,7 @@ export default function BlogPostsPage() {
                         onClick={() => router.push('/auth/blog/blog-posts/create')}
                     >
                         <Plus className="h-4 w-4 mr-2 shrink-0" />
-                        <span className="truncate" suppressHydrationWarning>{t('create_item', {item: t('post')})}</span>
+                        <span className="truncate" suppressHydrationWarning>{t('create_item', { item: t('post') })}</span>
                     </Button>
                 </div>
             </div>
@@ -370,6 +370,7 @@ export default function BlogPostsPage() {
                 getCategoryName={getCategoryNameForPost}
                 searchTerm={searchTerm}
                 statusFilter={statusFilter}
+                onCreate={() => router.push('/auth/blog/blog-posts/create')}
             />
 
             {/* View Post Dialog */}

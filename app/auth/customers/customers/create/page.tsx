@@ -41,6 +41,8 @@ import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
 import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
+import { CustomerTagsInput } from "@/components/app/auth/customers/customer-tags-input";
+import { getCustomerTags, setCustomerTags } from "@/lib/customer-utils";
 
 export default function CreateCustomerPage() {
   const { user, loading: authLoading } = useAuth();
@@ -81,6 +83,9 @@ export default function CreateCustomerPage() {
     metadata: '',
   });
 
+  // Tags state (derived from metadata)
+  const [tags, setTags] = useState<string[]>([]);
+
   // Load existing customer and initialize form
   useEffect(() => {
     const loadData = async () => {
@@ -110,15 +115,15 @@ export default function CreateCustomerPage() {
           toast.info(t('customers_page.create_page.already_exists'));
           // Redirect to edit page
           setTimeout(() => {
-            router.push(`/auth/customers/${existing.$id}/edit`);
+            router.push(`/auth/customers/customers/${existing.$id}/edit`);
           }, 2000);
           return;
         }
 
-        // Initialize form with user data
+        // Initialize form with default values (customer info, not user info)
         const initialData: CustomerFormData = {
-          name: user.name || '',
-          email: user.email || '',
+          name: '',
+          email: '',
           phone: '',
           company: '',
           jobTitle: '',
@@ -180,7 +185,7 @@ export default function CreateCustomerPage() {
 
     const handlePopState = () => {
       if (hasUnsavedChanges()) {
-        setPendingNavigation('/auth/customers');
+        setPendingNavigation('/auth/customers/customers');
         setShowUnsavedDialog(true);
         window.history.pushState(null, '', window.location.href);
       }
@@ -238,12 +243,16 @@ export default function CreateCustomerPage() {
         }
       }
 
+      // Include tags in metadata
+      const metadataWithTags = setCustomerTags(formData.metadata, tags);
+
       // Create customer record
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           ...formData,
+          metadata: metadataWithTags,
           userId: user.$id,
         }),
       });
@@ -266,7 +275,7 @@ export default function CreateCustomerPage() {
       
       // Redirect to customers list
       setTimeout(() => {
-        router.push('/auth/customers');
+        router.push('/auth/customers/customers');
       }, 1000);
     } catch (error: any) {
       console.error('Failed to create customer:', error);
@@ -303,7 +312,7 @@ export default function CreateCustomerPage() {
           <div className="px-4 sm:px-6 py-2 sm:py-3">
             <nav className="flex items-center space-x-2 text-xs sm:text-sm">
               <Button variant="ghost" size="sm" className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0" asChild>
-                <Link href="/auth/customers">
+                <Link href="/auth/customers/customers">
                   <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
                   <span className="truncate" suppressHydrationWarning>
                     {t('customers_page.title')}
@@ -326,7 +335,7 @@ export default function CreateCustomerPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button onClick={() => router.push(`/auth/customers/${existingCustomer.$id}/edit`)}>
+              <Button onClick={() => router.push(`/auth/customers/customers/${existingCustomer.$id}/edit`)}>
                 {t('edit')}
               </Button>
             </CardContent>
@@ -346,7 +355,7 @@ export default function CreateCustomerPage() {
               variant="ghost" 
               size="sm" 
               className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
-              onClick={() => handleNavigation('/auth/customers')}
+              onClick={() => handleNavigation('/auth/customers/customers')}
             >
               <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
               <span className="truncate" suppressHydrationWarning>
@@ -640,6 +649,23 @@ export default function CreateCustomerPage() {
           </CardContent>
         </Card>
 
+        {/* Tags */}
+        <Card>
+          <CardHeader>
+            <CardTitle suppressHydrationWarning>{t('customers_page.create_page.tags.title')}</CardTitle>
+            <CardDescription suppressHydrationWarning>
+              {t('customers_page.create_page.tags.description')}
+            </CardDescription>
+          </CardHeader>
+          <Separator />
+          <CardContent>
+            <CustomerTagsInput
+              tags={tags}
+              onTagsChange={setTags}
+            />
+          </CardContent>
+        </Card>
+
         {/* Notes */}
         <Card>
           <CardHeader>
@@ -673,7 +699,7 @@ export default function CreateCustomerPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handleNavigation('/auth/customers')}
+                  onClick={() => handleNavigation('/auth/customers/customers')}
                 >
                   {t('cancel')}
                 </Button>
@@ -728,7 +754,7 @@ export default function CreateCustomerPage() {
               <AlertDialogAction
                 onClick={async () => {
                   setShowUnsavedDialog(false);
-                  const navPath = pendingNavigation || '/auth/customers';
+                  const navPath = pendingNavigation || '/auth/customers/customers';
                   setPendingNavigation(null);
                   await new Promise(resolve => setTimeout(resolve, 0));
                   router.push(navPath);

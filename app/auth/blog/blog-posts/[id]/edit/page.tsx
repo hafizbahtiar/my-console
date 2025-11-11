@@ -62,6 +62,7 @@ export default function EditBlogPostPage() {
   const [availableTags, setAvailableTags] = useState<BlogTag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
   const [isGeneratingExcerpt, setIsGeneratingExcerpt] = useState(false);
   const [isImprovingContent, setIsImprovingContent] = useState(false);
   const [isGeneratingSEOSuggestions, setIsGeneratingSEOSuggestions] = useState(false);
@@ -110,6 +111,48 @@ export default function EditBlogPostPage() {
       readTime: readTime
     }));
   }, []); // Empty deps - calculateReadTime is a pure function, setFormData is stable
+
+  // AI Title Generation
+  const generateTitleWithAI = async () => {
+    if (!formData.content.trim()) {
+      toast.error(t('blog_posts_page.create_page.validation.content_required'));
+      return;
+    }
+
+    const textContent = formData.content.replace(/<[^>]*>/g, '').trim();
+    if (textContent.length < 50) {
+      toast.error('Content must be at least 50 characters long');
+      return;
+    }
+
+    setIsGeneratingTitle(true);
+    try {
+      const headers = await getCSRFHeadersAlt();
+      const response = await fetch('/api/ai/generate-title', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          content: formData.content,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate title');
+      }
+
+      const data = await response.json();
+      if (data.title) {
+        handleTitleChange(data.title);
+        toast.success('Title generated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Failed to generate title:', error);
+      toast.error(error.message || 'Failed to generate title');
+    } finally {
+      setIsGeneratingTitle(false);
+    }
+  };
 
   // SEO Suggestions
   const generateSEOSuggestions = async () => {
@@ -799,10 +842,10 @@ export default function EditBlogPostPage() {
                 onFormDataChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
                 onTitleChange={handleTitleChange}
                 onContentChange={handleContentChange}
-                isGeneratingTitle={false}
+                isGeneratingTitle={isGeneratingTitle}
                 isGeneratingExcerpt={isGeneratingExcerpt}
                 isImprovingContent={isImprovingContent}
-                onGenerateTitle={() => { }}
+                onGenerateTitle={generateTitleWithAI}
                 onGenerateExcerpt={generateExcerptWithAI}
                 onImproveContent={improveContentWithAI}
               />

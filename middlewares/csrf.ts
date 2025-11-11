@@ -67,14 +67,17 @@ export function csrfProtection(request: NextRequest): NextResponse | null {
     return null
   }
 
-  // Get session ID (you might get this from cookies or headers)
-  const sessionId = request.cookies.get('sessionId')?.value ||
-                   request.headers.get('x-session-id') ||
-                   'anonymous'
+  // Get session ID from cookies or headers (must match CSRF token generation logic)
+  const sessionId = request.cookies.get('csrf-session-id')?.value ||
+    request.cookies.get('sessionId')?.value ||
+    request.headers.get('x-session-id') ||
+    'anonymous'
 
-  // Get CSRF token from headers
+  // Get CSRF token from headers (check multiple header name variations)
   const csrfToken = request.headers.get('x-csrf-token') ||
-                   request.headers.get('csrf-token')
+    request.headers.get('X-CSRF-Token') ||
+    request.headers.get('csrf-token') ||
+    request.headers.get('CSRF-Token')
 
   if (!csrfToken) {
     return NextResponse.json(

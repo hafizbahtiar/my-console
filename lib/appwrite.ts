@@ -31,5 +31,7 @@ export const AUDIT_COLLECTION_ID = 'audit_logs'
 export const SECURITY_EVENTS_COLLECTION_ID = 'security_events'
 export const IP_BLOCKLIST_COLLECTION_ID = 'ip_blocklist'
 export const CUSTOMERS_COLLECTION_ID = 'customers'
+export const CUSTOMER_NOTES_COLLECTION_ID = 'customer_notes'
+export const CUSTOMER_INTERACTIONS_COLLECTION_ID = 'customer_interactions'
 
 export default client

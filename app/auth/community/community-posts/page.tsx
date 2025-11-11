@@ -359,6 +359,7 @@ export default function CommunityPostsPage() {
                 getTopicName={getTopicName}
                 searchTerm={searchTerm}
                 statusFilter={statusFilter}
+                onCreate={() => router.push('/auth/community/community-posts/create')}
             />
 
             {/* Delete Confirmation Dialog */}

@@ -16,21 +16,48 @@ This document tracks current development tasks, features, and improvements for M
 
 ## 🔥 Critical Priority
 
+### Security Enhancements
+**Status**: Partially Complete - Core Tasks Done
+**Priority**: Critical
+**Estimated Effort**: 1-2 weeks (Remaining: Documentation & Minor Enhancements)
+**Due Date**: Q1 2026
+
+**Description**:
+Address security vulnerabilities and implement security best practices identified in security audit.
+
+**Tasks**:
+- [x] Implement structured logging with log levels (replace console.error)
+- [x] Add request size limits to API routes
+- [x] Standardize error handling across all API routes
+- [x] Implement request size limits in Next.js config
+- [x] Review and sanitize error messages before logging
+- [ ] Document API key rotation procedure
+- [ ] Add file size validation for uploads/imports
+- [ ] Document audit log retention policy
+- [ ] Add CSP headers configuration
+
+**Security Audit**: See `docs/SECURITY_AUDIT.md` for detailed findings and recommendations.
+
 ### AI Integration with OpenRouter API
-**Status**: Partially Complete - Basic Integration Done
+**Status**: ✅ Core Features Complete - Advanced Features Remaining
 **Priority**: Critical
 **Estimated Effort**: 1-2 weeks (Remaining)
 **Due Date**: Q1 2026
 
 **Description**:
-Integrate OpenRouter API to provide AI-powered content assistance features in the blog management system. Basic excerpt generation is implemented.
+Integrate OpenRouter API to provide AI-powered content assistance features in the blog management system. All core AI features are now fully functional.
 
 **Completed**:
 - ✅ OpenRouter API integration (excerpt generation, title generation, SEO suggestions, content improvement)
-- ✅ Multiple AI model support with fallback
-- ✅ Server-side API routes with error handling
-- ✅ UI integration in blog create/edit pages
+- ✅ Multiple AI model support with fallback mechanism
+- ✅ Server-side API routes with comprehensive error handling
+- ✅ UI integration in blog create/edit pages (both pages fully functional)
 - ✅ StatusBadge component with internationalization
+- ✅ **Title generation fully functional** - Works on both create and edit pages with proper cleanup
+- ✅ **Enhanced excerpt generation** - Improved cleanup to remove formatting artifacts (Option:, Choice:, etc.)
+- ✅ **Improved title cleanup** - Removes prefixes, markdown, and formatting artifacts
+- ✅ **CSRF protection** - Proper session ID handling with cookie-based identification
+- ✅ **Query optimization** - Fixed pagination queries to use Appwrite Query builder (resolved syntax errors)
 
 **Remaining Requirements**:
 - [ ] Add content summarization capabilities
@@ -45,7 +72,7 @@ Integrate OpenRouter API to provide AI-powered content assistance features in th
 ## 🔴 High Priority
 
 ### Performance Optimization
-**Status**: In Progress
+**Status**: ✅ Core Complete, 🟡 Minor Optimizations Remaining
 **Priority**: High
 **Estimated Effort**: 1 week
 
@@ -56,13 +83,36 @@ Integrate OpenRouter API to provide AI-powered content assistance features in th
 - [x] Add service worker for caching
 - [x] Implement virtual scrolling for large lists
 - [x] Optimize database queries with pagination
+- [x] **Fixed pagination query syntax** - Updated to use Appwrite Query builder (resolved "Invalid query: Syntax error")
+- [x] **Query optimization** - Proper use of Query.equal(), Query.orderDesc(), Query.limit(), Query.offset()
 
 
 ### Security Hardening
-**Status**: ✅ Complete
+**Status**: ✅ Core Complete, 🟡 Minor Enhancements Remaining
 **Priority**: High
 
 **Summary**: HTML sanitization, rate limiting, input validation, CSRF protection, session management, and security headers all implemented.
+
+**Completed**:
+- ✅ CSRF protection on all state-changing operations
+- ✅ **CSRF token session management** - Cookie-based session ID generation and validation
+- ✅ **CSRF header support** - Multiple header name variations supported (x-csrf-token, X-CSRF-Token, etc.)
+- ✅ Rate limiting on API routes
+- ✅ Input validation with Zod schemas
+- ✅ HTML sanitization for user content
+- ✅ Security headers via middleware
+- ✅ Audit logging system
+- ✅ User ownership checks (self-service model)
+- ✅ Structured logging with log levels (DEBUG, INFO, WARN, ERROR, FATAL)
+- ✅ Request size limits (10MB default, configurable per route)
+- ✅ Standardized error handling with APIError class and consistent responses
+- ✅ Error message sanitization (removes sensitive data from logs)
+
+**Remaining Enhancements** (See `docs/SECURITY_AUDIT.md`):
+- [ ] API key rotation documentation
+- [x] Audit log retention policy - ✅ Implemented with automatic cleanup, API endpoints, and documentation
+- [x] Enhanced CSP headers - ✅ Enhanced with stricter policies, documentation, and block-all-mixed-content
+- [x] File size validation for uploads/imports - ✅ Implemented with validation utilities and integration in import/restore routes
 
 ### Mobile Responsiveness
 **Status**: Partially Complete
@@ -87,16 +137,16 @@ Integrate OpenRouter API to provide AI-powered content assistance features in th
 **Summary**: Complete multi-language support for English and Malay across all 19 pages. See [I18N_SETUP.md](./docs/I18N_SETUP.md) for details.
 
 ### Customers Module
-**Status**: ✅ Core Features Complete
+**Status**: ✅ Core Features Complete + Notes/Interactions/Import-Export/Tags/Bulk Operations Complete
 **Priority**: Medium
-**Estimated Effort**: Completed (Core), 1-2 weeks (Remaining)
+**Estimated Effort**: Completed (Core + Notes/Interactions/Import-Export/Tags/Bulk Operations), 1-2 weeks (Remaining)
 
 **Description**:
 Self-service customer relationship management (CRM) module for managing customer data, interactions, and relationships. Users own and manage their own customer records.
 
 **✅ Completed Core Features**:
 - ✅ Customer listing page with search and filters
-- ✅ Customer detail view page with tabs (overview, details, notes)
+- ✅ Customer detail view page with tabs (overview, details, notes, interactions, activity timeline)
 - ✅ Create customer form with validation and unsaved changes detection
 - ✅ Edit customer form with validation and unsaved changes detection
 - ✅ Customer deletion with confirmation dialog
@@ -108,6 +158,9 @@ Self-service customer relationship management (CRM) module for managing customer
 - ✅ Full internationalization (English & Malay)
 - ✅ Complete shadcn UI integration (Breadcrumb, Separator, Badge, Avatar, Tabs, ScrollArea, Tooltip)
 - ✅ Self-service model implementation (user ownership)
+- ✅ Customer notes management (create, edit, delete, pin, tag, mark important)
+- ✅ Customer interactions logging (calls, emails, meetings, tasks, etc.)
+- ✅ Activity timeline combining notes and interactions
 
 **Database Schema**:
 - ✅ Customer collection documented in `docs/APPWRITE_DB_CUSTOMERS.md`
@@ -115,21 +168,34 @@ Self-service customer relationship management (CRM) module for managing customer
 - ✅ Customer notes collection documented in `docs/APPWRITE_DB_CUSTOMER_NOTES.md`
 
 **UI Components Implemented**:
-- ✅ Customer listing table with pagination
-- ✅ Customer detail view with tabs (overview, details, notes)
-- ✅ Customer form (create/edit) with all fields
+- ✅ Customer listing table with pagination and bulk selection
+- ✅ Customer detail view with tabs (overview, details, notes, interactions, activity timeline)
+- ✅ Customer form (create/edit) with all fields and tags
 - ✅ Customer search and filter components
 - ✅ Empty state component with create button
 - ✅ View and delete dialogs
+- ✅ Customer notes component (full CRUD with tags, pinning, importance flags)
+- ✅ Customer interactions component (logging and timeline view)
+- ✅ Activity timeline component (combined notes and interactions)
+- ✅ Bulk operations toolbar (status update, tag assignment, export)
+- ✅ Customer tags input component
+- ✅ Customer import/export component
+
+**✅ Recently Completed**:
+- ✅ **Customer Notes UI** - Full CRUD interface for customer notes with create, edit, delete, pin, and tag support
+- ✅ **Customer Interactions UI** - Full interface for logging and tracking customer interactions (calls, emails, meetings, etc.)
+- ✅ **Customer Activity Timeline** - Combined timeline view showing both notes and interactions chronologically
+- ✅ **API Routes** - Complete REST API for customer notes and interactions with proper authentication and validation
+- ✅ **Folder Structure** - Reorganized to match blog/community pattern (`customers/customers/` subfolder structure)
+
+**✅ Recently Completed**:
+- ✅ **Customer Import/Export** - Full import/export functionality supporting CSV, JSON, and Excel formats with file size validation, overwrite options, and error handling
+- ✅ **Customer Tags & Categorization** - Metadata-based tagging system with tag input component, stored in customer metadata field for flexible categorization
+- ✅ **Bulk Operations** - Complete bulk operations system with status update, tag assignment (add/remove/set), and bulk export for selected customers
 
 **Remaining Features** (Future Enhancements):
-- [ ] Customer import/export functionality
-- [ ] Customer tags and categorization
-- [ ] Customer activity timeline
-- [ ] Customer notes and interactions tracking (UI for interactions/notes collections)
-- [ ] Bulk operations (status update, tag assignment, export)
 - [ ] Link to invoice module (customer → invoices relationship)
-- [ ] Advanced customer analytics
+- [ ] Advanced customer analytics dashboard
 
 ---
 
@@ -440,9 +506,15 @@ Comprehensive invoice management system for creating, managing, and tracking inv
 
 ### Recent Major Completions
 - ✅ **Multi-Language Support**: All 19 pages fully internationalized (English & Malay)
-- ✅ **Security Hardening**: HTML sanitization, rate limiting, CSRF protection, session management
+- ✅ **Security Hardening**: HTML sanitization, rate limiting, CSRF protection, session management, security headers
+- ✅ **Security Enhancements**: Structured logging, request size limits, standardized error handling, error sanitization
+- ✅ **CSRF Token System**: Cookie-based session ID generation, multiple header support, proper token validation
+- ✅ **Security Audit**: Comprehensive security analysis completed (see `docs/SECURITY_AUDIT.md`)
 - ✅ **AI Integration**: OpenRouter API with excerpt, title generation, SEO suggestions, content improvement
+- ✅ **AI Title Generation**: Fully functional on both create and edit pages with enhanced cleanup
+- ✅ **AI Excerpt Generation**: Enhanced cleanup to remove formatting artifacts (Option:, Choice:, etc.)
 - ✅ **Performance Optimization**: TipTap optimization, smart pagination, virtual scrolling
+- ✅ **Pagination Fixes**: Fixed query syntax errors by implementing proper Appwrite Query builder usage
 - ✅ **Component Architecture**: Modular components with separation of concerns across all pages
 - ✅ **Audit Log Export**: PDF, CSV, and JSON export with formatted reports and advanced search capabilities
 - ✅ **Global Slug Utility**: Centralized slug generation replacing duplicate implementations across blog and community modules
@@ -451,6 +523,10 @@ Comprehensive invoice management system for creating, managing, and tracking inv
 - ✅ **Email & Password Management**: Email verification resend, password reset flow, and proper error handling
 - ✅ **Personal Activity Timeline**: User-specific activity timeline on profile page with proper timeline UI using shadcn components
 - ✅ **Customer Management Module**: Complete self-service CRM module with listing, create, view, edit, delete, search, filters, empty states, and full shadcn UI integration
+- ✅ **Customer Notes & Interactions**: Full UI for customer notes and interactions with CRUD operations, activity timeline, and proper folder structure matching blog/community patterns
+- ✅ **Customer Import/Export**: Complete import/export functionality with CSV, JSON, and Excel support, file validation, and error handling
+- ✅ **Customer Tags**: Metadata-based tagging system for customer categorization with tag input component
+- ✅ **Customer Bulk Operations**: Complete bulk operations system with checkbox selection, status update, tag management (add/remove/set), and bulk export for selected customers
 
 ### Metrics to Track
 

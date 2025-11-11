@@ -43,6 +43,8 @@ import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
 import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
+import { CustomerTagsInput } from "@/components/app/auth/customers/customer-tags-input";
+import { getCustomerTags, setCustomerTags } from "@/lib/customer-utils";
 
 export default function EditCustomerPage() {
   const { user, loading: authLoading } = useAuth();
@@ -85,6 +87,9 @@ export default function EditCustomerPage() {
     notes: '',
     metadata: '',
   });
+
+  // Tags state (derived from metadata)
+  const [tags, setTags] = useState<string[]>([]);
 
   // Load customer data
   useEffect(() => {
@@ -175,6 +180,10 @@ export default function EditCustomerPage() {
 
       setFormData(initialData);
       setInitialFormData(initialData);
+      
+      // Initialize tags from metadata
+      const customerTags = getCustomerTags(loadedCustomer.metadata);
+      setTags(customerTags);
     } catch (error: any) {
       console.error('Failed to load customer:', error);
       throw error;
@@ -209,7 +218,7 @@ export default function EditCustomerPage() {
 
     const handlePopState = () => {
       if (hasUnsavedChanges()) {
-        setPendingNavigation('/auth/customers');
+        setPendingNavigation('/auth/customers/customers');
         setShowUnsavedDialog(true);
         window.history.pushState(null, '', window.location.href);
       }
@@ -267,12 +276,16 @@ export default function EditCustomerPage() {
         }
       }
 
+      // Include tags in metadata
+      const metadataWithTags = setCustomerTags(formData.metadata, tags);
+
       // Update customer record
       const response = await fetch(`/api/customers/${customerId}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({
           ...formData,
+          metadata: metadataWithTags,
           updatedBy: user.$id,
         }),
       });
@@ -337,7 +350,7 @@ export default function EditCustomerPage() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/auth/customers">
+              <Link href="/auth/customers/customers">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 <span suppressHydrationWarning>{t('customers_page.edit_page.back_to_customers')}</span>
               </Link>
@@ -358,7 +371,7 @@ export default function EditCustomerPage() {
               variant="ghost" 
               size="sm" 
               className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
-              onClick={() => handleNavigation('/auth/customers')}
+              onClick={() => handleNavigation('/auth/customers/customers')}
             >
               <ArrowLeft className="h-3 w-3 mr-1 shrink-0" />
               <span className="truncate" suppressHydrationWarning>
@@ -661,6 +674,23 @@ export default function EditCustomerPage() {
                 </Select>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle suppressHydrationWarning>{t('customers_page.create_page.tags.title')}</CardTitle>
+            <CardDescription suppressHydrationWarning>
+              {t('customers_page.create_page.tags.description')}
+            </CardDescription>
+          </CardHeader>
+          <Separator />
+          <CardContent>
+            <CustomerTagsInput
+              tags={tags}
+              onTagsChange={setTags}
+            />
           </CardContent>
         </Card>
 

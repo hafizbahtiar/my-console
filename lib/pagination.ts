@@ -4,6 +4,8 @@
  * Helper functions for implementing pagination with Appwrite TablesDB
  */
 
+import { Query } from 'appwrite'
+
 export interface PaginationParams {
   limit?: number
   offset?: number
@@ -116,21 +118,49 @@ export async function optimizedPagination<T = any>(
   try {
     const queries: string[] = []
     
-    // Add filters
+    // Add filters using Query builder
     filters.forEach(filter => {
-      queries.push(`${filter.operator}("${filter.field}", ${JSON.stringify(filter.value)})`)
+      switch (filter.operator) {
+        case 'equal':
+          queries.push(Query.equal(filter.field, filter.value))
+          break
+        case 'notEqual':
+          queries.push(Query.notEqual(filter.field, filter.value))
+          break
+        case 'greaterThan':
+          queries.push(Query.greaterThan(filter.field, filter.value))
+          break
+        case 'lessThan':
+          queries.push(Query.lessThan(filter.field, filter.value))
+          break
+        case 'greaterThanEqual':
+          queries.push(Query.greaterThanEqual(filter.field, filter.value))
+          break
+        case 'lessThanEqual':
+          queries.push(Query.lessThanEqual(filter.field, filter.value))
+          break
+        case 'contains':
+          queries.push(Query.contains(filter.field, filter.value))
+          break
+        case 'search':
+          queries.push(Query.search(filter.field, filter.value))
+          break
+        default:
+          // Skip unknown operators
+          break
+      }
     })
     
     // Add ordering
     if (orderDirection === 'desc') {
-      queries.push(`orderDesc("${orderBy}")`)
+      queries.push(Query.orderDesc(orderBy))
     } else {
-      queries.push(`orderAsc("${orderBy}")`)
+      queries.push(Query.orderAsc(orderBy))
     }
     
     // Add pagination
-    queries.push(`limit(${limit})`)
-    queries.push(`offset(${offset})`)
+    queries.push(Query.limit(limit))
+    queries.push(Query.offset(offset))
 
     const response = await listRows({
       databaseId,
@@ -141,12 +171,41 @@ export async function optimizedPagination<T = any>(
     // Get total count (try to get it efficiently)
     let total = 0
     try {
+      const countQueries: string[] = []
+      filters.forEach(filter => {
+        switch (filter.operator) {
+          case 'equal':
+            countQueries.push(Query.equal(filter.field, filter.value))
+            break
+          case 'notEqual':
+            countQueries.push(Query.notEqual(filter.field, filter.value))
+            break
+          case 'greaterThan':
+            countQueries.push(Query.greaterThan(filter.field, filter.value))
+            break
+          case 'lessThan':
+            countQueries.push(Query.lessThan(filter.field, filter.value))
+            break
+          case 'greaterThanEqual':
+            countQueries.push(Query.greaterThanEqual(filter.field, filter.value))
+            break
+          case 'lessThanEqual':
+            countQueries.push(Query.lessThanEqual(filter.field, filter.value))
+            break
+          case 'contains':
+            countQueries.push(Query.contains(filter.field, filter.value))
+            break
+          case 'search':
+            countQueries.push(Query.search(filter.field, filter.value))
+            break
+          default:
+            break
+        }
+      })
       const countResponse = await listRows({
         databaseId,
         tableId,
-        queries: filters.map(filter => 
-          `${filter.operator}("${filter.field}", ${JSON.stringify(filter.value)})`
-        )
+        queries: countQueries
       })
       total = countResponse.rows.length
     } catch {

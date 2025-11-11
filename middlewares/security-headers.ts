@@ -17,20 +17,37 @@ export const securityHeaders = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 
   // Content Security Policy (configured for Appwrite, OpenRouter, and TipTap)
+  // Enhanced CSP with stricter policies while maintaining compatibility
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for TipTap
+    // Scripts: Allow self, inline (for Next.js), and eval (for TipTap)
+    // Note: In production, consider using nonces for inline scripts
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    // Styles: Allow self and inline (for Tailwind and component styles)
     "style-src 'self' 'unsafe-inline'",
+    // Images: Allow self, data URIs, HTTPS, and blob URLs
     "img-src 'self' data: https: blob:",
+    // Fonts: Allow self, data URIs, and HTTPS
     "font-src 'self' data: https:",
+    // Connections: Allow self, Appwrite endpoint, and OpenRouter API
     `connect-src 'self' ${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com'} https://openrouter.ai https://api.openrouter.ai`,
+    // Media: Allow self and blob URLs
     "media-src 'self' blob:",
+    // Disallow object/embed tags
     "object-src 'none'",
+    // Disallow frames (prevents clickjacking)
     "frame-src 'none'",
     "frame-ancestors 'none'",
+    // Base URI: Only allow same origin
     "base-uri 'self'",
+    // Form actions: Only allow same origin
     "form-action 'self'",
-    "upgrade-insecure-requests"
+    // Upgrade insecure requests to HTTPS
+    "upgrade-insecure-requests",
+    // Report violations (optional, requires reporting endpoint)
+    // "report-uri /api/csp-report",
+    // Block all mixed content
+    "block-all-mixed-content",
   ].join('; '),
 
   // Permissions policy (restrict features)
@@ -52,8 +69,8 @@ export const securityHeaders = {
   // Strict Transport Security (enable in production with HTTPS)
   ...(process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://')
     ? {
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-      }
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+    }
     : {}),
 
   // Cross-Origin policies
@@ -68,6 +85,7 @@ export const securityHeaders = {
 }
 
 // Development headers (less restrictive for local development)
+// Allows WebSocket connections and localhost for hot reloading
 export const developmentSecurityHeaders = {
   ...securityHeaders,
   'Content-Security-Policy': [
@@ -76,13 +94,15 @@ export const developmentSecurityHeaders = {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data: https:",
-    `connect-src 'self' ws: wss: https: ${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com'} https://openrouter.ai https://api.openrouter.ai http://localhost:*`,
+    // Development: Allow WebSocket and localhost connections
+    `connect-src 'self' ws: wss: https: http://localhost:* ${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || 'https://appwrite.hafizbahtiar.com'} https://openrouter.ai https://api.openrouter.ai`,
     "media-src 'self' blob:",
     "object-src 'none'",
     "frame-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self'",
+    // Development: Don't block mixed content (for local development)
   ].join('; '),
   // Disable HSTS in development
   'Strict-Transport-Security': undefined,

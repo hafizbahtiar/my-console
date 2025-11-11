@@ -3,6 +3,8 @@ import { createProtectedPOST } from '@/lib/api-protection';
 import { tablesDB, DATABASE_ID } from '@/lib/appwrite';
 import * as XLSX from 'xlsx';
 import { auditLogger } from '@/lib/audit-log';
+import { logger } from '@/lib/logger';
+import { validateImportFileSize, FileSizeError, formatFileSize } from '@/lib/file-validation';
 
 interface ImportOptions {
   collectionId: string;
@@ -20,6 +22,35 @@ export const POST = createProtectedPOST(
         { error: 'Data and collection ID are required' },
         { status: 400 }
       );
+    }
+
+    // Validate file size
+    try {
+      const dataSize = typeof data === 'string'
+        ? new Blob([data]).size
+        : data.byteLength;
+
+      validateImportFileSize(dataSize);
+    } catch (error) {
+      if (error instanceof FileSizeError) {
+        logger.warn('Import file size validation failed', 'api/import', error, {
+          actualSize: error.actualSize,
+          maxSize: error.maxSize,
+          fileType: error.fileType,
+        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            details: {
+              actualSize: formatFileSize(error.actualSize),
+              maxSize: formatFileSize(error.maxSize),
+            },
+          },
+          { status: 413 }
+        );
+      }
+      throw error;
     }
 
 
@@ -52,14 +83,14 @@ export const POST = createProtectedPOST(
             tableId: options.collectionId,
           });
           for (const row of existing.rows) {
-          await tablesDB.deleteRow({
-            databaseId: DATABASE_ID,
-            tableId: options.collectionId,
-            rowId: row.$id,
-          });
+            await tablesDB.deleteRow({
+              databaseId: DATABASE_ID,
+              tableId: options.collectionId,
+              rowId: row.$id,
+            });
           }
         } catch (error) {
-          console.warn(`Could not clear existing data:`, error);
+          logger.warn('Could not clear existing data', 'api/import', error);
         }
       }
 
@@ -80,6 +111,7 @@ export const POST = createProtectedPOST(
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           errors.push(`Row ${imported + 1}: ${errorMsg}`);
+          logger.warn(`Failed to import row ${imported + 1}`, 'api/import', error, { rowIndex: imported + 1 });
           if (!options.skipErrors) {
             throw error;
           }
@@ -114,7 +146,7 @@ export const POST = createProtectedPOST(
         },
       });
     } catch (error) {
-      console.error('Import failed:', error);
+      logger.error('Import failed', 'api/import', error);
       return NextResponse.json(
         {
           success: false,

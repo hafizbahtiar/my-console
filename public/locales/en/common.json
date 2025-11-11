@@ -811,7 +811,9 @@
       "posts": "Posts",
       "order": "Order",
       "no_categories": "No categories found",
-      "no_categories_description": "Create your first category to get started"
+      "no_categories_empty": "Create your first category to get started",
+      "empty_title": "No categories yet",
+      "empty_description": "Get started by creating your first blog category. Categories help organize your blog posts into meaningful groups."
     }
   },
   "blog_tags_page": {
@@ -840,7 +842,9 @@
       "description": "All blog tags - Showing {{current}} of {{total}} entries (Total: {{total}})",
       "posts": "Posts",
       "no_tags": "No tags found",
-      "no_tags_description": "Create your first tag to get started"
+      "no_tags_empty": "Create your first tag to get started",
+      "empty_title": "No tags yet",
+      "empty_description": "Get started by creating your first blog tag. Tags help organize and categorize your blog posts for better discoverability."
     }
   },
   "blog_posts_page": {
@@ -875,6 +879,10 @@
       "no_posts": "No posts found",
       "no_posts_filtered": "Try adjusting your filters to see more results",
       "no_posts_empty": "Create your first blog post to get started",
+      "empty_title": "No posts yet",
+      "empty_description": "Get started by creating your first blog post. Share your thoughts, ideas, and expertise with your audience.",
+      "empty_title_filtered": "No posts found",
+      "empty_description_filtered": "No posts match your current search or filter criteria. Try adjusting your filters to see more results.",
       "uncategorized": "Uncategorized"
     },
     "view_dialog": {
@@ -1114,6 +1122,9 @@
       "posts": "Posts",
       "replies": "Replies",
       "no_topics": "No topics found",
+      "no_topics_empty": "Create your first topic to get started",
+      "empty_title": "No topics yet",
+      "empty_description": "Get started by creating your first community topic. Topics help organize discussions and make it easier for users to find relevant content.",
       "no_parent": "None"
     },
     "form": {
@@ -1170,6 +1181,10 @@
       "no_posts": "No posts found",
       "no_posts_filtered": "Try adjusting your search or filter criteria",
       "no_posts_empty": "Create your first community post to get started",
+      "empty_title": "No posts yet",
+      "empty_description": "Get started by creating your first community post. Engage with your community and start meaningful discussions.",
+      "empty_title_filtered": "No posts found",
+      "empty_description_filtered": "No posts match your current search or filter criteria. Try adjusting your filters to see more results.",
       "anonymous": "Anonymous",
       "view_tooltip": "View",
       "uncategorized": "Uncategorized"

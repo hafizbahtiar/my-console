@@ -3,6 +3,8 @@ import { createProtectedPOST, createProtectedGET } from '@/lib/api-protection';
 import { tablesDB, DATABASE_ID, CUSTOMERS_COLLECTION_ID, account } from '@/lib/appwrite';
 import { Query, ID } from 'appwrite';
 import { auditLogger } from '@/lib/audit-log';
+import { logger } from '@/lib/logger';
+import { APIError, createSuccessResponse } from '@/lib/api-error-handler';
 import { z } from 'zod';
 
 // Schema for customer creation
@@ -39,26 +41,20 @@ export const POST = createProtectedPOST(
     try {
       user = await account.get();
     } catch (error) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw APIError.unauthorized('Unauthorized');
     }
 
     // Validate request body
       const validationResult = customerSchema.safeParse(body);
       if (!validationResult.success) {
-        return NextResponse.json(
-          { error: 'Validation failed', details: validationResult.error.issues },
-          { status: 400 }
-        );
+        throw APIError.validationError('Validation failed', validationResult.error.issues);
       }
 
     const data = validationResult.data;
 
     // Ensure userId matches the authenticated user (self-service model)
     if (data.userId !== user.$id) {
-      return NextResponse.json(
-        { error: 'You can only create customer records for yourself' },
-        { status: 403 }
-      );
+      throw APIError.forbidden('You can only create customer records for yourself');
     }
 
     // Check if user already has a customer record
@@ -72,10 +68,7 @@ export const POST = createProtectedPOST(
     });
 
     if (existingCheck.rows.length > 0) {
-      return NextResponse.json(
-        { error: 'You already have a customer profile. Please update your existing profile instead.' },
-        { status: 409 }
-      );
+      throw APIError.conflict('You already have a customer profile. Please update your existing profile instead.');
     }
 
     // Check for duplicate email if provided
@@ -90,10 +83,7 @@ export const POST = createProtectedPOST(
       });
 
       if (emailCheck.rows.length > 0) {
-        return NextResponse.json(
-          { error: 'A customer with this email already exists' },
-          { status: 409 }
-        );
+        throw APIError.conflict('A customer with this email already exists');
       }
     }
 
@@ -139,7 +129,7 @@ export const POST = createProtectedPOST(
       customerName: (customer as any).name,
     }).catch(() => {});
 
-    return NextResponse.json(customer, { status: 201 });
+    return createSuccessResponse(customer, 'Customer created successfully', 201);
   },
   {
     rateLimit: 'api',
@@ -154,7 +144,7 @@ export const GET = createProtectedGET(
     try {
       user = await account.get();
     } catch (error) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw APIError.unauthorized('Unauthorized');
     }
 
     // Extract search params from URL
@@ -202,7 +192,7 @@ export const GET = createProtectedGET(
       queries,
     });
 
-    return NextResponse.json({
+    return createSuccessResponse({
       rows: response.rows,
       total: response.total,
       page,

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { Edit, Building2, Mail, Phone, MapPin, Globe, Calendar, DollarSign, FileText } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
-import { Customer } from "@/app/auth/customers/types";
+import { Customer } from "@/app/auth/customers/customers/types";
 import { format } from "date-fns";
 
 interface ViewCustomerDialogProps {

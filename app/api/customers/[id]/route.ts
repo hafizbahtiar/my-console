@@ -3,6 +3,8 @@ import { createProtectedGET, createProtectedPUT, createProtectedDELETE } from '@
 import { tablesDB, DATABASE_ID, CUSTOMERS_COLLECTION_ID, account } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { auditLogger } from '@/lib/audit-log';
+import { logger } from '@/lib/logger';
+import { APIError, createSuccessResponse, createErrorResponse, APIErrorCode } from '@/lib/api-error-handler';
 import { z } from 'zod';
 
 // Schema for customer update
@@ -44,11 +46,11 @@ export async function GET(
       try {
         user = await account.get();
       } catch (error) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        throw APIError.unauthorized('Unauthorized');
       }
 
       if (!resolvedParams || !resolvedParams.id) {
-        return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+        throw APIError.badRequest('Customer ID is required');
       }
 
       const customerId = resolvedParams.id;
@@ -62,22 +64,19 @@ export async function GET(
 
         // Verify user owns this customer record (self-service model)
         if ((customer as any).userId !== user.$id) {
-          return NextResponse.json(
-            { error: 'You do not have permission to view this customer' },
-            { status: 403 }
-          );
+          throw APIError.forbidden('You do not have permission to view this customer');
         }
 
-        return NextResponse.json(customer);
+        return createSuccessResponse(customer);
       } catch (error: any) {
-        if (error.code === 404) {
-          return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        if (error instanceof APIError) {
+          throw error;
         }
-        console.error('Failed to get customer:', error);
-        return NextResponse.json(
-          { error: 'Failed to retrieve customer' },
-          { status: 500 }
-        );
+        if (error.code === 404) {
+          throw APIError.notFound('Customer not found');
+        }
+        logger.error('Failed to get customer', 'api/customers/[id]', error, { customerId });
+        throw APIError.internalServerError('Failed to retrieve customer', error);
       }
     },
     {
@@ -100,11 +99,11 @@ export async function PUT(
       try {
         user = await account.get();
       } catch (error) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        throw APIError.unauthorized('Unauthorized');
       }
 
       if (!routeParams || !routeParams.id) {
-        return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+        throw APIError.badRequest('Customer ID is required');
       }
 
       const customerId = routeParams.id;
@@ -112,10 +111,7 @@ export async function PUT(
       // Validate request body
       const validationResult = customerUpdateSchema.safeParse(body);
       if (!validationResult.success) {
-        return NextResponse.json(
-          { error: 'Validation failed', details: validationResult.error.issues },
-          { status: 400 }
-        );
+        throw APIError.validationError('Validation failed', validationResult.error.issues);
       }
 
       const data = validationResult.data;
@@ -130,10 +126,7 @@ export async function PUT(
 
         // Verify user owns this customer record (self-service model)
         if ((existingCustomer as any).userId !== user.$id) {
-          return NextResponse.json(
-            { error: 'You do not have permission to update this customer' },
-            { status: 403 }
-          );
+          throw APIError.forbidden('You do not have permission to update this customer');
         }
 
         // Check for duplicate email if email is being changed
@@ -148,10 +141,7 @@ export async function PUT(
           });
 
           if (emailCheck.rows.length > 0) {
-            return NextResponse.json(
-              { error: 'A customer with this email already exists' },
-              { status: 409 }
-            );
+            throw APIError.conflict('A customer with this email already exists');
           }
         }
 
@@ -194,16 +184,16 @@ export async function PUT(
           customerName: (updatedCustomer as any).name,
         }).catch(() => {});
 
-        return NextResponse.json(updatedCustomer);
+        return createSuccessResponse(updatedCustomer, 'Customer updated successfully');
       } catch (error: any) {
-        if (error.code === 404) {
-          return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        if (error instanceof APIError) {
+          throw error;
         }
-        console.error('Failed to update customer:', error);
-        return NextResponse.json(
-          { error: 'Failed to update customer' },
-          { status: 500 }
-        );
+        if (error.code === 404) {
+          throw APIError.notFound('Customer not found');
+        }
+        logger.error('Failed to update customer', 'api/customers/[id]', error, { customerId });
+        throw APIError.internalServerError('Failed to update customer', error);
       }
     },
     {
@@ -224,11 +214,11 @@ export async function DELETE(
       try {
         user = await account.get();
       } catch (error) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        throw APIError.unauthorized('Unauthorized');
       }
 
       if (!routeParams || !routeParams.id) {
-        return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+        throw APIError.badRequest('Customer ID is required');
       }
 
       const customerId = routeParams.id;
@@ -243,10 +233,7 @@ export async function DELETE(
 
         // Verify user owns this customer record (self-service model)
         if ((existingCustomer as any).userId !== user.$id) {
-          return NextResponse.json(
-            { error: 'You do not have permission to delete this customer' },
-            { status: 403 }
-          );
+          throw APIError.forbidden('You do not have permission to delete this customer');
         }
 
         // Delete customer
@@ -262,16 +249,16 @@ export async function DELETE(
           customerName: (existingCustomer as any).name,
         }).catch(() => {});
 
-        return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
+        return createSuccessResponse(null, 'Customer deleted successfully');
       } catch (error: any) {
-        if (error.code === 404) {
-          return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+        if (error instanceof APIError) {
+          throw error;
         }
-        console.error('Failed to delete customer:', error);
-        return NextResponse.json(
-          { error: 'Failed to delete customer' },
-          { status: 500 }
-        );
+        if (error.code === 404) {
+          throw APIError.notFound('Customer not found');
+        }
+        logger.error('Failed to delete customer', 'api/customers/[id]', error, { customerId });
+        throw APIError.internalServerError('Failed to delete customer', error);
       }
     },
     {

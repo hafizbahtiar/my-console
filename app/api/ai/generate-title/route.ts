@@ -45,16 +45,22 @@ export const POST = createProtectedPOST(
             : textContent;
 
         const prompt = `Based on the following blog post content, generate a compelling, SEO-friendly title that:
-- Is between 40-60 characters long
-- Captures the main topic and value proposition
-- Is engaging and click-worthy
-- Includes relevant keywords naturally
-- Avoids clickbait or misleading language
+            - Is between 40-60 characters long
+            - Captures the main topic and value proposition
+            - Is engaging and click-worthy
+            - Includes relevant keywords naturally
+            - Avoids clickbait or misleading language
 
-Content:
-${limitedContent}
+            Requirements:
+            - No labels, prefixes, or formatting (no "Title:", "Option:", "Choice:", etc.)
+            - No markdown, quotes, or special characters
+            - Just the title text directly
+            - Between 40-60 characters
 
-Title:`;
+            Content:
+            ${limitedContent}
+
+            Title:`;
 
         // Try models in order
         let lastError: ModelError | null = null;
@@ -132,7 +138,7 @@ Title:`;
             const errorMessage = lastError?.status === 429
                 ? getAllModelsRateLimitedMessage()
                 : lastError?.error || 'Failed to generate title';
-            
+
             return NextResponse.json(
                 { error: errorMessage, retryable: true },
                 { status: lastError?.status || 503 }
@@ -157,10 +163,20 @@ Title:`;
             }
         }
 
-        // Clean up title
+        // Clean up title - remove formatting artifacts, prefixes, etc.
         generatedTitle = generatedTitle
-            .replace(/^["']|["']$/g, '') // Remove quotes
-            .replace(/^Title[:\s]+/i, '') // Remove "Title:" prefix
+            // Remove common reasoning/formatting prefixes
+            .replace(/^(?:title[:\s]+|option\s*\d*:?\s*|choice\s*\d*:?\s*|alternative\s*\d*:?\s*|suggestion\s*\d*:?\s*)\s*/i, '')
+            // Remove newlines and normalize whitespace
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            // Remove surrounding quotes
+            .replace(/^["']|["']$/g, '')
+            // Remove markdown formatting
+            .replace(/\*\*|\*|__|_|`/g, '')
+            // Remove any remaining leading/trailing punctuation artifacts
+            .replace(/^[:\-–—]\s*/, '')
+            .replace(/\s*[:\-–—]$/, '')
             .trim();
 
         // Validate length

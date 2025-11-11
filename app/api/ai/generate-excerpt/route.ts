@@ -12,6 +12,7 @@ import {
     isNonRetryableError,
     getAllModelsRateLimitedMessage,
 } from '@/lib/openrouter';
+import { logger } from '@/lib/logger';
 
 export const POST = createProtectedPOST(
     async ({ body }) => {
@@ -49,12 +50,19 @@ export const POST = createProtectedPOST(
 
         // Create concise prompt to reduce reasoning overhead for reasoning models
         // Direct instruction limits reasoning tokens and gets straight to output
-        const prompt = `Write a 2-3 sentence blog excerpt (max 500 chars, no markdown/quotes) for:
+        const prompt = `Write a 2-3 sentence blog excerpt (max 500 chars) for:
 
-Title: ${title}
-Content: ${limitedContent}
+            Title: ${title}
+            Content: ${limitedContent}
 
-Excerpt:`;
+            Requirements:
+            - No labels, prefixes, or formatting (no "Option:", "Choice:", etc.)
+            - No markdown, quotes, or special characters
+            - Just the excerpt text directly
+            - 2-3 complete sentences
+            - Maximum 500 characters
+
+            Excerpt:`;
 
         // Use shared free models list
         const freeModels = FREE_MODELS;
@@ -133,9 +141,17 @@ Excerpt:`;
 
             // Clean up the excerpt
             foundExcerpt = foundExcerpt
-                .replace(/^(?:first sentence|second sentence|third|excerpt:)\s*/i, '')
+                // Remove common reasoning/formatting prefixes
+                .replace(/^(?:first sentence|second sentence|third|excerpt:|option\s*\d*:?\s*|choice\s*\d*:?\s*|alternative\s*\d*:?\s*)\s*/i, '')
+                // Remove newlines and normalize whitespace
+                .replace(/\n+/g, ' ')
+                .replace(/\s+/g, ' ')
+                // Remove markdown formatting
                 .replace(/^\*+/g, '')
                 .replace(/\*+$/g, '')
+                // Remove any remaining leading/trailing punctuation artifacts
+                .replace(/^[:\-–—]\s*/, '')
+                .replace(/\s*[:\-–—]$/, '')
                 .trim();
 
             return foundExcerpt;
@@ -182,7 +198,7 @@ Excerpt:`;
                 if (response.status === 429 && retryCount < 3) {
                     // Increased retry wait times: 3s, 6s, 12s (was 2s, 4s)
                     const waitTime = Math.pow(2, retryCount) * 3000;
-                    console.log(`Rate limited on ${model}. Retrying in ${waitTime}ms... (attempt ${retryCount + 1}/3)`);
+                    logger.debug(`Rate limited on ${model}. Retrying in ${waitTime}ms... (attempt ${retryCount + 1}/3)`, 'api/ai/generate-excerpt', { model, waitTime, retryCount });
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                     return callOpenRouter(model, retryCount + 1);
                 }
@@ -215,14 +231,14 @@ Excerpt:`;
 
         for (const model of freeModels) {
             try {
-                console.log(`Attempting to generate excerpt with model: ${model}`);
+                logger.debug(`Attempting to generate excerpt with model: ${model}`, 'api/ai/generate-excerpt', { model });
                 const { response, errorData } = await callOpenRouter(model);
 
                 // If successful (200-299), use this response
                 if (response.ok) {
                     successfulResponse = response;
                     successfulModel = model;
-                    console.log(`Successfully generated excerpt with model: ${model}`);
+                    logger.debug(`Successfully generated excerpt with model: ${model}`, 'api/ai/generate-excerpt', { model });
                     break;
                 }
 
@@ -236,7 +252,7 @@ Excerpt:`;
                         model,
                         status: 429
                     };
-                    console.warn(`Model ${model} is rate-limited. Trying next model...`);
+                    logger.warn(`Model ${model} is rate-limited. Trying next model...`, 'api/ai/generate-excerpt', undefined, { model });
                     continue;
                 }
 
@@ -254,11 +270,11 @@ Excerpt:`;
                     model,
                     status: response.status
                 };
-                console.warn(`Model ${model} returned error ${response.status}. Trying next model...`);
+                logger.warn(`Model ${model} returned error ${response.status}. Trying next model...`, 'api/ai/generate-excerpt', undefined, { model, status: response.status });
                 continue;
             } catch (error: unknown) {
                 const errorMessage = error instanceof Error ? error.message : 'Network error';
-                console.error(`Error with model ${model}:`, error);
+                logger.error(`Error with model ${model}`, 'api/ai/generate-excerpt', error, { model });
                 lastError = { error: errorMessage, model };
                 continue;
             }
@@ -287,7 +303,7 @@ Excerpt:`;
         const data = await response.json() as OpenRouterResponse;
 
         // Log the response structure for debugging
-        console.log(`OpenRouter response from model ${successfulModel}:`, JSON.stringify(data, null, 2));
+        logger.debug(`OpenRouter response from model ${successfulModel}`, 'api/ai/generate-excerpt', { model: successfulModel });
 
         // According to OpenRouter API docs: response structure is
         // { id, choices: [{ finish_reason, message: { role, content } }], usage, model }
@@ -300,7 +316,7 @@ Excerpt:`;
 
             // Handle error in choice (per docs, choices can have an error field)
             if (choice.error) {
-                console.error('OpenRouter choice error:', choice.error);
+                logger.error('OpenRouter choice error', 'api/ai/generate-excerpt', undefined, { choiceError: choice.error });
                 return NextResponse.json(
                     {
                         error: choice.error.message || 'Error in AI response',
@@ -360,7 +376,7 @@ Excerpt:`;
 
         // Check finish_reason for issues
         if (finishReason === 'length') {
-            console.warn('Generation stopped due to max_tokens limit');
+            logger.warn('Generation stopped due to max_tokens limit', 'api/ai/generate-excerpt');
             // Still try to use the content/reasoning even if truncated
             // For reasoning models, we already extracted from reasoning field above
         } else if (finishReason === 'content_filter') {
@@ -382,7 +398,7 @@ Excerpt:`;
         }
 
         if (!generatedExcerpt || generatedExcerpt.trim().length === 0) {
-            console.error('No excerpt generated. Response structure:', {
+            logger.error('No excerpt generated. Response structure:', 'api/ai/generate-excerpt', undefined, {
                 hasChoices: !!data.choices,
                 choicesLength: data.choices?.length,
                 finishReason,
@@ -400,15 +416,25 @@ Excerpt:`;
         }
 
         // Clean up the excerpt
-        // Remove any markdown formatting, quotes, etc.
+        // Remove any markdown formatting, quotes, reasoning artifacts, etc.
         let cleanedExcerpt = generatedExcerpt
-            .replace(/^["']|["']$/g, '') // Remove surrounding quotes
-            .replace(/\*\*|\*|__|_|`/g, '') // Remove markdown formatting
+            // Remove common reasoning/formatting prefixes
+            .replace(/^(?:option\s*\d*:?\s*|choice\s*\d*:?\s*|alternative\s*\d*:?\s*|solution\s*\d*:?\s*|answer\s*\d*:?\s*)/i, '')
+            // Remove newlines and normalize whitespace
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            // Remove surrounding quotes
+            .replace(/^["']|["']$/g, '')
+            // Remove markdown formatting
+            .replace(/\*\*|\*|__|_|`/g, '')
+            // Remove any remaining leading/trailing punctuation artifacts
+            .replace(/^[:\-–—]\s*/, '')
+            .replace(/\s*[:\-–—]$/, '')
             .trim();
 
         // Validate minimum length (at least 50 characters)
         if (cleanedExcerpt.length < 50) {
-            console.warn(`Generated excerpt is too short (${cleanedExcerpt.length} chars). Minimum: 50 chars.`);
+            logger.warn(`Generated excerpt is too short (${cleanedExcerpt.length} chars). Minimum: 50 chars.`, 'api/ai/generate-excerpt');
             return NextResponse.json(
                 {
                     error: 'Generated excerpt is too short. Please try again or provide more content.',

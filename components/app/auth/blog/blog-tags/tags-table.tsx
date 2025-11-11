@@ -4,8 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/custom/status-badge";
-import { Tag, Edit, Trash2 } from "lucide-react";
+import { 
+  Empty, 
+  EmptyHeader, 
+  EmptyTitle, 
+  EmptyDescription, 
+  EmptyMedia, 
+  EmptyContent 
+} from "@/components/ui/empty";
+import { Tag, Edit, Trash2, Plus } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Pagination,
   PaginationContent,
@@ -36,6 +45,8 @@ interface TagsTableProps {
   onPageChange: (page: number) => void;
   onEdit: (tag: BlogTag) => void;
   onDelete: (tag: BlogTag) => void;
+  onCreate?: () => void;
+  isLoading?: boolean;
 }
 
 export function TagsTable({
@@ -46,20 +57,78 @@ export function TagsTable({
   onPageChange,
   onEdit,
   onDelete,
+  onCreate,
+  isLoading = false,
 }: TagsTableProps) {
   const { t } = useTranslation();
   const totalPages = getTotalPages(allTags.length, pageSize);
+  const isEmpty = tags.length === 0 && !isLoading;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle suppressHydrationWarning>{t('blog_tags_page.table.title', { count: 0 })}</CardTitle>
+          <CardDescription suppressHydrationWarning>
+            {t('blog_tags_page.table.no_tags_empty')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Tag className="h-6 w-6" />
+              </EmptyMedia>
+              <EmptyTitle suppressHydrationWarning>
+                {t('blog_tags_page.table.empty_title')}
+              </EmptyTitle>
+              <EmptyDescription suppressHydrationWarning>
+                {t('blog_tags_page.table.empty_description')}
+              </EmptyDescription>
+            </EmptyHeader>
+            {onCreate && (
+              <EmptyContent>
+                <Button
+                  onClick={onCreate}
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>
+                    {t('add_item', {item: t('tag')})}
+                  </span>
+                </Button>
+              </EmptyContent>
+            )}
+          </Empty>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
-      <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl" suppressHydrationWarning>
-          <Tag className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-          <span className="truncate">
-            {t('blog_tags_page.table.title', { count: allTags.length.toString() })}
-          </span>
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+      <CardHeader>
+        <CardTitle suppressHydrationWarning>{t('blog_tags_page.table.title', { count: allTags.length.toString() })}</CardTitle>
+        <CardDescription suppressHydrationWarning>
           {t('blog_tags_page.table.description', {
             current: tags.length.toString(),
             total: allTags.length.toString()
@@ -89,58 +158,44 @@ export function TagsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tags.length > 0 ? (
-                tags.map((tag) => (
-                  <TableRow key={tag.$id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full shrink-0"
-                          style={{ backgroundColor: tag.color }}
-                        />
-                        <span className="font-medium text-xs sm:text-sm">{tag.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs sm:text-sm">{tag.slug}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={tag.isActive ? "active" : "inactive"} type="blog-category" />
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">{tag.postCount}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1 sm:gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(tag)}
-                          className="h-7 w-7 sm:h-8 sm:w-8 p-0"
-                        >
-                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onDelete(tag)}
-                          className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                        >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8 sm:py-12 px-4">
-                    <Tag className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm sm:text-base font-medium" suppressHydrationWarning>
-                      {t('blog_tags_page.table.no_tags')}
-                    </p>
-                    <p className="text-xs sm:text-sm mt-1" suppressHydrationWarning>
-                      {t('blog_tags_page.table.no_tags_description')}
-                    </p>
+              {tags.map((tag) => (
+                <TableRow key={tag.$id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <span className="font-medium text-xs sm:text-sm">{tag.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs sm:text-sm">{tag.slug}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={tag.isActive ? "active" : "inactive"} type="blog-category" />
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">{tag.postCount}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1 sm:gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEdit(tag)}
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      >
+                        <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDelete(tag)}
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      >
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </div>

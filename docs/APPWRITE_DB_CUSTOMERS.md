@@ -8,38 +8,79 @@ The `customers` collection stores customer relationship management (CRM) data in
 **Collection ID**: `customers`
 **Database**: `console-db`
 
+## Appwrite Relationship Setup
+
+When creating this collection in Appwrite Console, you need to set up relationship attributes:
+
+### Relationship Attributes to Create
+
+1. **userId** (Relationship, Unique)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: One to One (unique)
+   - **On Delete**: Restrict (prevent deletion if customer exists)
+   - **Two-Way**: Optional
+   - **Unique**: Yes (enforced by unique index)
+   - **Purpose**: Owner of this customer record (self-service model)
+
+2. **assignedTo** (Relationship, Optional)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: Many to One
+   - **On Delete**: Set null (allow deletion, set to null)
+   - **Two-Way**: No
+   - **Purpose**: Assigned sales rep/admin for internal assignment
+
+3. **createdBy** (Relationship, Optional)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: Many to One
+   - **On Delete**: Set null (allow deletion, set to null)
+   - **Two-Way**: No
+   - **Purpose**: User who created this customer record
+
+4. **updatedBy** (Relationship, Optional)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: Many to One
+   - **On Delete**: Set null (allow deletion, set to null)
+   - **Two-Way**: No
+   - **Purpose**: User who last updated this customer record
+
+**Note**: When creating relationship attributes in Appwrite Console, ensure the related collection (`users`) exists first. The `userId` relationship should be marked as unique to enforce one customer record per user.
+
 ## Attributes
 
-| Attribute | Type | Size | Required | Default | Description | Index |
-|-----------|------|------|----------|---------|-------------|-------|
-| `userId` | String | 128 | ✅ | - | Appwrite user ID (owner of this customer record) | ✅ |
-| `name` | String | 200 | ✅ | - | Customer full name | ✅ |
-| `email` | String | 255 | ❌ | null | Primary email address | ✅ |
-| `phone` | String | 50 | ❌ | null | Primary phone number | ✅ |
-| `company` | String | 200 | ❌ | null | Company name | ✅ |
-| `jobTitle` | String | 100 | ❌ | null | Job title/position | ❌ |
-| `address` | String | 500 | ❌ | null | Street address | ❌ |
-| `city` | String | 100 | ❌ | null | City | ✅ |
-| `state` | String | 100 | ❌ | null | State/Province | ✅ |
-| `zipCode` | String | 20 | ❌ | null | ZIP/Postal code | ❌ |
-| `country` | String | 100 | ❌ | null | Country | ✅ |
-| `website` | String | 255 | ❌ | null | Company website URL | ❌ |
-| `status` | String | 20 | ✅ | 'active' | Customer status | ✅ |
-| `assignedTo` | String | 128 | ❌ | null | Assigned user ID (sales rep/admin) | ✅ |
-| `source` | String | 50 | ❌ | null | Lead source | ✅ |
-| `industry` | String | 100 | ❌ | null | Industry type | ✅ |
-| `customerType` | String | 50 | ✅ | 'individual' | Customer type | ✅ |
-| `currency` | String | 3 | ❌ | 'MYR' | Preferred currency | ❌ |
-| `language` | String | 10 | ❌ | 'en' | Preferred language | ❌ |
-| `timezone` | String | 50 | ❌ | null | Customer timezone | ❌ |
-| `notes` | String | 5000 | ❌ | null | General notes (JSON string) | ❌ |
-| `metadata` | String | 5000 | ❌ | null | Additional metadata (JSON string) | ❌ |
-| `lastContactAt` | Datetime | - | ❌ | null | Last contact timestamp | ✅ |
-| `nextFollowUpAt` | Datetime | - | ❌ | null | Next follow-up date | ✅ |
-| `totalRevenue` | Float | - | ✅ | 0.0 | Total revenue (Min: 0) | ✅ |
-| `totalInvoices` | Integer | - | ✅ | 0 | Total invoice count (Min: 0) | ✅ |
-| `createdBy` | String | 128 | ❌ | null | User who created this customer | ❌ |
-| `updatedBy` | String | 128 | ❌ | null | User who last updated | ❌ |
+| Attribute | Type | Size | Required | Default | Description | Index | Relation |
+|-----------|------|------|----------|---------|-------------|-------|----------|
+| `userId` | Relationship | - | ✅ | - | Appwrite user ID (owner of this customer record, One to One, unique) | ✅ | `users` |
+| `name` | String | 200 | ✅ | - | Customer full name | ✅ | - |
+| `email` | String | 255 | ❌ | null | Primary email address | ✅ | - |
+| `phone` | String | 50 | ❌ | null | Primary phone number | ✅ | - |
+| `company` | String | 200 | ❌ | null | Company name | ✅ | - |
+| `jobTitle` | String | 100 | ❌ | null | Job title/position | ❌ | - |
+| `address` | String | 500 | ❌ | null | Street address | ❌ | - |
+| `city` | String | 100 | ❌ | null | City | ✅ | - |
+| `state` | String | 100 | ❌ | null | State/Province | ✅ | - |
+| `zipCode` | String | 20 | ❌ | null | ZIP/Postal code | ❌ | - |
+| `country` | String | 100 | ❌ | null | Country | ✅ | - |
+| `website` | String | 255 | ❌ | null | Company website URL | ❌ | - |
+| `status` | String | 20 | ✅ | 'active' | Customer status | ✅ | - |
+| `assignedTo` | Relationship | - | ❌ | null | Assigned user ID (sales rep/admin, Many to One) | ✅ | `users` |
+| `source` | String | 50 | ❌ | null | Lead source | ✅ | - |
+| `industry` | String | 100 | ❌ | null | Industry type | ✅ | - |
+| `customerType` | String | 50 | ✅ | 'individual' | Customer type | ✅ | - |
+| `currency` | String | 3 | ❌ | 'MYR' | Preferred currency | ❌ | - |
+| `language` | String | 10 | ❌ | 'en' | Preferred language | ❌ | - |
+| `timezone` | String | 50 | ❌ | null | Customer timezone | ❌ | - |
+| `notes` | String | 5000 | ❌ | null | General notes (JSON string) | ❌ | - |
+| `metadata` | String | 5000 | ❌ | null | Additional metadata (JSON string) | ❌ | - |
+| `lastContactAt` | Datetime | - | ❌ | null | Last contact timestamp | ✅ | - |
+| `nextFollowUpAt` | Datetime | - | ❌ | null | Next follow-up date | ✅ | - |
+| `totalRevenue` | Float | - | ✅ | 0.0 | Total revenue (Min: 0) | ✅ | - |
+| `totalInvoices` | Integer | - | ✅ | 0 | Total invoice count (Min: 0) | ✅ | - |
+| `createdBy` | Relationship | - | ❌ | null | User who created this customer (Many to One) | ❌ | `users` |
+| `updatedBy` | Relationship | - | ❌ | null | User who last updated (Many to One) | ❌ | `users` |
 
 ## Enum Values
 
@@ -105,16 +146,52 @@ The `customers` collection stores customer relationship management (CRM) data in
 
 ## Relations
 
-### Outgoing Relations
-- `userId` → `users.$id` (One to One, unique - owner of this customer record)
-- `assignedTo` → `users.$id` (Many to One, assigned sales rep/admin)
-- `createdBy` → `users.$id` (Many to One, user who created customer record)
-- `updatedBy` → `users.$id` (Many to One, user who last updated)
+### Outgoing Relations (Appwrite Relationships)
+
+**Relationship Attributes:**
+- `userId` → `users` collection (One to One, unique)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: One customer to one user (unique)
+  - **On Delete**: Restrict (prevent deletion if customer exists)
+  - **Purpose**: Owner of this customer record (self-service model)
+  
+- `assignedTo` → `users` collection (Many to One, optional)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: Many customers to one user
+  - **On Delete**: Set null (allow deletion, set to null)
+  - **Purpose**: Assigned sales rep/admin for internal assignment
+  
+- `createdBy` → `users` collection (Many to One, optional)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: Many customers to one user
+  - **On Delete**: Set null (allow deletion, set to null)
+  - **Purpose**: User who created this customer record
+  
+- `updatedBy` → `users` collection (Many to One, optional)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: Many customers to one user
+  - **On Delete**: Set null (allow deletion, set to null)
+  - **Purpose**: User who last updated this customer record
 
 ### Incoming Relations
 - `customer_interactions.customerId` → This customer (One to Many) *[Customer interactions/activities]*
+  - **Related Collection**: `customer_interactions`
+  - **Relationship Field**: `customerId` (Relationship type)
+  - **Cardinality**: One customer to many interactions
+  
 - `customer_notes.customerId` → This customer (One to Many) *[Customer notes]*
+  - **Related Collection**: `customer_notes`
+  - **Relationship Field**: `customerId` (Relationship type)
+  - **Cardinality**: One customer to many notes
+  
 - `invoices.customerId` → This customer (One to Many) *[Customer invoices]*
+  - **Related Collection**: `invoices`
+  - **Relationship Field**: `customerId` (Relationship type)
+  - **Cardinality**: One customer to many invoices
 
 ### Relationship Notes
 - **Self-Service Ownership**: `userId` links to the Appwrite user who owns this customer record (one-to-one relationship)
@@ -130,7 +207,12 @@ interface Customer {
   $id: string;
   $createdAt: string;
   $updatedAt: string;
-  userId: string; // Appwrite user ID (owner of this customer record - unique)
+  // Relationship fields (Appwrite returns relationship objects)
+  userId: string | User; // Relationship to users collection (One to One, unique - owner)
+  assignedTo?: string | User; // Relationship to users collection (Many to One, optional)
+  createdBy?: string | User; // Relationship to users collection (Many to One, optional)
+  updatedBy?: string | User; // Relationship to users collection (Many to One, optional)
+  // Regular fields
   name: string;
   email?: string;
   phone?: string;
@@ -143,7 +225,6 @@ interface Customer {
   country?: string;
   website?: string;
   status: 'active' | 'inactive' | 'lead' | 'prospect' | 'archived';
-  assignedTo?: string; // Admin/sales rep User ID (for internal assignment)
   source?: 'website' | 'referral' | 'social_media' | 'advertising' | 'trade_show' | 'cold_call' | 'email_campaign' | 'other';
   industry?: string;
   customerType: 'individual' | 'company' | 'non-profit' | 'government';
@@ -156,8 +237,14 @@ interface Customer {
   nextFollowUpAt?: string;
   totalRevenue: number; // Min: 0
   totalInvoices: number; // Min: 0
-  createdBy?: string; // User ID who created this record
-  updatedBy?: string; // User ID who last updated
+}
+
+// When using Appwrite relationship queries, related objects are populated
+interface CustomerWithRelations extends Customer {
+  userId: User; // Populated user object (owner)
+  assignedTo?: User; // Populated user object (optional)
+  createdBy?: User; // Populated user object (optional)
+  updatedBy?: User; // Populated user object (optional)
 }
 
 // Notes structure (stored as JSON string in notes field)
@@ -170,7 +257,7 @@ interface CustomerNotes {
 
 // Metadata structure (stored as JSON string in metadata field)
 interface CustomerMetadata {
-  tags?: string[]; // Customer tags for categorization
+  tags?: string[]; // Customer tags for categorization (used in UI for filtering and organization)
   customFields?: Record<string, any>;
   integrationData?: Record<string, any>;
   lastSyncAt?: string;
@@ -179,12 +266,14 @@ interface CustomerMetadata {
 
 ## Data Validation Rules
 
-### User ID
-- Required, max 128 characters
+### User ID (Relationship)
+- Required relationship attribute
 - Must match the authenticated Appwrite user ID
-- Must be unique (one customer record per user)
+- Must be unique (one customer record per user) - enforced by unique index
 - Immutable after creation
 - This is the primary key for self-service access
+- When creating: Use user `$id` as the relationship value
+- When querying: Can use relationship queries to populate user data
 
 ### Name
 - Required, max 200 characters
@@ -221,10 +310,12 @@ interface CustomerMetadata {
 - Default: `individual`
 - Determines required fields and business logic
 
-### Assigned To
-- Optional user ID reference
-- Links to user who manages this customer
+### Assigned To (Relationship)
+- Optional relationship attribute
+- Links to user who manages this customer (sales rep/admin)
 - Used for assignment filtering and reporting
+- When creating: Use user `$id` as the relationship value
+- When querying: Can use relationship queries to populate assigned user data
 
 ### Total Revenue
 - Required float, minimum 0
@@ -278,22 +369,23 @@ async function createCustomer(customerData: Partial<Customer>, userId: string): 
   }
   
   // Set defaults - userId must match the authenticated user
+  // Use user $id for relationship fields
   const newCustomer = {
     ...customerData,
-    userId: userId, // Must match authenticated user
+    userId: userId, // Relationship: Use user $id (must match authenticated user)
     status: customerData.status || 'active',
     customerType: customerData.customerType || 'individual',
     totalRevenue: 0.0,
     totalInvoices: 0,
-    createdBy: userId,
-    createdAt: new Date().toISOString()
+    assignedTo: customerData.assignedTo, // Relationship: Use user $id (optional)
+    createdBy: userId, // Relationship: Use user $id (optional)
   };
   
   const customer = await tablesDB.createRow({
     databaseId: DATABASE_ID,
     tableId: CUSTOMERS_COLLECTION_ID,
     rowId: ID.unique(),
-    body: newCustomer
+    data: newCustomer // Note: Use 'data' not 'body' for Tables API
   });
   
   // Log customer creation in audit log
@@ -321,10 +413,9 @@ async function updateCustomerStatus(
     databaseId: DATABASE_ID,
     tableId: CUSTOMERS_COLLECTION_ID,
     rowId: customerId,
-    body: {
+    data: {
       status: newStatus,
-      updatedBy: updatedBy,
-      updatedAt: new Date().toISOString(),
+      updatedBy: updatedBy, // Relationship: Use user $id
       metadata: JSON.stringify({
         ...JSON.parse(customer.metadata || '{}'),
         statusChangeReason: reason,
@@ -355,10 +446,9 @@ async function updateCustomerRevenue(customerId: string): Promise<void> {
     databaseId: DATABASE_ID,
     tableId: CUSTOMERS_COLLECTION_ID,
     rowId: customerId,
-    body: {
+    data: {
       totalRevenue: totalRevenue,
       totalInvoices: invoices.length,
-      updatedAt: new Date().toISOString()
     }
   });
 }
@@ -371,9 +461,8 @@ async function updateLastContact(customerId: string, contactDate?: string): Prom
     databaseId: DATABASE_ID,
     tableId: CUSTOMERS_COLLECTION_ID,
     rowId: customerId,
-    body: {
+    data: {
       lastContactAt: contactDate || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
     }
   });
 }
@@ -383,14 +472,26 @@ async function updateLastContact(customerId: string, contactDate?: string): Prom
 
 ### Get Customer by User ID (Self-Service)
 ```typescript
+// Basic query using relationship field
 const customer = await tablesDB.listRows({
   databaseId: DATABASE_ID,
   tableId: CUSTOMERS_COLLECTION_ID,
   queries: [
-    Query.equal('userId', userId),
+    Query.equal('userId', userId), // Relationship query
     Query.limit(1)
   ]
 });
+
+// With relationship population (if supported by your Appwrite version)
+// Note: Appwrite Tables API may require separate queries to populate relationships
+if (customer.rows.length > 0) {
+  const user = await tablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: USERS_COLLECTION_ID,
+    rowId: customer.rows[0].userId as string
+  });
+  const customerWithUser = { ...customer.rows[0], userId: user };
+}
 ```
 
 ### Get Customer by Email
@@ -420,11 +521,12 @@ const activeCustomers = await tablesDB.listRows({
 
 ### Get Customers by Assigned User
 ```typescript
+// Query customers by assigned user relationship
 const assignedCustomers = await tablesDB.listRows({
   databaseId: DATABASE_ID,
   tableId: CUSTOMERS_COLLECTION_ID,
   queries: [
-    Query.equal('assignedTo', userId),
+    Query.equal('assignedTo', userId), // Relationship query
     Query.equal('status', 'active'),
     Query.orderAsc('name')
   ]
@@ -579,6 +681,172 @@ const topCustomers = await tablesDB.listRows({
 - **Customer Documents**: Document management per customer
 - **Customer Tasks**: Task management linked to customers
 - **Customer Contracts**: Contract management per customer
+
+## Appwrite Relationship Usage
+
+### Creating Customers with Relationships
+
+When creating a customer, use the `$id` of the related user:
+
+```typescript
+const customer = await tablesDB.createRow({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMERS_COLLECTION_ID,
+  rowId: ID.unique(),
+  data: {
+    userId: user.$id, // Use user $id for relationship (required, unique)
+    name: 'John Doe',
+    assignedTo: adminUser.$id, // Use user $id for relationship (optional)
+    createdBy: currentUser.$id, // Use user $id for relationship (optional)
+    // ... other fields
+  }
+});
+```
+
+### Querying with Relationships
+
+Appwrite relationship fields can be queried like regular fields:
+
+```typescript
+// Query customer by user relationship
+const customer = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMERS_COLLECTION_ID,
+  queries: [
+    Query.equal('userId', userId) // Relationship query works like regular query
+  ]
+});
+
+// Query customers by assigned user
+const assignedCustomers = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMERS_COLLECTION_ID,
+  queries: [
+    Query.equal('assignedTo', adminUserId) // Relationship query
+  ]
+});
+```
+
+### Populating Relationships
+
+To get related data, you may need to make separate queries (depending on Appwrite version):
+
+```typescript
+const customer = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMERS_COLLECTION_ID,
+  queries: [Query.equal('userId', userId)]
+});
+
+// Populate user data
+if (customer.rows.length > 0) {
+  const user = await tablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: USERS_COLLECTION_ID,
+    rowId: customer.rows[0].userId as string
+  });
+  const customerWithUser = { ...customer.rows[0], userId: user };
+}
+```
+
+### Accessing Related Collections
+
+You can query related collections using the relationship:
+
+```typescript
+// Get all notes for a customer (using relationship)
+const notes = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_NOTES_COLLECTION_ID,
+  queries: [
+    Query.equal('customerId', customer.$id) // Relationship query
+  ]
+});
+```
+
+## Import/Export Functionality
+
+The customer module supports full data import and export functionality:
+
+### Export Features
+- **Formats**: CSV, JSON, Excel (XLSX)
+- **API Endpoint**: `GET /api/customers/export?format={json|csv|excel}`
+- **Self-Service**: Users can only export their own customer records
+- **Data Transformation**: Automatically parses JSON fields (notes, metadata) for readable export
+- **File Naming**: Automatic date-based filenames (e.g., `customers-2025-01-15.json`)
+
+### Import Features
+- **Formats**: CSV, JSON, Excel (XLSX)
+- **API Endpoint**: `POST /api/customers/import`
+- **Options**:
+  - `overwrite`: Replace existing customer records
+  - `skipErrors`: Continue importing even if some rows fail
+- **Validation**: File size validation (prevents DoS attacks)
+- **Self-Service**: Users can only import to their own customer records
+- **Auto-Assignment**: Automatically sets `userId` to authenticated user
+
+### Import/Export Data Format
+
+The exported data includes all customer fields with JSON fields parsed:
+
+```json
+{
+  "id": "customer_123",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "tags": ["vip", "enterprise"],  // Parsed from metadata
+  "notes": {                      // Parsed from notes field
+    "general": "Regular customer",
+    "preferences": "Prefers email communication"
+  },
+  "metadata": {
+    "tags": ["vip", "enterprise"],
+    "customFields": {}
+  }
+}
+```
+
+## Tags and Categorization
+
+Customer tags are stored in the `metadata` field as a JSON array:
+
+### Tag Structure
+```typescript
+interface CustomerMetadata {
+  tags?: string[]; // Array of tag strings
+  // ... other metadata fields
+}
+```
+
+### Tag Management
+- **UI Component**: `CustomerTagsInput` component for adding/removing tags
+- **Storage**: Tags stored in `metadata.tags` array
+- **Utilities**: Helper functions in `lib/customer-utils.ts`:
+  - `getCustomerTags(metadata)`: Extract tags from metadata
+  - `setCustomerTags(metadata, tags)`: Set tags in metadata
+  - `addCustomerTag(metadata, tag)`: Add a single tag
+  - `removeCustomerTag(metadata, tag)`: Remove a single tag
+
+### Usage Example
+```typescript
+import { getCustomerTags, setCustomerTags } from '@/lib/customer-utils';
+
+// Get tags from customer metadata
+const tags = getCustomerTags(customer.metadata); // Returns: ["vip", "enterprise"]
+
+// Set tags in metadata
+const updatedMetadata = setCustomerTags(customer.metadata, ["vip", "enterprise", "priority"]);
+
+// Update customer with new tags
+await tablesDB.updateRow({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMERS_COLLECTION_ID,
+  rowId: customer.$id,
+  data: {
+    metadata: updatedMetadata
+  }
+});
+```
 
 ## Related Documentation
 

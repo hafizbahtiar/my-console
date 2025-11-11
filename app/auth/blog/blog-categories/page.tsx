@@ -403,6 +403,8 @@ export default function BlogCategoriesPage() {
         onPageChange={setCurrentPage}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
+        onCreate={() => setCreateDialogOpen(true)}
+        isLoading={isLoading}
       />
 
       <EditCategoryDialog

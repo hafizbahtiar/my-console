@@ -811,7 +811,9 @@
       "posts": "Siaran",
       "order": "Susunan",
       "no_categories": "Tiada kategori",
-      "no_categories_description": "Cipta kategori pertama anda untuk bermula"
+      "no_categories_empty": "Cipta kategori pertama anda untuk bermula",
+      "empty_title": "Belum ada kategori",
+      "empty_description": "Mula dengan mencipta kategori blog pertama anda. Kategori membantu mengatur siaran blog anda kepada kumpulan yang bermakna."
     }
   },
   "blog_tags_page": {
@@ -840,7 +842,9 @@
       "description": "Semua tag blog - Papar {{current}} daripada {{total}} entri (Jumlah: {{total}})",
       "posts": "Siaran",
       "no_tags": "Tiada tag dijumpai",
-      "no_tags_description": "Cipta tag pertama anda untuk bermula"
+      "no_tags_empty": "Cipta tag pertama anda untuk bermula",
+      "empty_title": "Belum ada tag",
+      "empty_description": "Mula dengan mencipta tag blog pertama anda. Tag membantu mengatur dan mengkategorikan siaran blog anda untuk penemuan yang lebih baik."
     }
   },
   "blog_posts_page": {
@@ -875,6 +879,10 @@
       "no_posts": "Tiada siaran dijumpai",
       "no_posts_filtered": "Laraskan tapis anda untuk lebih banyak hasil",
       "no_posts_empty": "Cipta siaran pertama anda untuk bermula",
+      "empty_title": "Belum ada siaran",
+      "empty_description": "Mula dengan mencipta siaran blog pertama anda. Kongsi pemikiran, idea, dan kepakaran anda dengan penonton anda.",
+      "empty_title_filtered": "Tiada siaran dijumpai",
+      "empty_description_filtered": "Tiada siaran yang sepadan dengan kriteria carian atau penapis semasa anda. Cuba laraskan penapis anda untuk melihat lebih banyak hasil.",
       "uncategorized": "Tiada kategori"
     },
     "view_dialog": {
@@ -1114,6 +1122,9 @@
       "posts": "Siaran",
       "replies": "Balasan",
       "no_topics": "Tiada topik dijumpai",
+      "no_topics_empty": "Cipta topik pertama anda untuk bermula",
+      "empty_title": "Belum ada topik",
+      "empty_description": "Mula dengan mencipta topik komuniti pertama anda. Topik membantu mengatur perbincangan dan memudahkan pengguna mencari kandungan yang relevan.",
       "no_parent": "Tiada"
     },
     "form": {
@@ -1170,6 +1181,10 @@
       "no_posts": "Tiada catatan ditemui",
       "no_posts_filtered": "Cuba laraskan kriteria carian atau penapis anda",
       "no_posts_empty": "Cipta catatan komuniti pertama anda untuk bermula",
+      "empty_title": "Belum ada catatan",
+      "empty_description": "Mula dengan mencipta catatan komuniti pertama anda. Libatkan komuniti anda dan mulakan perbincangan yang bermakna.",
+      "empty_title_filtered": "Tiada catatan dijumpai",
+      "empty_description_filtered": "Tiada catatan yang sepadan dengan kriteria carian atau penapis semasa anda. Cuba laraskan penapis anda untuk melihat lebih banyak hasil.",
       "anonymous": "Tanpa nama",
       "view_tooltip": "Lihat",
       "uncategorized": "Tidak dikategorikan"

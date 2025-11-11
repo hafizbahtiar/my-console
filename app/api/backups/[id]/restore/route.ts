@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as zlib from 'zlib';
@@ -8,6 +9,7 @@ import { TablesDB } from 'appwrite';
 import * as XLSX from 'xlsx';
 import { BSON } from 'bson';
 import { auditLogger } from '@/lib/audit-log';
+import { validateBackupFileSize, FileSizeError, formatFileSize } from '@/lib/file-validation';
 
 interface RestoreOptions {
   format?: 'sql' | 'bson' | 'excel';
@@ -89,8 +91,30 @@ export async function POST(
           if (format === 'excel') {
             const excelFile = files.find(f => f.endsWith('.xlsx'));
             if (excelFile) {
+              const filePath = path.join(dailyDir, excelFile);
+              // Validate file size before processing
+              const fileStats = fs.statSync(filePath);
+              try {
+                validateBackupFileSize(fileStats.size);
+              } catch (error) {
+                if (error instanceof FileSizeError) {
+                  logger.warn('Backup file size validation failed', 'api/backups/restore', error, {
+                    file: excelFile,
+                    actualSize: error.actualSize,
+                    maxSize: error.maxSize,
+                  });
+                  restoreResults.push({
+                    collection: collectionId,
+                    records: 0,
+                    status: 'error',
+                    error: error.message,
+                  });
+                  continue;
+                }
+                throw error;
+              }
               recordsRestored = await restoreFromExcel(
-                path.join(dailyDir, excelFile),
+                filePath,
                 collectionId,
                 DATABASE_ID,
                 tablesDB,
@@ -100,8 +124,30 @@ export async function POST(
           } else if (format === 'bson') {
             const bsonFile = files.find(f => f.endsWith('.bson.gz'));
             if (bsonFile) {
+              const filePath = path.join(dailyDir, bsonFile);
+              // Validate file size before processing
+              const fileStats = fs.statSync(filePath);
+              try {
+                validateBackupFileSize(fileStats.size);
+              } catch (error) {
+                if (error instanceof FileSizeError) {
+                  logger.warn('Backup file size validation failed', 'api/backups/restore', error, {
+                    file: bsonFile,
+                    actualSize: error.actualSize,
+                    maxSize: error.maxSize,
+                  });
+                  restoreResults.push({
+                    collection: collectionId,
+                    records: 0,
+                    status: 'error',
+                    error: error.message,
+                  });
+                  continue;
+                }
+                throw error;
+              }
               recordsRestored = await restoreFromBSON(
-                path.join(dailyDir, bsonFile),
+                filePath,
                 collectionId,
                 DATABASE_ID,
                 tablesDB,
@@ -112,8 +158,30 @@ export async function POST(
             // SQL format
             const sqlFile = files.find(f => f.endsWith('.sql.gz'));
             if (sqlFile) {
+              const filePath = path.join(dailyDir, sqlFile);
+              // Validate file size before processing
+              const fileStats = fs.statSync(filePath);
+              try {
+                validateBackupFileSize(fileStats.size);
+              } catch (error) {
+                if (error instanceof FileSizeError) {
+                  logger.warn('Backup file size validation failed', 'api/backups/restore', error, {
+                    file: sqlFile,
+                    actualSize: error.actualSize,
+                    maxSize: error.maxSize,
+                  });
+                  restoreResults.push({
+                    collection: collectionId,
+                    records: 0,
+                    status: 'error',
+                    error: error.message,
+                  });
+                  continue;
+                }
+                throw error;
+              }
               recordsRestored = await restoreFromSQL(
-                path.join(dailyDir, sqlFile),
+                filePath,
                 collectionId,
                 DATABASE_ID,
                 tablesDB,
@@ -128,7 +196,7 @@ export async function POST(
             status: 'success',
           });
         } catch (error) {
-          console.error(`Failed to restore collection ${collectionId}:`, error);
+          logger.error(`Failed to restore collection ${collectionId}`, 'api/backups/restore', error, { collectionId });
           restoreResults.push({
             collection: collectionId,
             records: 0,
@@ -151,7 +219,7 @@ export async function POST(
           }
         );
       } catch (error) {
-        console.warn('Failed to log restore event:', error);
+        logger.warn('Failed to log restore event', 'api/backups/restore', error);
       }
 
       return NextResponse.json({
@@ -201,7 +269,7 @@ async function restoreFromExcel(
         });
       }
     } catch (error) {
-      console.warn(`Could not clear existing data for ${collectionId}:`, error);
+      logger.warn(`Could not clear existing data for ${collectionId}`, 'api/backups/restore', error, { collectionId });
     }
   }
 
@@ -219,7 +287,7 @@ async function restoreFromExcel(
       });
       restored++;
     } catch (error) {
-      console.warn(`Failed to restore row in ${collectionId}:`, error);
+      logger.warn(`Failed to restore row in ${collectionId}`, 'api/backups/restore', error, { collectionId });
     }
   }
 
@@ -256,7 +324,7 @@ async function restoreFromBSON(
         });
       }
     } catch (error) {
-      console.warn(`Could not clear existing data for ${collectionId}:`, error);
+      logger.warn(`Could not clear existing data for ${collectionId}`, 'api/backups/restore', error, { collectionId });
     }
   }
 
@@ -274,7 +342,7 @@ async function restoreFromBSON(
       });
       restored++;
     } catch (error) {
-      console.warn(`Failed to restore row in ${collectionId}:`, error);
+      logger.warn(`Failed to restore row in ${collectionId}`, 'api/backups/restore', error, { collectionId });
     }
   }
 
@@ -311,7 +379,7 @@ async function restoreFromSQL(
         });
       }
     } catch (error) {
-      console.warn(`Could not clear existing data for ${collectionId}:`, error);
+      logger.warn(`Could not clear existing data for ${collectionId}`, 'api/backups/restore', error, { collectionId });
     }
   }
 

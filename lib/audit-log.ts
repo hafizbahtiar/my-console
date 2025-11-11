@@ -141,6 +141,68 @@ export class AuditLogger {
     })
   }
 
+  // Customer Notes audit methods
+  async logCustomerNoteCreated(userId: string, noteId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_NOTE_CREATED',
+      resource: 'customer_note',
+      resourceId: noteId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
+  async logCustomerNoteUpdated(userId: string, noteId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_NOTE_UPDATED',
+      resource: 'customer_note',
+      resourceId: noteId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
+  async logCustomerNoteDeleted(userId: string, noteId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_NOTE_DELETED',
+      resource: 'customer_note',
+      resourceId: noteId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
+  // Customer Interactions audit methods
+  async logCustomerInteractionCreated(userId: string, interactionId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_INTERACTION_CREATED',
+      resource: 'customer_interaction',
+      resourceId: interactionId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
+  async logCustomerInteractionUpdated(userId: string, interactionId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_INTERACTION_UPDATED',
+      resource: 'customer_interaction',
+      resourceId: interactionId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
+  async logCustomerInteractionDeleted(userId: string, interactionId: string, customerId: string): Promise<void> {
+    await this.log({
+      userId,
+      action: 'CUSTOMER_INTERACTION_DELETED',
+      resource: 'customer_interaction',
+      resourceId: interactionId,
+      metadata: { customerId, eventType: 'customer_management' }
+    })
+  }
+
   // Query helpers
   async getUserAuditLogs(userId: string, limit: number = 50, offset: number = 0): Promise<{ logs: any[], total: number }> {
     if (!this.checkFetchRateLimit()) {

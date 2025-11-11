@@ -134,7 +134,7 @@ export function SidebarNav() {
   const customerItems = [
     {
       title: t('sidebar.customers'),
-      url: "/auth/customers",
+      url: "/auth/customers/customers",
       icon: Users,
       requiresSuperAdmin: false,
     },
@@ -504,7 +504,7 @@ export function SidebarNav() {
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === item.url || pathname?.startsWith(item.url)}
+                      isActive={pathname === item.url || pathname?.startsWith(item.url + '/')}
                       tooltip={item.title}
                     >
                       <Link href={item.url} onClick={handleNavClick}>

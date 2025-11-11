@@ -6,8 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/custom/status-badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Edit, Trash2, Eye, Heart } from "lucide-react";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyMedia,
+  EmptyContent
+} from "@/components/ui/empty";
+import { FileText, Edit, Trash2, Eye, Heart, Plus } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Pagination,
   PaginationContent,
@@ -33,6 +43,7 @@ interface PostsTableProps {
   getCategoryName: (post: BlogPost) => string;
   searchTerm: string;
   statusFilter: string;
+  onCreate?: () => void;
 }
 
 export function PostsTable({
@@ -48,20 +59,91 @@ export function PostsTable({
   getCategoryName,
   searchTerm,
   statusFilter,
+  onCreate,
 }: PostsTableProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const totalPages = getTotalPages(totalPosts, pageSize);
+  const hasFilters = searchTerm.trim().length > 0 || statusFilter !== 'all';
+  const isEmpty = posts.length === 0 && !isLoading;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-64 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-16 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle suppressHydrationWarning>{t('blog_posts_page.table.title', { count: 0 })}</CardTitle>
+          <CardDescription suppressHydrationWarning>
+            {hasFilters
+              ? t('blog_posts_page.table.no_posts_filtered')
+              : t('blog_posts_page.table.no_posts_empty')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <FileText className="h-6 w-6" />
+              </EmptyMedia>
+              <EmptyTitle suppressHydrationWarning>
+                {hasFilters
+                  ? t('blog_posts_page.table.empty_title_filtered')
+                  : t('blog_posts_page.table.empty_title')}
+              </EmptyTitle>
+              <EmptyDescription suppressHydrationWarning>
+                {hasFilters
+                  ? t('blog_posts_page.table.empty_description_filtered')
+                  : t('blog_posts_page.table.empty_description')}
+              </EmptyDescription>
+            </EmptyHeader>
+            {!hasFilters && (
+              <EmptyContent>
+                <Button
+                  onClick={() => {
+                    if (onCreate) {
+                      onCreate();
+                    } else {
+                      router.push('/auth/blog/blog-posts/create');
+                    }
+                  }}
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
+                  <Plus className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate" suppressHydrationWarning>
+                    {t('create_item', {item: t('post')})}
+                  </span>
+                </Button>
+              </EmptyContent>
+            )}
+          </Empty>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
-      <CardHeader className="p-4 sm:p-6">
-        <CardTitle className="flex items-center gap-2 text-lg sm:text-xl" suppressHydrationWarning>
-          <FileText className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
-          <span className="truncate">
-            {t('blog_posts_page.table.title', { count: totalPosts.toString() })}
-          </span>
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm" suppressHydrationWarning>
+      <CardHeader>
+        <CardTitle suppressHydrationWarning>{t('blog_posts_page.table.title', { count: totalPosts.toString() })}</CardTitle>
+        <CardDescription suppressHydrationWarning>
           {t('blog_posts_page.table.description', {
             current: posts.length.toString(),
             total: totalPosts.toString()
@@ -100,44 +182,7 @@ export function PostsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                // Loading skeleton rows
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="space-y-2">
-                        <div className="h-4 bg-muted animate-pulse rounded w-48"></div>
-                        <div className="h-3 bg-muted animate-pulse rounded w-32"></div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 bg-muted animate-pulse rounded w-24"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 bg-muted animate-pulse rounded w-20"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-6 bg-muted animate-pulse rounded w-16"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 bg-muted animate-pulse rounded w-12"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 bg-muted animate-pulse rounded w-12"></div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 bg-muted animate-pulse rounded w-20"></div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <div className="h-8 w-8 bg-muted animate-pulse rounded"></div>
-                        <div className="h-8 w-8 bg-muted animate-pulse rounded"></div>
-                        <div className="h-8 w-8 bg-muted animate-pulse rounded"></div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : posts.length > 0 ? (
+              {posts.length > 0 ? (
                 posts.map((post) => (
                   <TableRow
                     key={post.$id}
@@ -228,23 +273,6 @@ export function PostsTable({
             </TableBody>
           </Table>
         </div>
-
-        {posts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4">
-            <div className="rounded-full bg-muted p-4 sm:p-6 mb-4">
-              <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-center" suppressHydrationWarning>
-              {t('blog_posts_page.table.no_posts')}
-            </h3>
-            <p className="text-muted-foreground text-center text-sm sm:text-base max-w-md mb-6" suppressHydrationWarning>
-              {searchTerm || statusFilter !== 'all'
-                ? t('blog_posts_page.table.no_posts_filtered')
-                : t('blog_posts_page.table.no_posts_empty')
-              }
-            </p>
-          </div>
-        )}
 
         {/* Pagination */}
         {totalPages > 1 && (

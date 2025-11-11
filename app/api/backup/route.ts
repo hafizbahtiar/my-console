@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { performBackup } from '../../../scripts/backup/backup';
 import { createProtectedPOST, createProtectedGET } from '@/lib/api-protection';
 import { apiSchemas } from '@/lib/api-schemas';
 
 export const POST = createProtectedPOST(
   async ({ body }) => {
-    console.log('🔄 Manual backup initiated via API');
+    logger.info('Manual backup initiated via API', 'api/backup');
 
     const { type = 'manual' } = body;
 
     // Perform the backup
     const result = await performBackup(type);
 
-    console.log('✅ Manual backup completed successfully');
-    console.log(`📊 Backup summary: ${result.collections} collections, ${result.totalRecords} records`);
+    logger.info('Manual backup completed successfully', 'api/backup', {
+      collections: result.collections,
+      totalRecords: result.totalRecords,
+    });
 
     return NextResponse.json({
       success: true,

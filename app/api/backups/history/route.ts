@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -41,7 +42,7 @@ export async function GET() {
 
         backupHistory.push(backupInfo);
       } catch (error) {
-        console.warn(`Failed to parse backup log ${logFile}:`, error);
+        logger.warn(`Failed to parse backup log ${logFile}`, 'api/backups/history', error, { logFile });
         // Skip corrupted log files
       }
     }
@@ -49,7 +50,7 @@ export async function GET() {
     return NextResponse.json(backupHistory);
 
   } catch (error) {
-    console.error('Failed to read backup history:', error);
+    logger.error('Failed to read backup history', 'api/backups/history', error);
     return NextResponse.json(
       { error: 'Failed to read backup history' },
       { status: 500 }

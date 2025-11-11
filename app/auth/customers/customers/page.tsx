@@ -25,6 +25,8 @@ import {
     ViewCustomerDialog,
     DeleteCustomerDialog,
 } from "@/components/app/auth/customers";
+import { CustomerImportExport } from "@/components/app/auth/customers";
+import { CustomerBulkOperations } from "@/components/app/auth/customers/customer-bulk-operations";
 import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
 
 export default function CustomersPage() {
@@ -53,6 +55,9 @@ export default function CustomersPage() {
     const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Selection state for bulk operations
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     // Load data on component mount
     useEffect(() => {
@@ -209,7 +214,7 @@ export default function CustomersPage() {
     };
 
     const openEditDialog = (customer: Customer) => {
-        router.push(`/auth/customers/${customer.$id}/edit`);
+        router.push(`/auth/customers/customers/${customer.$id}/edit`);
     };
 
     // Determine which customers to display
@@ -286,6 +291,7 @@ export default function CustomersPage() {
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <CustomerImportExport onImportComplete={loadCustomers} />
                     <Button
                         variant="outline"
                         onClick={loadCustomers}
@@ -300,7 +306,7 @@ export default function CustomersPage() {
                         variant="outline"
                         className="w-full sm:w-auto shrink-0"
                         size="sm"
-                        onClick={() => router.push('/auth/customers/create')}
+                        onClick={() => router.push('/auth/customers/customers/create')}
                     >
                         <Plus className="h-4 w-4 mr-2 shrink-0" />
                         <span className="truncate" suppressHydrationWarning>{t('create_item', {item: t('customer')})}</span>
@@ -318,6 +324,63 @@ export default function CustomersPage() {
                 onClearFilters={() => {
                     setSearchTerm('');
                     setStatusFilter('all');
+                }}
+            />
+
+            {/* Bulk Operations */}
+            <CustomerBulkOperations
+                selectedIds={selectedIds}
+                onComplete={() => {
+                    setSelectedIds([]);
+                    loadCustomers();
+                }}
+                onExport={async (ids) => {
+                    try {
+                        // Get selected customers data
+                        const selectedCustomers = allCustomers.filter(c => ids.includes(c.$id));
+                        
+                        // Transform for export
+                        const exportData = selectedCustomers.map((customer: any) => {
+                            const { $id, $createdAt, $updatedAt, ...rest } = customer;
+                            const parsed: any = {
+                                id: $id,
+                                createdAt: $createdAt,
+                                updatedAt: $updatedAt,
+                                ...rest,
+                            };
+
+                            // Parse JSON fields
+                            if (parsed.notes && typeof parsed.notes === 'string') {
+                                try {
+                                    parsed.notes = JSON.parse(parsed.notes);
+                                } catch {}
+                            }
+
+                            if (parsed.metadata && typeof parsed.metadata === 'string') {
+                                try {
+                                    parsed.metadata = JSON.parse(parsed.metadata);
+                                } catch {}
+                            }
+
+                            return parsed;
+                        });
+
+                        // Create and download JSON file
+                        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `customers-selected-${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        toast.success(t('customers_page.bulk.exported_success', { count: ids.length.toString() }));
+                    } catch (error: any) {
+                        console.error('Bulk export failed:', error);
+                        toast.error(error.message || t('customers_page.bulk.export_failed'));
+                    }
                 }}
             />
 
@@ -342,7 +405,9 @@ export default function CustomersPage() {
                 onDelete={openDeleteDialog}
                 searchTerm={searchTerm}
                 statusFilter={statusFilter}
-                onCreate={() => router.push('/auth/customers/create')}
+                onCreate={() => router.push('/auth/customers/customers/create')}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
             />
 
             {/* View Dialog */}

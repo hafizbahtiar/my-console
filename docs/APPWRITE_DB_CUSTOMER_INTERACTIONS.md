@@ -8,25 +8,54 @@ The `customer_interactions` collection tracks all customer interactions includin
 **Collection ID**: `customer_interactions`
 **Database**: `console-db`
 
+## Appwrite Relationship Setup
+
+When creating this collection in Appwrite Console, you need to set up relationship attributes:
+
+### Relationship Attributes to Create
+
+1. **customerId** (Relationship)
+   - **Type**: Relationship
+   - **Related Collection**: `customers`
+   - **Cardinality**: Many to One
+   - **On Delete**: Cascade (delete interactions when customer is deleted)
+   - **Two-Way**: Yes (creates reverse relationship in customers collection)
+
+2. **userId** (Relationship)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: Many to One
+   - **On Delete**: Restrict (prevent deletion if interactions exist)
+   - **Two-Way**: Optional
+
+3. **createdBy** (Relationship, Optional)
+   - **Type**: Relationship
+   - **Related Collection**: `users`
+   - **Cardinality**: Many to One
+   - **On Delete**: Set null (allow deletion, set to null)
+   - **Two-Way**: No
+
+**Note**: When creating relationship attributes in Appwrite Console, ensure the related collections (`customers` and `users`) exist first.
+
 ## Attributes
 
-| Attribute | Type | Size | Required | Default | Description | Index |
-|-----------|------|------|----------|---------|-------------|-------|
-| `customerId` | String | 128 | ✅ | - | Customer ID reference | ✅ |
-| `interactionType` | String | 50 | ✅ | - | Type of interaction | ✅ |
-| `subject` | String | 200 | ❌ | null | Interaction subject/title | ✅ |
-| `description` | String | 5000 | ❌ | null | Interaction description/notes | ❌ |
-| `userId` | String | 128 | ✅ | - | User who created interaction | ✅ |
-| `contactMethod` | String | 50 | ❌ | null | Contact method used | ✅ |
-| `direction` | String | 20 | ✅ | 'outbound' | Interaction direction | ✅ |
-| `duration` | Integer | - | ❌ | null | Duration in minutes | ❌ |
-| `outcome` | String | 50 | ❌ | null | Interaction outcome | ✅ |
-| `nextAction` | String | 500 | ❌ | null | Next action required | ❌ |
-| `nextActionDate` | Datetime | - | ❌ | null | Next action due date | ✅ |
-| `relatedEntityType` | String | 50 | ❌ | null | Related entity type | ❌ |
-| `relatedEntityId` | String | 128 | ❌ | null | Related entity ID | ❌ |
-| `metadata` | String | 5000 | ❌ | null | Additional metadata (JSON string) | ❌ |
-| `createdBy` | String | 128 | ❌ | null | User who created this interaction | ❌ |
+| Attribute | Type | Size | Required | Default | Description | Index | Relation |
+|-----------|------|------|----------|---------|-------------|-------|----------|
+| `customerId` | Relationship | - | ✅ | - | Customer relationship (Many to One) | ✅ | `customers` |
+| `interactionType` | String | 50 | ✅ | - | Type of interaction | ✅ | - |
+| `subject` | String | 200 | ❌ | null | Interaction subject/title | ✅ | - |
+| `description` | String | 5000 | ❌ | null | Interaction description/notes | ❌ | - |
+| `userId` | Relationship | - | ✅ | - | User who created interaction (Many to One) | ✅ | `users` |
+| `contactMethod` | String | 50 | ❌ | null | Contact method used | ✅ | - |
+| `direction` | String | 20 | ✅ | 'outbound' | Interaction direction | ✅ | - |
+| `duration` | Integer | - | ❌ | null | Duration in minutes | ❌ | - |
+| `outcome` | String | 50 | ❌ | null | Interaction outcome | ✅ | - |
+| `nextAction` | String | 500 | ❌ | null | Next action required | ❌ | - |
+| `nextActionDate` | Datetime | - | ❌ | null | Next action due date | ✅ | - |
+| `relatedEntityType` | String | 50 | ❌ | null | Related entity type | ❌ | - |
+| `relatedEntityId` | String | 128 | ❌ | null | Related entity ID | ❌ | - |
+| `metadata` | String | 5000 | ❌ | null | Additional metadata (JSON string) | ❌ | - |
+| `createdBy` | Relationship | - | ❌ | null | User who created this interaction (Many to One) | ❌ | `users` |
 
 ## Enum Values
 
@@ -95,10 +124,26 @@ The `customer_interactions` collection tracks all customer interactions includin
 
 ## Relations
 
-### Outgoing Relations
-- `customerId` → `customers.$id` (Many to One, customer reference)
-- `userId` → `users.$id` (Many to One, user who created interaction)
-- `createdBy` → `users.$id` (Many to One, user who created record)
+### Outgoing Relations (Appwrite Relationships)
+
+**Relationship Attributes:**
+- `customerId` → `customers` collection (Many to One)
+  - **Type**: Relationship
+  - **Related Collection**: `customers`
+  - **Cardinality**: Many interactions to one customer
+  - **On Delete**: Cascade (delete interactions when customer is deleted)
+  
+- `userId` → `users` collection (Many to One)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: Many interactions to one user
+  - **On Delete**: Restrict (prevent deletion if interactions exist)
+  
+- `createdBy` → `users` collection (Many to One, optional)
+  - **Type**: Relationship
+  - **Related Collection**: `users`
+  - **Cardinality**: Many interactions to one user
+  - **On Delete**: Set null (allow deletion, set to null)
 
 ### Incoming Relations
 - None (this is a leaf collection)
@@ -115,11 +160,14 @@ interface CustomerInteraction {
   $id: string;
   $createdAt: string;
   $updatedAt: string;
-  customerId: string;
+  // Relationship fields (Appwrite returns relationship objects)
+  customerId: string | Customer; // Relationship to customers collection
+  userId: string | User; // Relationship to users collection (user who created interaction)
+  createdBy?: string | User; // Relationship to users collection (optional)
+  // Regular fields
   interactionType: 'call' | 'email' | 'meeting' | 'note' | 'task' | 'quote' | 'proposal' | 'contract' | 'support' | 'complaint' | 'feedback' | 'other';
   subject?: string;
   description?: string;
-  userId: string; // User who created/interacted
   contactMethod?: 'phone' | 'email' | 'in_person' | 'video_call' | 'chat' | 'social_media' | 'other';
   direction: 'inbound' | 'outbound';
   duration?: number; // Minutes
@@ -129,7 +177,13 @@ interface CustomerInteraction {
   relatedEntityType?: string; // e.g., 'invoice', 'quote', 'contract'
   relatedEntityId?: string; // ID of related entity
   metadata?: string; // JSON string
-  createdBy?: string; // User ID who created this record
+}
+
+// When using Appwrite relationship queries, related objects are populated
+interface CustomerInteractionWithRelations extends CustomerInteraction {
+  customerId: Customer; // Populated customer object
+  userId: User; // Populated user object
+  createdBy?: User; // Populated user object (optional)
 }
 
 // Metadata structure (stored as JSON string in metadata field)
@@ -146,10 +200,12 @@ interface InteractionMetadata {
 
 ## Data Validation Rules
 
-### Customer ID
-- Required, max 128 characters
-- Must reference existing customer
+### Customer ID (Relationship)
+- Required relationship attribute
+- Must reference existing customer in `customers` collection
 - Cannot be changed after creation
+- When creating: Use customer `$id` as the relationship value
+- When querying: Can use relationship queries to populate customer data
 
 ### Interaction Type
 - Required, one of the defined enum values
@@ -165,10 +221,12 @@ interface InteractionMetadata {
 - Detailed notes about the interaction
 - Required for notes and meetings
 
-### User ID
-- Required, max 128 characters
+### User ID (Relationship)
+- Required relationship attribute
 - User who performed the interaction
-- Must reference existing user
+- Must reference existing user in `users` collection
+- When creating: Use user `$id` as the relationship value
+- When querying: Can use relationship queries to populate user data
 
 ### Direction
 - Required, one of: `inbound`, `outbound`
@@ -207,20 +265,20 @@ async function createInteraction(
   }
   
   // Set defaults - customerId must match user's customer record
+  // Use customer $id and user $id for relationship fields
   const newInteraction = {
     ...interactionData,
-    customerId: customer.$id, // Must match user's customer record
-    userId: userId, // User who created the interaction
+    customerId: customer.$id, // Relationship: Use customer $id
+    userId: userId, // Relationship: Use user $id
     direction: interactionData.direction || 'outbound',
-    createdBy: userId,
-    createdAt: new Date().toISOString()
+    createdBy: userId, // Relationship: Use user $id (optional)
   };
   
   const interaction = await tablesDB.createRow({
     databaseId: DATABASE_ID,
     tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
     rowId: ID.unique(),
-    body: newInteraction
+    data: newInteraction // Note: Use 'data' not 'body' for Tables API
   });
   
   // Update customer's last contact date
@@ -251,11 +309,12 @@ async function getCustomerInteractions(
   }
   
   // Get interactions for user's customer record
+  // Use relationship query to filter by customer
   const interactions = await tablesDB.listRows({
     databaseId: DATABASE_ID,
     tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
     queries: [
-      Query.equal('customerId', customer.$id),
+      Query.equal('customerId', customer.$id), // Relationship query: filter by customer $id
       Query.orderDesc('$createdAt'),
       Query.limit(limit)
     ]
@@ -275,7 +334,7 @@ async function getInteractionsNeedingFollowUp(userId?: string): Promise<Customer
   ];
   
   if (userId) {
-    queries.push(Query.equal('userId', userId));
+    queries.push(Query.equal('userId', userId)); // Relationship query: filter by user $id
   }
   
   const interactions = await tablesDB.listRows({
@@ -292,15 +351,29 @@ async function getInteractionsNeedingFollowUp(userId?: string): Promise<Customer
 
 ### Get All Interactions for Customer
 ```typescript
+// Basic query using relationship field
 const interactions = await tablesDB.listRows({
   databaseId: DATABASE_ID,
   tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
   queries: [
-    Query.equal('customerId', customerId),
+    Query.equal('customerId', customerId), // Relationship query
     Query.orderDesc('$createdAt'),
     Query.limit(100)
   ]
 });
+
+// With relationship population (if supported by your Appwrite version)
+// Note: Appwrite Tables API may require separate queries to populate relationships
+const interactionsWithCustomer = await Promise.all(
+  interactions.rows.map(async (interaction) => {
+    const customer = await tablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CUSTOMERS_COLLECTION_ID,
+      rowId: interaction.customerId as string
+    });
+    return { ...interaction, customerId: customer };
+  })
+);
 ```
 
 ### Get Interactions by Type
@@ -318,11 +391,12 @@ const calls = await tablesDB.listRows({
 
 ### Get Interactions by User
 ```typescript
+// Query interactions by user relationship
 const userInteractions = await tablesDB.listRows({
   databaseId: DATABASE_ID,
   tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
   queries: [
-    Query.equal('userId', userId),
+    Query.equal('userId', userId), // Relationship query
     Query.orderDesc('$createdAt'),
     Query.limit(50)
   ]
@@ -388,9 +462,102 @@ const recentInteractions = await tablesDB.listRows({
 - Customer engagement metrics
 - Follow-up completion rates
 
+## Appwrite Relationship Usage
+
+### Creating Interactions with Relationships
+
+When creating an interaction, use the `$id` of the related record:
+
+```typescript
+const interaction = await tablesDB.createRow({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
+  rowId: ID.unique(),
+  data: {
+    customerId: customer.$id, // Use customer $id for relationship
+    userId: user.$id, // Use user $id for relationship
+    interactionType: 'call',
+    direction: 'outbound',
+    subject: 'Follow-up call',
+    // ... other fields
+  }
+});
+```
+
+### Querying with Relationships
+
+Appwrite relationship fields can be queried like regular fields:
+
+```typescript
+// Query interactions by customer relationship
+const interactions = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
+  queries: [
+    Query.equal('customerId', customerId) // Relationship query works like regular query
+  ]
+});
+
+// Query interactions by user relationship
+const userInteractions = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
+  queries: [
+    Query.equal('userId', userId) // Relationship query
+  ]
+});
+```
+
+### Populating Relationships
+
+To get related data, you may need to make separate queries (depending on Appwrite version):
+
+```typescript
+const interactions = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
+  queries: [Query.equal('customerId', customerId)]
+});
+
+// Populate customer and user data
+const interactionsWithRelations = await Promise.all(
+  interactions.rows.map(async (interaction) => {
+    const [customer, user] = await Promise.all([
+      tablesDB.getRow({
+        databaseId: DATABASE_ID,
+        tableId: CUSTOMERS_COLLECTION_ID,
+        rowId: interaction.customerId as string
+      }),
+      tablesDB.getRow({
+        databaseId: DATABASE_ID,
+        tableId: USERS_COLLECTION_ID,
+        rowId: interaction.userId as string
+      })
+    ]);
+    return { ...interaction, customerId: customer, userId: user };
+  })
+);
+```
+
+### Accessing Related Collections
+
+You can query related collections using the relationship:
+
+```typescript
+// Get all interactions for a customer (using relationship)
+const interactions = await tablesDB.listRows({
+  databaseId: DATABASE_ID,
+  tableId: CUSTOMER_INTERACTIONS_COLLECTION_ID,
+  queries: [
+    Query.equal('customerId', customer.$id) // Relationship query
+  ]
+});
+```
+
 ## Related Documentation
 
 - [APPWRITE_DB_CUSTOMERS.md](./APPWRITE_DB_CUSTOMERS.md) - Customer schema
+- [APPWRITE_DB_CUSTOMER_NOTES.md](./APPWRITE_DB_CUSTOMER_NOTES.md) - Customer notes schema
 - [APPWRITE_DB_USERS.md](./APPWRITE_DB_USERS.md) - User schema (for userId)
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Overall system architecture
 

@@ -417,31 +417,17 @@ export default function CommunityTopicsPage() {
                     </div>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2" suppressHydrationWarning>
-                            <MessageSquare className="h-5 w-5" />
-                            {t('community_topics_page.table.title', { count: allTopics.length.toString() })}
-                        </CardTitle>
-                        <CardDescription suppressHydrationWarning>
-                            {t('community_topics_page.table.description', {
-                                current: topics.length.toString(),
-                                total: allTopics.length.toString()
-                            })}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <TopicsTable
-                            topics={topics}
-                            allTopics={allTopics}
-                            currentPage={currentPage}
-                            pageSize={pageSize}
-                            onPageChange={setCurrentPage}
-                            onEdit={openEditDialog}
-                            onDelete={openDeleteDialog}
-                        />
-                    </CardContent>
-                </Card>
+                <TopicsTable
+                    topics={topics}
+                    allTopics={allTopics}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onEdit={openEditDialog}
+                    onDelete={openDeleteDialog}
+                    onCreate={() => setCreateDialogOpen(true)}
+                    isLoading={isLoading}
+                />
 
                 {/* Edit Topic Dialog */}
                 <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

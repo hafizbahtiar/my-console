@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -616,18 +617,12 @@ export default function CreateCustomerPage() {
                   placeholder={t('customers_page.create_page.business_info.industry_placeholder')}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="currency" suppressHydrationWarning>
-                  {t('customers_page.create_page.business_info.currency')}
-                </Label>
-                <Input
-                  id="currency"
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value.toUpperCase() })}
-                  placeholder="USD"
-                  maxLength={3}
-                />
-              </div>
+              <CurrencySelect
+                id="currency"
+                value={formData.currency}
+                onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                label={t('customers_page.create_page.business_info.currency')}
+              />
               <div className="space-y-2">
                 <Label htmlFor="language" suppressHydrationWarning>
                   {t('customers_page.create_page.business_info.language')}

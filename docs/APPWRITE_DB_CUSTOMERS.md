@@ -78,7 +78,7 @@ When creating this collection in Appwrite Console, you need to set up relationsh
 | `lastContactAt` | Datetime | - | ❌ | null | Last contact timestamp | ✅ | - |
 | `nextFollowUpAt` | Datetime | - | ❌ | null | Next follow-up date | ✅ | - |
 | `totalRevenue` | Float | - | ✅ | 0.0 | Total revenue (Min: 0) | ✅ | - |
-| `totalInvoices` | Integer | - | ✅ | 0 | Total invoice count (Min: 0) | ✅ | - |
+| `totalInvoices` | Integer | - | ✅ | 0 | Total invoice count (Min: 0) - **Note: Currently unused, reserved for future use** | ✅ | - |
 | `createdBy` | Relationship | - | ❌ | null | User who created this customer (Many to One) | ❌ | `users` |
 | `updatedBy` | Relationship | - | ❌ | null | User who last updated (Many to One) | ❌ | `users` |
 
@@ -126,7 +126,7 @@ When creating this collection in Appwrite Console, you need to set up relationsh
 14. **lastContactAt** (descending) - For recent contact queries
 15. **nextFollowUpAt** (ascending) - For follow-up scheduling
 16. **totalRevenue** (descending) - For revenue-based sorting
-17. **totalInvoices** (descending) - For invoice count sorting
+17. **totalInvoices** (descending) - For invoice count sorting (currently unused)
 18. **createdAt** (descending) - For new customer queries
 
 ## Permissions
@@ -188,16 +188,11 @@ When creating this collection in Appwrite Console, you need to set up relationsh
   - **Relationship Field**: `customerId` (Relationship type)
   - **Cardinality**: One customer to many notes
   
-- `invoices.customerId` → This customer (One to Many) *[Customer invoices]*
-  - **Related Collection**: `invoices`
-  - **Relationship Field**: `customerId` (Relationship type)
-  - **Cardinality**: One customer to many invoices
-
 ### Relationship Notes
 - **Self-Service Ownership**: `userId` links to the Appwrite user who owns this customer record (one-to-one relationship)
 - **Assignment Tracking**: `assignedTo` links to admin/sales rep who manages this customer (for internal use)
 - **Activity Tracking**: Related collections track customer interactions and notes
-- **Invoice Integration**: Customers are linked to invoices for revenue tracking
+- **Note**: Invoice integration has been removed. The `totalInvoices` field is reserved for future use.
 - **Audit Trail**: All customer changes should be logged in audit_logs
 
 ## TypeScript Interface
@@ -236,7 +231,7 @@ interface Customer {
   lastContactAt?: string;
   nextFollowUpAt?: string;
   totalRevenue: number; // Min: 0
-  totalInvoices: number; // Min: 0
+  totalInvoices: number; // Min: 0 - Currently unused, reserved for future use
 }
 
 // When using Appwrite relationship queries, related objects are populated
@@ -320,14 +315,14 @@ interface CustomerMetadata {
 ### Total Revenue
 - Required float, minimum 0
 - Default: 0.0
-- Calculated from related invoices
-- Should be updated when invoices are created/updated
+- Currently not automatically calculated (invoice module removed)
+- Reserved for future use
 
 ### Total Invoices
 - Required integer, minimum 0
 - Default: 0
-- Count of related invoices
-- Should be updated when invoices are created/deleted
+- Currently unused (invoice module removed)
+- Reserved for future use
 
 ### Notes
 - Optional JSON string, max 5000 characters
@@ -432,25 +427,13 @@ async function updateCustomerStatus(
 
 ### Update Revenue Statistics
 ```typescript
+// Note: Invoice calculation removed (invoice module removed)
+// totalRevenue and totalInvoices are currently not automatically calculated
+// Reserved for future use when invoice module is re-implemented
+
 async function updateCustomerRevenue(customerId: string): Promise<void> {
-  // Get all invoices for this customer
-  const invoices = await getCustomerInvoices(customerId);
-  
-  // Calculate total revenue
-  const totalRevenue = invoices
-    .filter(inv => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.total, 0);
-  
-  // Update customer
-  await tablesDB.updateRow({
-    databaseId: DATABASE_ID,
-    tableId: CUSTOMERS_COLLECTION_ID,
-    rowId: customerId,
-    data: {
-      totalRevenue: totalRevenue,
-      totalInvoices: invoices.length,
-    }
-  });
+  // This function is currently not used (invoice module removed)
+  // Reserved for future use
 }
 ```
 
@@ -604,7 +587,7 @@ const topCustomers = await tablesDB.listRows({
 - **Self-Service**: Users can only create/update/delete their own customer record (matched via `userId`)
 - Always validate email format before saving
 - Check for duplicate emails before creating new customers
-- Update `totalRevenue` and `totalInvoices` when invoices change
+- `totalRevenue` and `totalInvoices` are currently unused (invoice module removed)
 - Update `lastContactAt` when interactions are logged
 - Use `assignedTo` for admin/internal assignment tracking
 
@@ -632,14 +615,14 @@ const topCustomers = await tablesDB.listRows({
 - **User Profile**: Users can view and edit their own customer information
 - **Customer Information Form**: Create/update personal or company information
 - **Activity Timeline**: View their own interactions and notes
-- **Invoice History**: View their own invoices and payment history
+- **Future Integration**: Invoice history integration planned for future release
 - **Settings**: Manage preferences, language, timezone, notification settings
 
 ### Admin Customer Management
 - Display all customers in sortable table (admin only)
 - Filter by status, assigned user, company, source
 - Search by name, email, phone, company
-- Show customer statistics (revenue, invoice count)
+- Show customer statistics (revenue, invoice count - when invoice module is available)
 - Bulk operations (status update, assignment, export)
 - Assign customers to sales reps
 - View customer activity timeline
@@ -664,10 +647,10 @@ const topCustomers = await tablesDB.listRows({
 - Links to customer via `customerId`
 - See [APPWRITE_DB_CUSTOMER_NOTES.md](./APPWRITE_DB_CUSTOMER_NOTES.md)
 
-### Invoices (`invoices`)
-- Customer invoices and payments
-- Links to customer via `customerId`
-- Updates customer revenue statistics
+### Future Integrations
+- Invoice module integration planned for future release
+- Will link to customer via `customerId` when implemented
+- Will update customer revenue statistics when implemented
 
 ## Future Enhancements
 

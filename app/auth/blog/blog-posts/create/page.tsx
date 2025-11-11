@@ -552,6 +552,8 @@ export default function CreateBlogPostPage() {
 
     setIsSubmitting(true);
     try {
+      if (!user) return;
+
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
 
@@ -561,7 +563,8 @@ export default function CreateBlogPostPage() {
         publishedAt: formData.status === 'published' ? new Date().toISOString() : null,
         featuredImage: formData.featuredImage && formData.featuredImage.trim() !== '' ? formData.featuredImage.trim() : null,
         featuredImageAlt: formData.featuredImageAlt && formData.featuredImageAlt.trim() !== '' ? formData.featuredImageAlt.trim() : null,
-        // Convert tag relationships to the format expected by Appwrite
+        // Convert relationship fields to the format expected by Appwrite
+        blogCategories: formData.blogCategories?.$id || formData.blogCategories || null,
         blogTags: formData.blogTags.map((tag: any) => tag.$id),
       };
 
@@ -591,9 +594,9 @@ export default function CreateBlogPostPage() {
       setIsFormSubmitted(true);
       toast.success(t('blog_posts_page.create_page.created_success'));
       router.push('/auth/blog/blog-posts');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create blog post:', error);
-      toast.error(t('error'));
+      toast.error(error.message || t('blog_posts_page.create_page.create_failed'));
     } finally {
       setIsSubmitting(false);
     }

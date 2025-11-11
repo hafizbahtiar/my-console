@@ -139,7 +139,7 @@ When creating this collection in Appwrite Console, you need to set up relationsh
 ### Relationship Notes
 - **Customer Notes**: All notes for a customer provide detailed information
 - **User Attribution**: Notes track which user created/updated them
-- **Entity Linking**: Notes can link to related entities (invoices, contracts, etc.)
+- **Entity Linking**: Notes can link to related entities (contracts, quotes, etc.) (invoice module removed)
 
 ## TypeScript Interface
 
@@ -160,7 +160,7 @@ interface CustomerNote {
   isImportant: boolean;
   isPinned: boolean;
   tags: string[];
-  relatedEntityType?: string; // e.g., 'invoice', 'contract', 'quote'
+  relatedEntityType?: string; // e.g., 'contract', 'quote' (invoice module removed)
   relatedEntityId?: string; // ID of related entity
   metadata?: string; // JSON string
 }

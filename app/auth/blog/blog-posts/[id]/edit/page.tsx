@@ -332,47 +332,52 @@ export default function EditBlogPostPage() {
 
   // Fix category selection after both post and categories are loaded
   useEffect(() => {
-    if (post && categories.length > 0) {
-      // Only fix if blogCategories exists but might be in wrong format
-      if (formData.blogCategories) {
-        let categoryObj: any | null = null;
+    if (!post || categories.length === 0) return;
 
-        // Check if blogCategories is a string ID instead of an object
-        if (typeof formData.blogCategories === 'string') {
-          categoryObj = categories.find(cat => cat.$id === formData.blogCategories) || null;
-        }
-        // Check if blogCategories is an object but might not have the right structure
-        else if (typeof formData.blogCategories === 'object') {
-          // If it already has $id and matches a category, use it as is
-          if ((formData.blogCategories as any).$id) {
-            categoryObj = categories.find(cat => cat.$id === (formData.blogCategories as any).$id) || null;
-            // If found, use the full category object from the list (to ensure consistency)
-            if (categoryObj) {
-              // Only update if the structure is different
-              if (JSON.stringify(formData.blogCategories) !== JSON.stringify(categoryObj)) {
-                setFormData(prev => ({
-                  ...prev,
-                  blogCategories: categoryObj
-                }));
-              }
-              return; // Already correct format
-            }
-          }
-          // Try to find by other ID properties
-          const categoryId = (formData.blogCategories as any).id || (formData.blogCategories as any)._id || (formData.blogCategories as any).$id;
-          if (categoryId) {
-            categoryObj = categories.find(cat => cat.$id === categoryId) || null;
-          }
-        }
-
-        // Update formData if we found a matching category object
-        if (categoryObj && (!formData.blogCategories || typeof formData.blogCategories === 'string' || (formData.blogCategories as any).$id !== categoryObj.$id)) {
-          setFormData(prev => ({
-            ...prev,
-            blogCategories: categoryObj
-          }));
-        }
+    // Get the raw category from post (source of truth)
+    const rawCategory = post.blogCategories || null;
+    if (!rawCategory) {
+      // No category in post, ensure formData is null
+      if (formData.blogCategories !== null) {
+        setFormData(prev => ({ ...prev, blogCategories: null }));
       }
+      return;
+    }
+
+    // Extract category ID from raw category
+    let categoryId: string | null = null;
+    if (typeof rawCategory === 'string') {
+      categoryId = rawCategory;
+    } else if (typeof rawCategory === 'object' && rawCategory) {
+      categoryId = (rawCategory as any).$id || (rawCategory as any).id || (rawCategory as any)._id || null;
+    }
+
+    if (!categoryId) return;
+
+    // Find the full category object from the categories list
+    const categoryObj = categories.find(cat => cat.$id === categoryId) || null;
+
+    // Get current category ID from formData
+    const currentCategoryId = typeof formData.blogCategories === 'string'
+      ? formData.blogCategories
+      : (formData.blogCategories as any)?.$id;
+    
+    const isFormDataString = typeof formData.blogCategories === 'string';
+
+    // Update formData if:
+    // 1. Category object is found AND (formData is a string OR IDs don't match)
+    // The Select component needs an object, not a string!
+    if (categoryObj && (isFormDataString || currentCategoryId !== categoryObj.$id)) {
+      setFormData(prev => ({
+        ...prev,
+        blogCategories: categoryObj
+      }));
+    } else if (!categoryObj && currentCategoryId) {
+      // Category was deleted, set to null
+      setFormData(prev => ({
+        ...prev,
+        blogCategories: null
+      }));
     }
   }, [post, categories]);
 
@@ -481,6 +486,10 @@ export default function EditBlogPostPage() {
       const post = postData as unknown as BlogPost;
       setPost(post);
 
+      // Don't resolve category here - let useEffect handle it after categories are loaded
+      // Just store the raw category data from the post
+      const rawCategory = post.blogCategories || null;
+
       // Populate form with post data
       const initialData: BlogPostFormData = {
         title: post.title,
@@ -489,7 +498,7 @@ export default function EditBlogPostPage() {
         content: post.content,
         author: post.author,
         authorId: post.authorId || '',
-        blogCategories: post.blogCategories || null,
+        blogCategories: rawCategory, // Store raw category - will be resolved in useEffect
         blogTags: post.blogTags || [],
         readTime: post.readTime,
         featuredImage: post.featuredImage || '',
@@ -564,9 +573,15 @@ export default function EditBlogPostPage() {
       const createdTag = newTag as unknown as BlogTag;
       setAvailableTags(prev => [...prev, createdTag]);
       return createdTag;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create tag:', error);
-      toast.error(t('blog_posts_page.create_page.tags.create_tag_failed'));
+      
+      // Check for unauthorized error
+      if (error?.code === 401 || error?.code === 403 || error?.message?.includes('not authorized') || error?.message?.includes('Unauthorized')) {
+        toast.error(`Permission denied. You need "Create" permission set to "role:super_admin" on the '${BLOG_TAGS_COLLECTION_ID}' table.`);
+      } else {
+        toast.error(t('blog_posts_page.create_page.tags.create_tag_failed'));
+      }
       return null;
     }
   };
@@ -650,6 +665,8 @@ export default function EditBlogPostPage() {
 
     setIsSubmitting(true);
     try {
+      if (!user) return;
+
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
 
@@ -691,9 +708,9 @@ export default function EditBlogPostPage() {
       setIsFormSubmitted(true);
       toast.success(t('blog_posts_page.edit_page.updated_success'));
       router.push(`/auth/blog/blog-posts/${postId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update blog post:', error);
-      toast.error(t('blog_posts_page.edit_page.update_failed'));
+      toast.error(error.message || t('blog_posts_page.edit_page.update_failed'));
     } finally {
       setIsSubmitting(false);
     }

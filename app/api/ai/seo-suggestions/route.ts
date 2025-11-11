@@ -193,25 +193,183 @@ Only return the JSON, no other text.`;
         if (jsonMatch) {
             jsonText = jsonMatch[1];
         } else {
-            // Try to find JSON object
-            const braceMatch = suggestionsText.match(/\{[\s\S]*\}/);
-            if (braceMatch) {
-                jsonText = braceMatch[0];
+            // Try to find JSON object - get everything from first { to end (even if incomplete)
+            const firstBrace = suggestionsText.indexOf('{');
+            if (firstBrace !== -1) {
+                jsonText = suggestionsText.substring(firstBrace);
             }
         }
 
-        try {
-            const suggestions: SEOSuggestions = JSON.parse(jsonText);
+        // Try to repair incomplete JSON
+        const repairJSON = (text: string): string => {
+            let repaired = text.trim();
             
-            // Validate and clean suggestions
+            // Handle incomplete values (colon but no value after)
+            repaired = repaired.replace(/:\s*$/gm, ': null');
+            repaired = repaired.replace(/:\s*([,\n}])/g, ': null$1');
+            
+            // Handle incomplete strings (opening quote but no closing)
+            const incompleteStringMatch = repaired.match(/:\s*"([^"]*?)([,\n}])/);
+            if (incompleteStringMatch && !incompleteStringMatch[1].endsWith('"')) {
+                // Find all incomplete strings and close them
+                repaired = repaired.replace(/:\s*"([^"]*?)(?=[,\n}])/g, (match, content) => {
+                    // If content doesn't end with quote and we're at end of line/object, close it
+                    if (!content.endsWith('"')) {
+                        return `: "${content}"`;
+                    }
+                    return match;
+                });
+            }
+            
+            // Handle incomplete arrays
+            const openBrackets = (repaired.match(/\[/g) || []).length;
+            const closeBrackets = (repaired.match(/\]/g) || []).length;
+            if (openBrackets > closeBrackets) {
+                // Find last incomplete array and close it
+                let lastOpenBracket = repaired.lastIndexOf('[');
+                let lastCloseBracket = repaired.lastIndexOf(']');
+                if (lastOpenBracket > lastCloseBracket) {
+                    // Check if there's content after the last [
+                    const afterBracket = repaired.substring(lastOpenBracket + 1).trim();
+                    if (afterBracket && !afterBracket.startsWith(']')) {
+                        // Add closing bracket before the next } or at end
+                        const nextBrace = repaired.indexOf('}', lastOpenBracket);
+                        if (nextBrace > lastOpenBracket) {
+                            repaired = repaired.substring(0, nextBrace) + ']' + repaired.substring(nextBrace);
+                        } else {
+                            repaired += ']';
+                        }
+                    }
+                }
+            }
+            
+            // Count braces to see if object is closed
+            const openBraces = (repaired.match(/\{/g) || []).length;
+            const closeBraces = (repaired.match(/\}/g) || []).length;
+            
+            // Close incomplete object
+            if (openBraces > closeBraces) {
+                // Find last incomplete string/array/object
+                let lastQuote = repaired.lastIndexOf('"');
+                let lastBracket = repaired.lastIndexOf(']');
+                let lastBrace = repaired.lastIndexOf('}');
+                let lastColon = repaired.lastIndexOf(':');
+                
+                // If we have a colon at the end with no value, add null
+                if (lastColon > Math.max(lastQuote, lastBracket, lastBrace)) {
+                    const afterColon = repaired.substring(lastColon + 1).trim();
+                    if (!afterColon || afterColon === '' || afterColon.startsWith(',')) {
+                        repaired = repaired.substring(0, lastColon + 1) + ' null';
+                    }
+                }
+                
+                // If we're in the middle of a string, close it
+                if (lastQuote > lastBracket && lastQuote > lastBrace) {
+                    // Check if quote is escaped
+                    let quotePos = lastQuote;
+                    let escaped = false;
+                    while (quotePos > 0 && repaired[quotePos - 1] === '\\') {
+                        escaped = !escaped;
+                        quotePos--;
+                    }
+                    if (!escaped && !repaired.substring(lastQuote + 1).trim().startsWith('"')) {
+                        // String is incomplete, close it
+                        repaired += '"';
+                    }
+                }
+                
+                // Close all remaining objects
+                for (let i = 0; i < openBraces - closeBraces; i++) {
+                    repaired += '}';
+                }
+            }
+            
+            return repaired;
+        };
+
+        try {
+            // Try parsing original JSON first
+            let suggestions: SEOSuggestions;
+            try {
+                suggestions = JSON.parse(jsonText);
+            } catch (firstError) {
+                // If parsing fails, try to repair and parse again
+                const repairedJson = repairJSON(jsonText);
+                try {
+                    suggestions = JSON.parse(repairedJson);
+                } catch (secondError) {
+                    // If still fails, try to extract partial data
+                    console.warn('Failed to parse JSON even after repair, attempting partial extraction');
+                    
+                    // Try to extract at least title and description using more flexible regex
+                    const titleMatch = jsonText.match(/"title"\s*:\s*\{[^}]*?"suggested"\s*:\s*"([^"]*?)"/);
+                    const descMatch = jsonText.match(/"description"\s*:\s*\{[^}]*?"suggested"\s*:\s*"([^"]*?)"/);
+                    const keywordsMatch = jsonText.match(/"keywords"\s*:\s*\{[^}]*?"suggested"\s*:\s*\[([^\]]*?)\]/);
+                    
+                    // Extract keywords if available
+                    let keywords: string[] = [];
+                    if (keywordsMatch && keywordsMatch[1]) {
+                        // Extract quoted strings from keywords array
+                        const keywordMatches = keywordsMatch[1].match(/"([^"]+)"/g);
+                        if (keywordMatches) {
+                            keywords = keywordMatches.map(k => k.replace(/"/g, ''));
+                        }
+                    }
+                    
+                    if (titleMatch || descMatch) {
+                        // Create minimal valid response with whatever we can extract
+                        suggestions = {
+                            title: {
+                                current: titleMatch?.[1] || '',
+                                suggested: titleMatch?.[1] || '',
+                                score: 50,
+                                feedback: []
+                            },
+                            description: {
+                                current: '',
+                                suggested: descMatch?.[1] || '',
+                                score: 50,
+                                feedback: []
+                            },
+                            keywords: {
+                                suggested: keywords,
+                                score: 50,
+                                feedback: []
+                            },
+                            overall: {
+                                score: 50,
+                                feedback: []
+                            }
+                        };
+                    } else {
+                        throw secondError;
+                    }
+                }
+            }
+            
+            // Validate and clean suggestions - make fields optional and provide defaults
             if (!suggestions.title) {
-                throw new Error('Invalid response format: missing title');
+                suggestions.title = {
+                    current: '',
+                    suggested: '',
+                    score: 0,
+                    feedback: []
+                };
             }
             if (!suggestions.description) {
-                throw new Error('Invalid response format: missing description');
+                suggestions.description = {
+                    current: '',
+                    suggested: '',
+                    score: 0,
+                    feedback: []
+                };
             }
             if (!suggestions.keywords) {
-                throw new Error('Invalid response format: missing keywords');
+                suggestions.keywords = {
+                    suggested: [],
+                    score: 0,
+                    feedback: []
+                };
             }
 
             // Ensure scores are valid
@@ -227,18 +385,34 @@ Only return the JSON, no other text.`;
                 { suggestions },
                 { status: 200 }
             );
-        } catch (parseError) {
+        } catch (parseError: any) {
             console.error('Failed to parse SEO suggestions:', parseError);
+            console.error('Parse error message:', parseError?.message);
             console.error('Response text:', suggestionsText);
+            console.error('Extracted JSON text:', jsonText);
+            
+            // Try to repair and log
+            try {
+                const repaired = repairJSON(jsonText);
+                console.error('Repaired JSON text:', repaired);
+            } catch (repairError) {
+                console.error('Failed to repair JSON:', repairError);
+            }
+            
+            // Return more detailed error in development
+            const errorMessage = process.env.NODE_ENV === 'development' 
+                ? `Failed to parse SEO suggestions: ${parseError?.message || 'Unknown error'}. Response length: ${suggestionsText.length}`
+                : 'Failed to parse SEO suggestions. Please try again.';
             
             return NextResponse.json(
-                { error: 'Failed to parse SEO suggestions. Please try again.' },
+                { error: errorMessage },
                 { status: 500 }
             );
         }
     },
     {
         rateLimit: 'api',
+        requireCSRF: false,
         schema: z.object({
             title: z.string().min(1, 'Title is required'),
             content: z.string().min(50, 'Content must be at least 50 characters'),

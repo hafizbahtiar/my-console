@@ -1328,6 +1328,27 @@
       "blog_post_not_found": "Catatan tidak dijumpai",
       "failed_to_load": "Gagal memuatkan catatan",
       "back_to_posts": "Kembali ke Catatan"
+    },
+    "replies": {
+      "title": "Balasan ({{count}})",
+      "no_replies": "Tiada balasan lagi. Jadilah yang pertama untuk membalas!",
+      "add_reply": "Tambah Balasan",
+      "reply": "Balas",
+      "solution": "Penyelesaian",
+      "show_replies": "Tunjukkan {{count}} balasan",
+      "hide_replies": "Sembunyikan balasan",
+      "placeholder": "Tulis balasan anda...",
+      "content_required": "Kandungan balasan diperlukan",
+      "content_too_long": "Balasan mestilah kurang daripada {{max}} aksara",
+      "characters": "aksara",
+      "submit": "Hantar Balasan",
+      "submitting": "Menghantar...",
+      "created_success": "Balasan berjaya dicipta",
+      "created_failed": "Gagal mencipta balasan"
+    },
+    "votes": {
+      "login_required": "Sila log masuk untuk mengundi",
+      "failed": "Gagal mengundi"
     }
   },
   "dashboard_page": {
@@ -1468,7 +1489,6 @@
       "source": "Sumber",
       "currency": "Mata Wang",
       "total_revenue": "Jumlah Hasil",
-      "total_invoices": "Jumlah Invois",
       "last_contact": "Hubungan Terakhir",
       "next_follow_up": "Tindakan Susulan Seterusnya"
     },

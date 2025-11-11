@@ -203,6 +203,7 @@ export class AuditLogger {
     })
   }
 
+
   // Query helpers
   async getUserAuditLogs(userId: string, limit: number = 50, offset: number = 0): Promise<{ logs: any[], total: number }> {
     if (!this.checkFetchRateLimit()) {

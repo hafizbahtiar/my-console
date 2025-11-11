@@ -1328,6 +1328,27 @@
       "blog_post_not_found": "Post not found",
       "failed_to_load": "Failed to load post",
       "back_to_posts": "Back to Posts"
+    },
+    "replies": {
+      "title": "Replies ({{count}})",
+      "no_replies": "No replies yet. Be the first to reply!",
+      "add_reply": "Add Reply",
+      "reply": "Reply",
+      "solution": "Solution",
+      "show_replies": "Show {{count}} replies",
+      "hide_replies": "Hide replies",
+      "placeholder": "Write your reply...",
+      "content_required": "Reply content is required",
+      "content_too_long": "Reply must be less than {{max}} characters",
+      "characters": "characters",
+      "submit": "Submit Reply",
+      "submitting": "Submitting...",
+      "created_success": "Reply created successfully",
+      "created_failed": "Failed to create reply"
+    },
+    "votes": {
+      "login_required": "Please log in to vote",
+      "failed": "Failed to vote"
     }
   },
   "dashboard_page": {
@@ -1468,7 +1489,6 @@
       "source": "Source",
       "currency": "Currency",
       "total_revenue": "Total Revenue",
-      "total_invoices": "Total Invoices",
       "last_contact": "Last Contact",
       "next_follow_up": "Next Follow-up"
     },

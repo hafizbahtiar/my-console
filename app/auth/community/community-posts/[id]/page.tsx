@@ -30,6 +30,7 @@ import {
   ViewMetadata,
   ViewContent,
 } from "@/components/app/auth/community/community-posts/view";
+import { RepliesList } from "@/components/app/auth/community/community-posts/replies";
 
 export default function ViewCommunityPostPage() {
   const { user, loading: authLoading } = useAuth();
@@ -212,6 +213,7 @@ export default function ViewCommunityPostPage() {
         <div className="space-y-8">
           <ViewMetadata post={post} getTopicName={getTopicName} />
           <ViewContent post={post} />
+          <RepliesList postId={postId} isLocked={post.isLocked} />
         </div>
       </div>
     </div>

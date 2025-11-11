@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/custom/status-badge";
 import { Pin, Lock, Star, Edit } from "lucide-react";
 import { useTranslation } from "@/lib/language-context";
 import { CommunityPost } from "@/app/auth/community/community-posts/types";
+import { VoteButtons } from "../replies/vote-buttons";
 
 interface ViewHeaderProps {
   post: CommunityPost;
@@ -33,6 +34,7 @@ export function ViewHeader({ post, postId }: ViewHeaderProps) {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <VoteButtons postId={postId} upvotes={post.upvotes} downvotes={post.downvotes} />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className={`w-2 h-2 rounded-full ${
                 post.status === 'approved' ? 'bg-green-500' : 

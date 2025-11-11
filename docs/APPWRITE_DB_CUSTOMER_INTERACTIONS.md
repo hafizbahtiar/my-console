@@ -174,7 +174,7 @@ interface CustomerInteraction {
   outcome?: 'successful' | 'no_answer' | 'voicemail' | 'busy' | 'follow_up_required' | 'resolved' | 'escalated' | 'cancelled' | 'other';
   nextAction?: string;
   nextActionDate?: string;
-  relatedEntityType?: string; // e.g., 'invoice', 'quote', 'contract'
+  relatedEntityType?: string; // e.g., 'quote', 'contract' (invoice module removed)
   relatedEntityId?: string; // ID of related entity
   metadata?: string; // JSON string
 }
@@ -421,7 +421,7 @@ const recentInteractions = await tablesDB.listRows({
 ### Data Consistency
 - Always update customer's `lastContactAt` when creating interactions
 - Update customer's `nextFollowUpAt` when `nextActionDate` is set
-- Link related entities (invoices, quotes) via `relatedEntityType` and `relatedEntityId`
+- Link related entities (quotes, contracts) via `relatedEntityType` and `relatedEntityId` (invoice module removed)
 - Use consistent interaction types across the system
 
 ### Performance
@@ -442,7 +442,7 @@ const recentInteractions = await tablesDB.listRows({
 - Display all interactions chronologically
 - Filter by interaction type
 - Show interaction details on click
-- Link to related entities (invoices, quotes)
+- Link to related entities (quotes, contracts) (invoice module removed)
 
 ### Interaction Creation
 - Quick log call/email/meeting

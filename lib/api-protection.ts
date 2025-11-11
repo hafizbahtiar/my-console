@@ -267,7 +267,7 @@ export function createProtectedPOST(
   return async (request: NextRequest) => {
     return protectedAPI(request, handler, {
       ...options,
-      requireCSRF: true, // POST requests need CSRF
+      requireCSRF: options.requireCSRF !== undefined ? options.requireCSRF : true, // POST requests need CSRF by default, but allow override
     });
   };
 }

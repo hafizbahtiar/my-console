@@ -140,6 +140,7 @@ export function SidebarNav() {
     },
   ]
 
+
   const developerItems = [
     {
       title: t('sidebar.api_keys'),
@@ -276,6 +277,7 @@ export function SidebarNav() {
     // Other customer items are available to all authenticated users
     return true
   })
+
 
   // Show skeleton while translations are loading
   if (translationLoading) {

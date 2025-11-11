@@ -111,10 +111,18 @@ export default function BlogPostsPage() {
             }
 
             setError(null);
-        } catch (err) {
+        } catch (err: any) {
             console.error('Failed to load blog posts:', err);
-            setError(t('blog_posts_page.failed_to_load'));
-            toast.error(t('blog_posts_page.failed_to_load'));
+            
+            // Check for unauthorized error
+            if (err?.code === 401 || err?.code === 403 || err?.message?.includes('not authorized') || err?.message?.includes('Unauthorized')) {
+                const errorMsg = `Permission denied. Please set Read permission to "users" (authenticated users) on the '${BLOG_POSTS_COLLECTION_ID}' table in Appwrite Console.\n\nSee: docs/APPWRITE_TABLES_PERMISSIONS_SETUP.md`;
+                setError(errorMsg);
+                toast.error('Unauthorized: Check table permissions in Appwrite Console');
+            } else {
+                setError(t('blog_posts_page.failed_to_load'));
+                toast.error(t('blog_posts_page.failed_to_load'));
+            }
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -128,8 +136,11 @@ export default function BlogPostsPage() {
                 tableId: BLOG_CATEGORIES_COLLECTION_ID,
             });
             setCategories(categoriesData.rows || []);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load categories:', error);
+            if (error?.code === 401 || error?.code === 403 || error?.message?.includes('not authorized')) {
+                console.error(`Permission denied for ${BLOG_CATEGORIES_COLLECTION_ID}. Set Read permission to "users" in Appwrite Console.`);
+            }
         }
     }, []);
 
@@ -140,8 +151,11 @@ export default function BlogPostsPage() {
                 tableId: BLOG_TAGS_COLLECTION_ID,
             });
             setTags(tagsData.rows || []);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to load tags:', error);
+            if (error?.code === 401 || error?.code === 403 || error?.message?.includes('not authorized')) {
+                console.error(`Permission denied for ${BLOG_TAGS_COLLECTION_ID}. Set Read permission to "*" (any) or "users" in Appwrite Console.`);
+            }
         }
     }, []);
 

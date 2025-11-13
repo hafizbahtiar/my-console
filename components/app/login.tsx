@@ -131,7 +131,7 @@ export function LoginForm() {
       })
 
       // Redirect to dashboard or home page
-      window.location.href = '/auth/dashboard'
+      // window.location.href = '/auth/dashboard'
     } catch (err: any) {
       // Log failed login attempt
       try {

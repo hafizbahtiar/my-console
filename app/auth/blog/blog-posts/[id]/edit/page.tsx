@@ -29,12 +29,15 @@ import {
   DATABASE_ID,
   BLOG_POSTS_COLLECTION_ID,
   BLOG_CATEGORIES_COLLECTION_ID,
-  BLOG_TAGS_COLLECTION_ID
+  BLOG_TAGS_COLLECTION_ID,
+  storage,
+  STORAGE_ID
 } from "@/lib/appwrite";
+import { Query } from "appwrite";
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
-import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
+import { getCSRFToken, getCSRFHeadersAlt } from "@/lib/csrf-utils";
 import {
   EditBreadcrumbNav,
   ProgressIndicator,
@@ -47,6 +50,7 @@ import {
   isValidUrl,
   generateSlug,
 } from "@/components/app/auth/blog/blog-posts/create";
+import { account } from "@/lib/appwrite";
 
 
 export default function EditBlogPostPage() {
@@ -334,17 +338,12 @@ export default function EditBlogPostPage() {
   // Fix category selection after both post and categories are loaded
   useEffect(() => {
     if (!post || categories.length === 0) return;
-
     // Get the raw category from post (source of truth)
     const rawCategory = post.blogCategories || null;
     if (!rawCategory) {
-      // No category in post, ensure formData is null
-      if (formData.blogCategories !== null) {
-        setFormData(prev => ({ ...prev, blogCategories: null }));
-      }
+      setFormData(prev => ({ ...prev, blogCategories: null }));
       return;
     }
-
     // Extract category ID from raw category
     let categoryId: string | null = null;
     if (typeof rawCategory === 'string') {
@@ -352,35 +351,195 @@ export default function EditBlogPostPage() {
     } else if (typeof rawCategory === 'object' && rawCategory) {
       categoryId = (rawCategory as any).$id || (rawCategory as any).id || (rawCategory as any)._id || null;
     }
-
-    if (!categoryId) return;
-
+    if (!categoryId) {
+      setFormData(prev => ({ ...prev, blogCategories: null }));
+      return;
+    }
     // Find the full category object from the categories list
     const categoryObj = categories.find(cat => cat.$id === categoryId) || null;
-
-    // Get current category ID from formData
-    const currentCategoryId = typeof formData.blogCategories === 'string'
-      ? formData.blogCategories
-      : (formData.blogCategories as any)?.$id;
-
-    const isFormDataString = typeof formData.blogCategories === 'string';
-
-    // Update formData if:
-    // 1. Category object is found AND (formData is a string OR IDs don't match)
-    // The Select component needs an object, not a string!
-    if (categoryObj && (isFormDataString || currentCategoryId !== categoryObj.$id)) {
-      setFormData(prev => ({
-        ...prev,
-        blogCategories: categoryObj
-      }));
-    } else if (!categoryObj && currentCategoryId) {
-      // Category was deleted, set to null
-      setFormData(prev => ({
-        ...prev,
-        blogCategories: null
-      }));
-    }
+    // Update formData using functional update to access current state
+    setFormData(prev => {
+      const currentCategoryId = typeof prev.blogCategories === 'string'
+        ? prev.blogCategories
+        : (prev.blogCategories as any)?.$id;
+      if (categoryObj) {
+        if (currentCategoryId !== categoryObj.$id) {
+          return { ...prev, blogCategories: categoryObj };
+        }
+      } else {
+        if (currentCategoryId) {
+          return { ...prev, blogCategories: null };
+        }
+      }
+      return prev;
+    });
   }, [post, categories]);
+
+  // Fix tag selection after both post and tags are loaded
+  useEffect(() => {
+    // Wait for both post and availableTags to be loaded
+    if (!post || !postId) {
+      return;
+    }
+    if (availableTags.length === 0) {
+      return;
+    }
+
+    // Appwrite Tables API's getRow doesn't populate many-to-many relationships
+    // So post.blogTags will be null/undefined. We need to query tags separately.
+    // Since relationships aren't populated in either direction, we need to query
+    // tags using a relationship query.
+
+    // Try to query tags using relationship query
+    // Since listRows doesn't populate relationships, we need to query tags
+    // that are related to this post using a relationship query
+    const loadRelatedTags = async () => {
+      try {
+        // Import Query if needed - but first let's try checking the raw post data
+        // The post might have tag IDs stored in a different format
+
+        // Since relationships aren't populated, let's try querying tags
+        // where blogPosts relationship contains this post ID
+        // But we need to check if Appwrite Tables supports relationship queries
+
+        // For now, let's check if we can get tag IDs from the post data directly
+        // by inspecting the raw post object
+        const rawPostData = post as any;
+
+        // Log ALL fields to see if tags are stored somewhere else
+        // console.log('[Edit Page] Tag resolution - ALL post fields:', Object.keys(rawPostData));
+        // console.log('[Edit Page] Tag resolution - raw post.blogTags:', rawPostData.blogTags);
+        // console.log('[Edit Page] Tag resolution - raw post.tags:', rawPostData.tags);
+
+        // Check if there are any other fields that might contain tag data
+        const possibleTagFields = ['blogTags', 'tags', 'tagIds', 'tag_ids', 'blog_tag_ids'];
+        for (const field of possibleTagFields) {
+          if (rawPostData[field] !== undefined && rawPostData[field] !== null) {
+            // console.log(`[Edit Page] Tag resolution - found field "${field}":`, rawPostData[field], 'type:', typeof rawPostData[field]);
+          }
+        }
+
+        // If blogTags or tags is stored as an array of IDs (even if not populated as objects),
+        // we might be able to access it directly
+        let tagIds: string[] = [];
+
+        // Check both blogTags (relationship field) and tags (fallback array field)
+        // We save to both fields because getRow doesn't populate many-to-many relationships
+        // Priority: blogTags first (relationship), then tags (fallback array field)
+        const tagsField = rawPostData.blogTags || rawPostData.tags;
+
+        // console.log('[Edit Page] Tag resolution - tagsField value:', tagsField, 'type:', typeof tagsField, 'isArray:', Array.isArray(tagsField));
+
+        // FALLBACK: If no tags found in post data, try to find tags by checking all tags
+        // and seeing if their blogPosts relationship (even if not populated) might contain this post ID
+        // This is a workaround for posts created before we started saving to the tags field
+        if (!tagsField || (Array.isArray(tagsField) && tagsField.length === 0)) {
+          // console.log('[Edit Page] Tag resolution - No tags in post data, trying fallback: checking all tags for blogPosts relationship...');
+
+          // Check each tag's raw data to see if blogPosts field exists (even if not populated)
+          // Sometimes Appwrite stores relationship IDs even if not populated
+          for (const tag of availableTags) {
+            const rawTag = tag as any;
+            // Check if blogPosts exists and might contain this post ID
+            if (rawTag.blogPosts !== undefined) {
+              // It might be an array of IDs, an array of objects, or a single value
+              const blogPostsValue = rawTag.blogPosts;
+              if (Array.isArray(blogPostsValue)) {
+                // Check if any element matches this post ID
+                const hasPostId = blogPostsValue.some((item: any) => {
+                  if (typeof item === 'string') return item === postId;
+                  if (typeof item === 'object' && item) return (item.$id || item.id) === postId;
+                  return false;
+                });
+                if (hasPostId) {
+                  // console.log(`[Edit Page] Tag resolution - Found tag "${tag.name}" that references this post via blogPosts relationship`);
+                  tagIds.push(tag.$id);
+                }
+              } else if (typeof blogPostsValue === 'string' && blogPostsValue === postId) {
+                // console.log(`[Edit Page] Tag resolution - Found tag "${tag.name}" that references this post (single value)`);
+                tagIds.push(tag.$id);
+              }
+            }
+          }
+
+          if (tagIds.length > 0) {
+            // console.log('[Edit Page] Tag resolution - Fallback found tags:', tagIds.length, tagIds);
+          }
+        }
+
+        if (tagsField) {
+          if (Array.isArray(tagsField)) {
+            // Handle array of IDs or array of objects
+            if (tagsField.length > 0) {
+              tagIds = tagsField
+                .map((tag: any) => {
+                  if (typeof tag === 'string') return tag;
+                  if (typeof tag === 'object' && tag) {
+                    // Could be full object or just { $id: '...' }
+                    return tag.$id || tag.id || tag._id || null;
+                  }
+                  return null;
+                })
+                .filter((id: string | null): id is string => id !== null && id !== '');
+              // console.log('[Edit Page] Tag resolution - extracted tag IDs from post:', tagIds);
+            } else {
+              // console.log('[Edit Page] Tag resolution - tagsField is empty array');
+            }
+          } else if (typeof tagsField === 'string') {
+            // Single tag ID as string
+            tagIds = [tagsField];
+            // console.log('[Edit Page] Tag resolution - extracted single tag ID from post:', tagIds);
+          } else {
+            // console.log('[Edit Page] Tag resolution - tagsField is not array or string:', typeof tagsField, tagsField);
+          }
+        } else {
+          // console.log('[Edit Page] Tag resolution - tagsField is falsy:', tagsField);
+        }
+
+        // If we found tag IDs, resolve them from availableTags
+        if (tagIds.length > 0) {
+          const resolvedTags = tagIds
+            .map((tagId: string) => availableTags.find(tag => tag.$id === tagId))
+            .filter((tag): tag is BlogTag => tag !== undefined);
+
+          // console.log('[Edit Page] Tag resolution - resolved tags from IDs:', resolvedTags.length, resolvedTags.map(t => t.name));
+
+          setFormData(prev => {
+            const currentTagIds = prev.blogTags.map(t => t.$id).sort().join(',');
+            const newTagIds = resolvedTags.map(t => t.$id).sort().join(',');
+
+            if (currentTagIds !== newTagIds) {
+              // console.log('[Edit Page] Tag resolution - updating formData with tags:', resolvedTags.length);
+              return {
+                ...prev,
+                blogTags: resolvedTags
+              };
+            }
+
+            return prev;
+          });
+          return;
+        }
+
+        // Note: Relationship queries for many-to-many relationships are not supported
+        // in Appwrite Tables API (returns "Cannot query on virtual relationship attribute")
+        // So we rely on the post data containing tag IDs in blogTags or tags field
+
+        // If we still haven't found tags, log a warning
+        if (tagIds.length === 0) {
+          // console.warn('[Edit Page] Tag resolution - could not find tag IDs in post data.');
+          // console.warn('[Edit Page] Tag resolution - checked fields: blogTags =', rawPostData.blogTags, ', tags =', rawPostData.tags);
+          // console.warn('[Edit Page] Tag resolution - This post was likely created before we started saving tags to the "tags" field.');
+          // console.warn('[Edit Page] Tag resolution - SOLUTION: Select tags in the UI and save the post once. This will populate the "tags" field and tags will load correctly on next edit.');
+        }
+
+      } catch (error) {
+        console.error('[Edit Page] Tag resolution - error loading related tags:', error);
+      }
+    };
+
+    loadRelatedTags();
+  }, [post, availableTags, postId]);
 
   // Check if form has unsaved changes
   const hasUnsavedChanges = useCallback(() => {
@@ -424,6 +583,7 @@ export default function EditBlogPostPage() {
       formData.status !== initialFormData.status ||
       formData.featuredImage !== initialFormData.featuredImage ||
       formData.featuredImageAlt !== initialFormData.featuredImageAlt ||
+      formData.featuredImageFile !== initialFormData.featuredImageFile ||
       formData.isFeatured !== initialFormData.isFeatured ||
       formData.allowComments !== initialFormData.allowComments ||
       formData.seoTitle !== initialFormData.seoTitle ||
@@ -480,18 +640,32 @@ export default function EditBlogPostPage() {
 
   const loadPost = async () => {
     try {
-      const postData = await tablesDB.getRow({
+      // Use listRows with Query instead of getRow - listRows may return relationship data
+      // that getRow doesn't populate (as seen in portfolio-next implementation)
+      const postData = await tablesDB.listRows({
         databaseId: DATABASE_ID,
         tableId: BLOG_POSTS_COLLECTION_ID,
-        rowId: postId,
+        queries: [
+          Query.equal('$id', postId),
+          Query.limit(1),
+        ],
       });
 
-      const post = postData as unknown as BlogPost;
+      if (!postData.rows || postData.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+
+      const post = postData.rows[0] as unknown as BlogPost;
       setPost(post);
 
       // Don't resolve category here - let useEffect handle it after categories are loaded
       // Just store the raw category data from the post
       const rawCategory = post.blogCategories || null;
+
+      // Check if listRows returned relationship data (unlike getRow which doesn't populate relationships)
+      const rawTags = post.blogTags || null;
+      // console.log('[Edit Page] loadPost - post.blogTags from listRows:', rawTags);
+      // console.log('[Edit Page] loadPost - post.tags from listRows:', (post as any).tags);
 
       // Populate form with post data
       const initialData: BlogPostFormData = {
@@ -502,7 +676,7 @@ export default function EditBlogPostPage() {
         author: post.author,
         authorId: post.authorId || '',
         blogCategories: rawCategory, // Store raw category - will be resolved in useEffect
-        blogTags: post.blogTags || [],
+        blogTags: [], // Start with empty array - will be resolved in useEffect after tags are loaded
         readTime: post.readTime,
         featuredImage: post.featuredImage || '',
         featuredImageAlt: post.featuredImageAlt || '',
@@ -674,27 +848,102 @@ export default function EditBlogPostPage() {
         return;
       }
 
+      // Upload featured image first if a file is selected
+      let featuredImageUrl = formData.featuredImage && formData.featuredImage.trim() !== ''
+        ? formData.featuredImage.trim()
+        : null;
+
+      if (formData.featuredImageFile) {
+        try {
+          // Get JWT for authentication (since session cookie is on Appwrite domain)
+          const jwtResponse = await account.createJWT();
+          const jwt = jwtResponse.jwt;
+          // Get CSRF token
+          const token = await getCSRFToken();
+          // Create FormData
+          const formDataToSend = new FormData();
+          formDataToSend.append('file', formData.featuredImageFile);
+          // Upload image
+          const uploadResponse = await fetch('/api/blog/upload-image', {
+            method: 'POST',
+            headers: {
+              'X-CSRF-Token': token,
+              'X-Appwrite-JWT': jwt,  // Send JWT for server-side auth
+            },
+            credentials: 'include',
+            body: formDataToSend,
+          });
+          // console.log('[DEBUG] Upload response status:', uploadResponse.status);
+          if (!uploadResponse.ok) {
+            const error = await uploadResponse.json();
+            // console.error('[ERROR] Upload failed:', error);
+            throw new Error(error.error?.message || error.error || 'Failed to upload image');
+          }
+          const uploadData = await uploadResponse.json();
+          // console.log('[DEBUG] Upload response data:', uploadData);
+          if (uploadData.success && (uploadData.data?.url || uploadData.url)) {
+            featuredImageUrl = uploadData.data?.url || uploadData.url;
+            // console.log('[DEBUG] Set featuredImageUrl:', featuredImageUrl);
+            // Delete old image if exists and new one uploaded
+            if (post?.featuredImage && featuredImageUrl !== post.featuredImage) {
+              try {
+                const oldFileId = post.featuredImage.split('/').pop()?.split('?')[0];
+                if (oldFileId) {
+                  await storage.deleteFile({ bucketId: STORAGE_ID, fileId: oldFileId });
+                }
+              } catch (deleteError) {
+                console.warn('[WARN] Failed to delete old image:', deleteError);
+                // Continue - non-critical error
+              }
+            }
+          } else {
+            // console.error('[ERROR] Invalid upload response:', uploadData);
+            throw new Error('Invalid response from image upload');
+          }
+        } catch (uploadError: any) {
+          // console.error('Image upload error:', uploadError);
+          toast.error(uploadError.message || 'Failed to upload image');
+          isSubmittingRef.current = false;
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
 
+      // Get tag IDs for saving
+      const tagIds = formData.blogTags.map((tag: any) => tag.$id);
+      // Exclude featuredImageFile from formData
+      const { featuredImageFile, ...postData } = formData;
       const updatedPost = {
-        ...formData,
+        ...postData,
         content: sanitizeHTMLForStorage(formData.content), // Sanitize HTML content
         publishedAt: formData.status === 'published' && !post?.publishedAt
           ? new Date().toISOString()
           : formData.publishedAt || post?.publishedAt,
-        featuredImage: formData.featuredImage && formData.featuredImage.trim() !== '' ? formData.featuredImage.trim() : null,
+        featuredImage: featuredImageUrl,
         featuredImageAlt: formData.featuredImageAlt && formData.featuredImageAlt.trim() !== '' ? formData.featuredImageAlt.trim() : null,
         // Convert tag relationships to the format expected by Appwrite
-        blogTags: formData.blogTags.map((tag: any) => tag.$id),
+        blogTags: tagIds,
+        // Also save to tags field (legacy/fallback) so we can read it back
+        // since getRow doesn't populate many-to-many relationships
+        tags: tagIds,
       };
-
-      await tablesDB.updateRow({
-        databaseId: DATABASE_ID,
-        tableId: BLOG_POSTS_COLLECTION_ID,
-        rowId: postId,
-        data: updatedPost,
-      });
+      // console.log('[DEBUG] Saving post with featuredImage:', updatedPost.featuredImage);
+      // console.log('[DEBUG] Updating row with data:', updatedPost);
+      try {
+        await tablesDB.updateRow({
+          databaseId: DATABASE_ID,
+          tableId: BLOG_POSTS_COLLECTION_ID,
+          rowId: postId,
+          data: updatedPost,
+        });
+        // console.log('[DEBUG] Post updated successfully');
+      } catch (updateError: any) {
+        // console.error('[ERROR] Failed to update post:', updateError);
+        throw updateError;
+      }
 
       // Note: Category post counts are calculated dynamically from relationships
       // No manual updates needed when categories change
@@ -722,6 +971,7 @@ export default function EditBlogPostPage() {
         status: updatedPost.status,
         featuredImage: updatedPost.featuredImage || '',
         featuredImageAlt: updatedPost.featuredImageAlt || '',
+        featuredImageFile: undefined, // Clear file after upload
         publishedAt: updatedPost.publishedAt || undefined,
         seoTitle: updatedPost.seoTitle || '',
         seoDescription: updatedPost.seoDescription || '',
@@ -737,7 +987,7 @@ export default function EditBlogPostPage() {
       // This ensures navigation happens even if state updates haven't completed
       window.location.href = '/auth/blog/blog-posts';
     } catch (error: any) {
-      console.error('Failed to update blog post:', error);
+      // console.error('Failed to update blog post:', error);
       toast.error(error.message || t('blog_posts_page.edit_page.update_failed'));
       isSubmittingRef.current = false; // Reset ref on error
     } finally {

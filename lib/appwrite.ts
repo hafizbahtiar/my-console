@@ -15,6 +15,9 @@ export const teams = new Teams(client)
 // Database ID
 export const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || 'console-db'
 
+// Storage ID
+export const STORAGE_ID = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_ID || 'default'
+
 // Collection IDs
 export const BLOG_POSTS_COLLECTION_ID = 'blog_posts'
 export const BLOG_CATEGORIES_COLLECTION_ID = 'blog_categories'

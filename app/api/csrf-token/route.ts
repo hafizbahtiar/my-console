@@ -19,6 +19,16 @@ export async function GET(request: NextRequest) {
     // Generate CSRF token
     const token = generateCSRFToken(sessionId);
 
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      const { csrfStore } = await import('@/middlewares/csrf');
+      console.log('[CSRF Token Generation]', {
+        sessionId,
+        tokenLength: token.length,
+        storedTokens: csrfStore.getTokenCount(),
+      });
+    }
+
     const response = NextResponse.json({
       token,
       sessionId

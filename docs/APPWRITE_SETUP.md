@@ -228,3 +228,10 @@ All routes under `/auth/` require authentication and automatically redirect unau
 - [Appwrite Documentation](https://appwrite.io/docs)
 - [Next.js Authentication Guide](https://nextjs.org/docs/authentication)
 - [Appwrite JavaScript SDK](https://github.com/appwrite/sdk-for-js)
+
+## Best Practices for Appwrite Implementation
+- Use Query builder for all database queries to avoid syntax errors
+- Implement JWT for cross-domain authentication (e.g., image uploads)
+- Handle file deletions when updating resources to avoid storage clutter
+- Add error handling and retries for Appwrite calls
+- Use latest SDK to avoid deprecations

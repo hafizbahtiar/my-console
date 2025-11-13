@@ -125,6 +125,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Create new email/password session
       const session = await account.createEmailPasswordSession({ email, password })
+      console.log('[DEBUG] Session created successfully:', {
+        sessionId: session.$id,
+        userId: session.userId,
+        expire: new Date(session.expire).toLocaleString(),
+        provider: session.provider,
+        ip: session.ip,
+        country: session.countryName
+      });
 
       // Update session manager
       try {
@@ -142,6 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Reset rate limit on successful login
       setLastLoginAttempt(0)
     } catch (error: any) {
+      console.error('[ERROR] Login failed:', error);
       // If it's a rate limit error from Appwrite, reset client-side limiting
       if (error.code === 429) {
         // Extend client-side rate limit to match server-side (5 minutes = 300000ms)

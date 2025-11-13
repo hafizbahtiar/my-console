@@ -244,11 +244,11 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **Component Separation**: Modular components with dedicated translation keys
 
 #### Appwrite Integration (`lib/appwrite.ts`)
-- Centralized client configuration
-- Database and account service exports
-- Centralized database and collection ID constants
-- Environment variable management
-- All collection IDs exported for consistent usage across the application
+- Centralized client with better error handling
+- Optimized queries using Appwrite Query builder
+- JWT authentication for cross-domain scenarios
+- Automatic old file deletion in storage
+- Consistent collection IDs and schemas
 
 #### API Protection System (`lib/api-protection.ts`)
 - Standardized API route protection wrappers

@@ -10,7 +10,9 @@
  */
 export async function getCSRFToken(): Promise<string> {
   try {
-    const response = await fetch('/api/csrf-token');
+    const response = await fetch('/api/csrf-token', {
+      credentials: 'include', // Include cookies to get the correct session ID
+    });
     if (!response.ok) {
       throw new Error('Failed to get CSRF token');
     }

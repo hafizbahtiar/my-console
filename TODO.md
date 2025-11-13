@@ -35,6 +35,9 @@ Address security vulnerabilities and implement security best practices identifie
 - ✅ Document audit log retention policy
 - ✅ Add CSP headers configuration
 - ✅ Document API key rotation procedure - Complete documentation in `docs/API_KEY_ROTATION.md`
+- ✅ CSRF protection with cookie-based session ID
+- ✅ JWT authentication for cross-domain scenarios
+- ✅ Image upload security with validation and deletion of old files
 
 **❌ Remaining**:
 - None (all security enhancements complete)
@@ -88,7 +91,7 @@ Integrate OpenRouter API to provide AI-powered content assistance features in th
 - [x] Optimize database queries with pagination
 - [x] **Fixed pagination query syntax** - Updated to use Appwrite Query builder (resolved "Invalid query: Syntax error")
 - [x] **Query optimization** - Proper use of Query.equal(), Query.orderDesc(), Query.limit(), Query.offset()
-
+- [x] Better Appwrite query handling with error fallbacks
 
 ### Security Hardening
 **Status**: ✅ Core Complete, 🟡 Minor Enhancements Remaining
@@ -115,6 +118,8 @@ Integrate OpenRouter API to provide AI-powered content assistance features in th
 - ✅ Request size limits (10MB default, configurable per route)
 - ✅ Standardized error handling with APIError class and consistent responses
 - ✅ Error message sanitization (removes sensitive data from logs)
+- ✅ JWT authentication for cross-domain Appwrite access
+- ✅ Automatic deletion of old uploaded files
 
 **Remaining Enhancements** (See `docs/SECURITY_AUDIT.md`):
 - ✅ API key rotation documentation - Complete procedure documented in `docs/API_KEY_ROTATION.md`
@@ -166,6 +171,9 @@ Self-service customer relationship management (CRM) module for managing customer
 - ✅ Customer notes management (create, edit, delete, pin, tag, mark important)
 - ✅ Customer interactions logging (calls, emails, meetings, tasks, etc.)
 - ✅ Activity timeline combining notes and interactions
+- ✅ Customer import/export with CSV, JSON, Excel
+- ✅ Customer tags system
+- ✅ Bulk operations (status update, tag management, export)
 
 **Database Schema**:
 - ✅ Customer collection documented in `docs/APPWRITE_DB_CUSTOMERS.md`
@@ -174,27 +182,16 @@ Self-service customer relationship management (CRM) module for managing customer
 
 **UI Components Implemented**:
 - ✅ Customer listing table with pagination and bulk selection
-- ✅ Customer detail view with tabs (overview, details, notes, interactions, activity timeline)
-- ✅ Customer form (create/edit) with all fields and tags
+- ✅ Customer detail view with tabs
+- ✅ Customer form (create/edit) with tags
 - ✅ Customer search and filter components
-- ✅ Empty state component with create button
+- ✅ Empty state component
 - ✅ View and delete dialogs
-- ✅ Customer notes component (full CRUD with tags, pinning, importance flags)
-- ✅ Customer interactions component (logging and timeline view)
-- ✅ Activity timeline component (combined notes and interactions)
-- ✅ Bulk operations toolbar (status update, tag assignment, export)
-- ✅ Customer tags input component
-- ✅ Customer import/export component
-
-**✅ Completed Features**:
-- ✅ **Customer Notes UI** - Full CRUD interface for customer notes with create, edit, delete, pin, and tag support
-- ✅ **Customer Interactions UI** - Full interface for logging and tracking customer interactions (calls, emails, meetings, etc.)
-- ✅ **Customer Activity Timeline** - Combined timeline view showing both notes and interactions chronologically
-- ✅ **API Routes** - Complete REST API for customer notes and interactions with proper authentication and validation
-- ✅ **Folder Structure** - Reorganized to match blog/community pattern (`customers/customers/` subfolder structure)
-- ✅ **Customer Import/Export** - Full import/export functionality supporting CSV, JSON, and Excel formats with file size validation, overwrite options, and error handling
-- ✅ **Customer Tags & Categorization** - Metadata-based tagging system with tag input component, stored in customer metadata field for flexible categorization
-- ✅ **Bulk Operations** - Complete bulk operations system with status update, tag assignment (add/remove/set), and bulk export for selected customers
+- ✅ Notes and interactions components
+- ✅ Activity timeline
+- ✅ Bulk operations toolbar
+- ✅ Tags input
+- ✅ Import/export component
 
 **Remaining Features** (Future Enhancements):
 - [ ] Advanced customer analytics dashboard
@@ -219,14 +216,14 @@ Self-service customer relationship management (CRM) module for managing customer
 **Priority**: Medium
 **Estimated Effort**: 2-3 weeks
 
-**✅ Completed**: Content categories, tags system, featured posts, analytics dashboard, threaded comments display
+**✅ Completed**: Content categories, tags system, featured posts, analytics dashboard, threaded comments display, image upload with deletion of old images
 
-**❌ Missing Features**:
-- [ ] **Comment creation form** - Users cannot create comments (only display exists)
-- [ ] **Comment moderation interface** - No way to approve/reject/edit/delete comments
+**❌ Missing**:
+- [ ] **Comment creation form** - Users can view comments but cannot create new ones
+- [ ] **Comment moderation** - No approve/reject/edit/delete interface for comments
 - [ ] **Bulk operations** - Cannot delete/update multiple posts at once
 - [ ] **Content export** - No export functionality for blog posts (CSV, JSON, PDF)
-- [ ] **Content import** - No import functionality for bulk content creation
+- [ ] **Content import** - No bulk import from CSV/JSON
 - [ ] **Content scheduling** - Cannot schedule posts for future publication
 - [ ] **Version history** - No content versioning or rollback capability
 - [ ] **Duplicate post** - No "duplicate" functionality to create similar posts
@@ -270,6 +267,19 @@ Analytics and reporting features for the portfolio-next project, accessible thro
 - [ ] Add project view tracking and analytics
 - [ ] Create engagement metrics (time on site, pages per session, exit pages)
 
+### Better Appwrite Implementation
+**Status**: Planning
+**Priority**: High
+**Estimated Effort**: 1 week
+
+**Tasks**:
+- [ ] Update to latest Appwrite SDK to resolve deprecation warnings
+- [ ] Optimize all database queries with proper indexing
+- [ ] Implement error handling for all Appwrite calls
+- [ ] Add retry mechanism for failed Appwrite requests
+- [ ] Use Appwrite's real-time subscriptions where appropriate
+- [ ] Review and improve relationship handling in schemas
+
 ---
 
 ## 🔍 Critical Missing Features Analysis
@@ -278,17 +288,17 @@ Analytics and reporting features for the portfolio-next project, accessible thro
 **Status**: Core CRUD Complete, Missing Advanced Features
 **Priority**: High
 
-**✅ Implemented**: Full CRUD, view page with tabs, threaded comments display, search/filtering, pagination, status management
+**✅ Implemented**: Full CRUD, view page with tabs, threaded comments display, search/filtering, pagination, status management, image upload with old image deletion, category loading in edit page
 
 **❌ Missing**:
 - [ ] **Comment creation form** - Users can view comments but cannot create new ones
 - [ ] **Comment moderation** - No approve/reject/edit/delete interface for comments
-- [ ] **Bulk operations** - Cannot select and delete/update multiple posts simultaneously
-- [ ] **Export functionality** - No CSV/JSON/PDF export for posts
-- [ ] **Import functionality** - No bulk import from CSV/JSON
+- [ ] **Bulk operations** - Cannot delete/update multiple posts at once
+- [ ] **Content export** - No export functionality for blog posts (CSV, JSON, PDF)
+- [ ] **Content import** - No bulk import from CSV/JSON
 - [ ] **Content scheduling** - Cannot schedule posts for future publication
 - [ ] **Version history** - No content versioning or rollback capability
-- [ ] **Duplicate post** - No "duplicate" button to create similar posts quickly
+- [ ] **Duplicate post** - No "duplicate" functionality to create similar posts
 - [ ] **Advanced search** - Limited to title/content search, no full-text search
 - [ ] **Content templates** - No template system for common post types
 
@@ -342,11 +352,13 @@ Analytics and reporting features for the portfolio-next project, accessible thro
 - Email verification resend with callback handling
 - Password reset (forgot password flow)
 - Personal activity timeline with proper timeline UI (visual timeline with icons, cards, and hover effects)
+- Account deletion with confirmation
 
 **❌ Missing**:
 - [ ] **Avatar upload** - Cannot upload/change profile picture
 - [ ] **Two-factor authentication setup** - Toggle exists but no actual 2FA implementation
 - [ ] **Export user data** - No GDPR-compliant data export
+- [ ] **Email change** - No email address update functionality
 
 **✅ Implemented**:
 - **Account deletion** - Users can delete their account with password confirmation and "DELETE" text confirmation
@@ -420,6 +432,7 @@ Analytics and reporting features for the portfolio-next project, accessible thro
 - Database monitoring (real-time query monitoring, performance analytics)
 - Database migration scripts (migration system with version tracking, CLI, and documentation)
 - Performance tuning and optimization (comprehensive performance tuning guide with best practices)
+- Better Appwrite implementation with optimized queries and error handling
 
 ---
 

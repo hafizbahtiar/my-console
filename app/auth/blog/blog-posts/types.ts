@@ -109,6 +109,7 @@ export interface BlogPostFormData {
   readTime: string;
   featuredImage: string;
   featuredImageAlt: string;
+  featuredImageFile?: File; // Temporary file storage (uploaded on save)
   status: 'draft' | 'published' | 'archived';
   publishedAt?: string;
   views: number;

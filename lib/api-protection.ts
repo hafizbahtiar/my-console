@@ -76,41 +76,20 @@ export async function protectedAPI(
     // 3. Check request size and parse body (if applicable)
     let body: any = {};
     if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
-      const contentLength = request.headers.get('content-length');
-      const maxBodySize = options.maxBodySize || 10 * 1024 * 1024; // Default 10MB
+      const contentType = request.headers.get('content-type') || '';
+      const isFormData = contentType.includes('multipart/form-data');
+      
+      // Skip JSON parsing for FormData - let the handler parse it manually
+      if (!isFormData) {
+        const contentLength = request.headers.get('content-length');
+        const maxBodySize = options.maxBodySize || 10 * 1024 * 1024; // Default 10MB
 
-      if (contentLength && parseInt(contentLength, 10) > maxBodySize) {
-        logger.warn(
-          `Request body too large: ${contentLength} bytes (max: ${maxBodySize})`,
-          'api-protection',
-          undefined,
-          { contentLength, maxBodySize, url: request.url }
-        );
-        return applySecurityHeaders(
-          NextResponse.json(
-            {
-              success: false,
-              error: {
-                code: APIErrorCode.PAYLOAD_TOO_LARGE,
-                message: `Request body exceeds maximum size of ${Math.round(maxBodySize / 1024 / 1024)}MB`,
-              },
-            },
-            { status: 413 }
-          )
-        );
-      }
-
-      try {
-        const rawBody = await request.json();
-
-        // Double-check size after parsing (for cases where content-length header is missing)
-        const bodySize = JSON.stringify(rawBody).length;
-        if (bodySize > maxBodySize) {
+        if (contentLength && parseInt(contentLength, 10) > maxBodySize) {
           logger.warn(
-            `Request body too large after parsing: ${bodySize} bytes (max: ${maxBodySize})`,
+            `Request body too large: ${contentLength} bytes (max: ${maxBodySize})`,
             'api-protection',
             undefined,
-            { bodySize, maxBodySize, url: request.url }
+            { contentLength, maxBodySize, url: request.url }
           );
           return applySecurityHeaders(
             NextResponse.json(
@@ -126,28 +105,55 @@ export async function protectedAPI(
           );
         }
 
-        body = options.sanitizeInput !== false ? sanitize.object(rawBody) : rawBody;
-      } catch (error) {
-        // Body might be empty or invalid JSON
-        if (request.headers.get('content-type')?.includes('application/json')) {
-          logger.warn(
-            'Invalid JSON in request body',
-            'api-protection',
-            error,
-            { url: request.url }
-          );
-          return applySecurityHeaders(
-            NextResponse.json(
-              {
-                success: false,
-                error: {
-                  code: APIErrorCode.BAD_REQUEST,
-                  message: 'Invalid JSON in request body',
+        try {
+          const rawBody = await request.json();
+
+          // Double-check size after parsing (for cases where content-length header is missing)
+          const bodySize = JSON.stringify(rawBody).length;
+          if (bodySize > maxBodySize) {
+            logger.warn(
+              `Request body too large after parsing: ${bodySize} bytes (max: ${maxBodySize})`,
+              'api-protection',
+              undefined,
+              { bodySize, maxBodySize, url: request.url }
+            );
+            return applySecurityHeaders(
+              NextResponse.json(
+                {
+                  success: false,
+                  error: {
+                    code: APIErrorCode.PAYLOAD_TOO_LARGE,
+                    message: `Request body exceeds maximum size of ${Math.round(maxBodySize / 1024 / 1024)}MB`,
+                  },
                 },
-              },
-              { status: 400 }
-            )
-          );
+                { status: 413 }
+              )
+            );
+          }
+
+          body = options.sanitizeInput !== false ? sanitize.object(rawBody) : rawBody;
+        } catch (error) {
+          // Body might be empty or invalid JSON
+          if (contentType.includes('application/json')) {
+            logger.warn(
+              'Invalid JSON in request body',
+              'api-protection',
+              error,
+              { url: request.url }
+            );
+            return applySecurityHeaders(
+              NextResponse.json(
+                {
+                  success: false,
+                  error: {
+                    code: APIErrorCode.BAD_REQUEST,
+                    message: 'Invalid JSON in request body',
+                  },
+                },
+                { status: 400 }
+              )
+            );
+          }
         }
       }
     }

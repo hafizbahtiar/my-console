@@ -32,7 +32,7 @@ import {
 import { auditLogger } from "@/lib/audit-log";
 import { useAuth } from "@/lib/auth-context";
 import { useTranslation } from "@/lib/language-context";
-import { getCSRFHeadersAlt } from "@/lib/csrf-utils";
+import { getCSRFToken, getCSRFHeadersAlt } from "@/lib/csrf-utils";
 import {
   BreadcrumbNav,
   ProgressIndicator,
@@ -357,6 +357,7 @@ export default function CreateBlogPostPage() {
       (formData.excerpt || '').trim() !== (initialFormData.excerpt || '').trim() ||
       (formData.featuredImage || '').trim() !== (initialFormData.featuredImage || '').trim() ||
       (formData.featuredImageAlt || '').trim() !== (initialFormData.featuredImageAlt || '').trim() ||
+      formData.featuredImageFile !== initialFormData.featuredImageFile ||
       (formData.seoTitle || '').trim() !== (initialFormData.seoTitle || '').trim() ||
       (formData.seoDescription || '').trim() !== (initialFormData.seoDescription || '').trim() ||
       JSON.stringify(formData.seoKeywords.sort()) !== JSON.stringify((initialFormData.seoKeywords || []).sort()) ||
@@ -565,6 +566,50 @@ export default function CreateBlogPostPage() {
         return;
       }
 
+      // Upload featured image first if a file is selected
+      let featuredImageUrl = formData.featuredImage && formData.featuredImage.trim() !== '' 
+        ? formData.featuredImage.trim() 
+        : null;
+
+      if (formData.featuredImageFile) {
+        try {
+          // Get CSRF token
+          const token = await getCSRFToken();
+
+          // Create FormData
+          const formDataToSend = new FormData();
+          formDataToSend.append('file', formData.featuredImageFile);
+
+          // Upload image - send CSRF token in header (browser will set Content-Type automatically)
+          const uploadResponse = await fetch('/api/blog/upload-image', {
+            method: 'POST',
+            headers: {
+              'X-CSRF-Token': token, // Send token in header
+            },
+            credentials: 'include', // Include cookies for authentication and CSRF
+            body: formDataToSend,
+          });
+
+          if (!uploadResponse.ok) {
+            const error = await uploadResponse.json();
+            throw new Error(error.error?.message || error.error || 'Failed to upload image');
+          }
+
+          const uploadData = await uploadResponse.json();
+          if (uploadData.success && uploadData.data?.url) {
+            featuredImageUrl = uploadData.data.url;
+          } else {
+            throw new Error('Invalid response from image upload');
+          }
+        } catch (uploadError: any) {
+          console.error('Image upload error:', uploadError);
+          toast.error(uploadError.message || 'Failed to upload image');
+          setIsFormSubmitted(false);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
 
@@ -573,11 +618,15 @@ export default function CreateBlogPostPage() {
         ...formData,
         content: sanitizeHTMLForStorage(formData.content), // Sanitize HTML content
         publishedAt: formData.status === 'published' ? new Date().toISOString() : null,
-        featuredImage: formData.featuredImage && formData.featuredImage.trim() !== '' ? formData.featuredImage.trim() : null,
+        featuredImage: featuredImageUrl,
         featuredImageAlt: formData.featuredImageAlt && formData.featuredImageAlt.trim() !== '' ? formData.featuredImageAlt.trim() : null,
         // Convert relationship fields to the format expected by Appwrite
         blogCategories: formData.blogCategories?.$id || formData.blogCategories || null,
+        // Get tag IDs for saving
         blogTags: formData.blogTags.map((tag: any) => tag.$id),
+        // Also save to tags field (legacy/fallback) so we can read it back
+        // since getRow doesn't populate many-to-many relationships
+        tags: formData.blogTags.map((tag: any) => tag.$id),
       };
 
       await tablesDB.createRow({

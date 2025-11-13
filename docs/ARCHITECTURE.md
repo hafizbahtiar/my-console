@@ -96,6 +96,10 @@ my-console/
 │   ├── audit-log.ts              # Audit logging system
 │   ├── language-context.tsx      # Internationalization
 │   ├── error-handler.ts          # Global error handling
+│   ├── api-protection.ts         # API route protection wrappers
+│   ├── api-error-handler.ts      # Standardized API error handling
+│   ├── api-schemas.ts            # Shared Zod schemas for API validation
+│   ├── csrf-utils.ts             # CSRF token utilities for client-side
 │   ├── pagination.ts             # Pagination utilities
 │   ├── validation.ts             # Input validation
 │   └── utils.ts                  # General utilities
@@ -168,6 +172,26 @@ sequenceDiagram
 - **CORS Error Handling**: Comprehensive CORS error detection with helpful console messages and configuration guidance
 - **Error Recovery**: Graceful handling of network and authentication errors
 
+#### API Protection System
+- **Standardized Protection Wrappers**: All API routes use consistent protection patterns
+- **CSRF Protection**: Automatic CSRF validation for all POST/PUT/DELETE/PATCH operations
+- **Rate Limiting**: Configurable rate limits per endpoint type (auth, api, health, upload)
+- **Input Validation**: Zod schema validation integrated into protection layer
+- **Request Size Limits**: Configurable body size limits (10MB default)
+- **Standardized Responses**: Consistent success/error response format across all endpoints
+- **Dynamic Route Support**: Full support for Next.js 15 dynamic route parameters
+- **Security Headers**: Automatic application of security headers to all responses
+- **Error Handling**: Standardized error handling with APIError class and consistent error codes
+- **Input Sanitization**: Automatic sanitization of request bodies
+
+**Protection Wrappers**:
+- `createProtectedGET`: GET requests (no CSRF)
+- `createProtectedPOST`: POST requests (CSRF enabled by default)
+- `createProtectedPUT`: PUT/PATCH requests (CSRF always enabled)
+- `createProtectedDELETE`: DELETE requests (CSRF always enabled)
+
+**See**: `docs/API_ROUTES.md` for complete API routes documentation
+
 ## 🌍 Internationalization Architecture
 
 ### Implementation Pattern
@@ -239,16 +263,26 @@ All collection IDs are exported from `lib/appwrite.ts`:
 - `BLOG_CATEGORIES_COLLECTION_ID` - Blog categories collection
 - `BLOG_TAGS_COLLECTION_ID` - Blog tags collection
 - `BLOG_COMMENTS_COLLECTION_ID` - Blog comments collection
-- `BLOG_VIEWS_COLLECTION_ID` - Blog views analytics collection
-- `BLOG_LIKES_COLLECTION_ID` - Blog likes engagement collection
+- `BLOG_VIEWS_COLLECTION_ID` - Blog views analytics collection (1 view per authenticated user OR 1 view per IP address)
+- `BLOG_LIKES_COLLECTION_ID` - Blog likes engagement collection (1 like per authenticated user OR 1 like per IP address with toggle functionality)
 - `COMMUNITY_POSTS_COLLECTION_ID` - Community posts collection
 - `COMMUNITY_TOPICS_COLLECTION_ID` - Community topics collection
 - `COMMUNITY_REPLIES_COLLECTION_ID` - Community replies collection
 - `COMMUNITY_VOTES_COLLECTION_ID` - Community votes collection
 - `USERS_COLLECTION_ID` - Extended user profiles collection
-- `AUDIT_COLLECTION_ID` - Audit logs collection
+- `AUDIT_COLLECTION_ID` - Audit logs collection (with retention settings and analytics)
 - `SECURITY_EVENTS_COLLECTION_ID` - Security events collection
 - `IP_BLOCKLIST_COLLECTION_ID` - IP blocklist collection
+
+#### Audit Log Features
+
+The audit log system includes:
+- **Retention Management**: Configurable retention periods via UI (`/auth/audit` → Retention tab) or API (`/api/audit/retention`)
+- **Analytics Dashboard**: Activity trends, hourly distribution, top actions/resources/users, security event analysis (`/auth/audit` → Analytics tab)
+- **Automatic Cleanup**: Configurable retention periods for different log types (default, security events, system events, user activity)
+- **Runtime Configuration**: Retention settings can be updated without server restart
+
+See `docs/AUDIT_RETENTION_POLICY.md` for detailed retention policy documentation.
 
 #### Audit Log Schema
 ```typescript
@@ -402,7 +436,17 @@ const editor = useEditor({
 2. **Content Sanitization**: HTML cleaning and security validation
 3. **SEO Optimization**: Meta tag generation and slug creation
 4. **Analytics Calculation**: Read time and content metrics
-5. **Database Storage**: Structured data persistence
+5. **View and Like Tracking**: 
+   - IP address detection with sessionId fallback for anonymous users
+   - SessionStorage-based duplicate prevention
+   - Proper handling of localhost/development scenarios
+   - Toggle like/unlike functionality with real-time count updates
+6. **Form Submission Improvements**:
+   - Double submission prevention with early return checks
+   - Immediate navigation after successful save
+   - Non-blocking audit logging for better performance
+   - Multi-language support for all user-facing messages
+7. **Database Storage**: Structured data persistence
 
 #### State Management
 
@@ -681,7 +725,10 @@ docs/
 ├── APPWRITE_DB_COMMUNITY_VOTES.md     # Community votes schema
 ├── APPWRITE_DB_USERS.md              # Users collection schema
 ├── APPWRITE_DB_AUDIT_LOG.md     # Audit log schema
+├── AUDIT_RETENTION_POLICY.md    # Audit log retention and analytics
+├── API_KEY_ROTATION.md          # API key rotation procedures
 ├── DATABASE_ADMIN.md            # Database administration guide
+├── PERFORMANCE_TUNING.md        # Performance optimization guide
 ├── TIPTAP_COMPONENTS.md         # Rich text editor documentation
 ├── PAGINATION_OPTIMIZATION.md   # Pagination optimization guide
 └── NICE_TO_HAVE.md              # Future enhancements

@@ -10,19 +10,23 @@ import { useTranslation } from "@/lib/language-context"
 import { LogOut, Loader2, Trash2, Eye } from "lucide-react"
 import { Session, getDeviceIcon, formatDate, formatExpirationDate, getSessionStatus, getBrowserName, getDeviceName } from "./session-utils"
 import { SessionDetailsModal } from "./session-details-modal"
+import { SuspiciousActivityBadge } from "./suspicious-activity-detector"
+import type { SuspiciousActivity } from "./suspicious-activity-detector"
 
 interface OtherSessionsListProps {
   sessions: Session[]
   onTerminateSession: (sessionId: string) => void
   onTerminateAll: () => void
   terminatingSession: string | null
+  suspiciousActivities?: Map<string, SuspiciousActivity>
 }
 
 export function OtherSessionsList({ 
   sessions, 
   onTerminateSession, 
   onTerminateAll, 
-  terminatingSession 
+  terminatingSession,
+  suspiciousActivities
 }: OtherSessionsListProps) {
   const { t } = useTranslation()
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)
@@ -92,6 +96,12 @@ export function OtherSessionsList({
                               <div className={`w-2 h-2 rounded-full ${sessionStatus.color} mr-1`} />
                               {sessionStatus.status}
                             </Badge>
+                            {suspiciousActivities?.has(session.$id) && (
+                              <SuspiciousActivityBadge
+                                activity={suspiciousActivities.get(session.$id)!}
+                                t={t}
+                              />
+                            )}
                           </div>
 
                           <div className="text-xs sm:text-sm text-muted-foreground break-words">

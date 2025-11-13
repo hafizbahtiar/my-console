@@ -44,13 +44,8 @@ export const POST = createProtectedPOST(
       throw APIError.unauthorized('Unauthorized');
     }
 
-    // Validate request body
-      const validationResult = customerSchema.safeParse(body);
-      if (!validationResult.success) {
-        throw APIError.validationError('Validation failed', validationResult.error.issues);
-      }
-
-    const data = validationResult.data;
+    // Body is already validated by schema in options
+    const data = body;
 
     // Ensure userId matches the authenticated user (self-service model)
     if (data.userId !== user.$id) {
@@ -127,12 +122,13 @@ export const POST = createProtectedPOST(
     await auditLogger.logSecurityEvent(user.$id, 'CUSTOMER_CREATED', {
       customerId: customer.$id,
       customerName: (customer as any).name,
-    }).catch(() => {});
+    }).catch(() => { });
 
     return createSuccessResponse(customer, 'Customer created successfully', 201);
   },
   {
     rateLimit: 'api',
+    schema: customerSchema,
   }
 );
 

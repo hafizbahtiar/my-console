@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { BlogPost, BlogPostFormData, BlogTag } from "../../types";
@@ -75,6 +75,7 @@ export default function EditBlogPostPage() {
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const isSubmittingRef = useRef(false); // Ref to track submission status immediately
 
   // Form states
   const [formData, setFormData] = useState<BlogPostFormData>({
@@ -361,7 +362,7 @@ export default function EditBlogPostPage() {
     const currentCategoryId = typeof formData.blogCategories === 'string'
       ? formData.blogCategories
       : (formData.blogCategories as any)?.$id;
-    
+
     const isFormDataString = typeof formData.blogCategories === 'string';
 
     // Update formData if:
@@ -383,6 +384,8 @@ export default function EditBlogPostPage() {
 
   // Check if form has unsaved changes
   const hasUnsavedChanges = useCallback(() => {
+    // If form is being submitted (tracked via ref for immediate check), don't block navigation
+    if (isSubmittingRef.current) return false;
     if (!initialFormData || isFormSubmitted) return false;
 
     // Compare form data with initial data
@@ -575,7 +578,7 @@ export default function EditBlogPostPage() {
       return createdTag;
     } catch (error: any) {
       console.error('Failed to create tag:', error);
-      
+
       // Check for unauthorized error
       if (error?.code === 401 || error?.code === 403 || error?.message?.includes('not authorized') || error?.message?.includes('Unauthorized')) {
         toast.error(`Permission denied. You need "Create" permission set to "role:super_admin" on the '${BLOG_TAGS_COLLECTION_ID}' table.`);
@@ -664,8 +667,12 @@ export default function EditBlogPostPage() {
     }
 
     setIsSubmitting(true);
+    isSubmittingRef.current = true; // Set ref immediately to bypass unsaved changes check
     try {
-      if (!user) return;
+      if (!user) {
+        isSubmittingRef.current = false; // Reset ref if early return
+        return;
+      }
 
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
@@ -705,12 +712,34 @@ export default function EditBlogPostPage() {
         }
       });
 
+      // Update initial form data to match current state (so hasUnsavedChanges returns false)
+      const updatedInitialData: BlogPostFormData = {
+        ...formData,
+        title: updatedPost.title,
+        slug: updatedPost.slug,
+        excerpt: updatedPost.excerpt,
+        content: updatedPost.content,
+        status: updatedPost.status,
+        featuredImage: updatedPost.featuredImage || '',
+        featuredImageAlt: updatedPost.featuredImageAlt || '',
+        publishedAt: updatedPost.publishedAt || undefined,
+        seoTitle: updatedPost.seoTitle || '',
+        seoDescription: updatedPost.seoDescription || '',
+        seoKeywords: updatedPost.seoKeywords || [],
+        blogTags: formData.blogTags, // Keep the tag objects for comparison
+      };
+      setInitialFormData(updatedInitialData);
       setIsFormSubmitted(true);
+
       toast.success(t('blog_posts_page.edit_page.updated_success'));
-      router.push(`/auth/blog/blog-posts/${postId}`);
+
+      // Navigate immediately - use window.location for hard navigation that bypasses React checks
+      // This ensures navigation happens even if state updates haven't completed
+      window.location.href = '/auth/blog/blog-posts';
     } catch (error: any) {
       console.error('Failed to update blog post:', error);
       toast.error(error.message || t('blog_posts_page.edit_page.update_failed'));
+      isSubmittingRef.current = false; // Reset ref on error
     } finally {
       setIsSubmitting(false);
     }
@@ -912,7 +941,7 @@ export default function EditBlogPostPage() {
           </div>
 
           {/* Submit Actions - Fixed at bottom */}
-          <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-3 sm:py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
+          <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-3 sm:py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
               <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                 {formData.content && (
@@ -925,7 +954,7 @@ export default function EditBlogPostPage() {
                 <Button
                   variant="outline"
                   type="button"
-                  size="lg"
+                  size="default"
                   className="w-full sm:w-auto"
                   onClick={() => handleNavigation(`/auth/blog/blog-posts/${postId}`)}
                 >
@@ -934,7 +963,7 @@ export default function EditBlogPostPage() {
                     {t('cancel')}
                   </span>
                 </Button>
-                <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
+                <Button type="submit" variant="outline" disabled={isSubmitting} size="default" className="w-full sm:w-auto">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />}
                   <Save className="h-4 w-4 mr-2 shrink-0" />
                   <span className="truncate" suppressHydrationWarning>

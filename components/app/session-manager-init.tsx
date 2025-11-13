@@ -42,7 +42,8 @@ export function SessionManagerInit() {
       },
       onExpired: () => {
         toast.error('Your session has expired. Please log in again.');
-        router.push('/');
+        // Use window.location for a full page reload to avoid hook issues
+        window.location.href = '/';
       },
       onIdleTimeout: () => {
         toast.warning(

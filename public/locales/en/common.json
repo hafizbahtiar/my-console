@@ -15,6 +15,8 @@
   "save_item": "Save {{item}}",
   "refresh": "Refresh",
   "loading": "Loading...",
+  "redirecting": "Redirecting...",
+  "redirect": "Redirect",
   "back": "Back",
   "next": "Next",
   "previous": "Previous",
@@ -301,7 +303,46 @@
       "theme": "Theme",
       "notifications_enabled": "Notifications Enabled",
       "updating": "Updating...",
-      "update": "Update"
+      "update": "Update",
+      "change_email": "Change Email",
+      "danger_zone": "Danger Zone",
+      "danger_zone_description": "Irreversible and destructive actions",
+      "delete_account": "Delete Account"
+    },
+    "email_change": {
+      "title": "Change Email Address",
+      "description": "Update your email address. You will need to verify the new email.",
+      "current_email": "Current Email",
+      "new_email": "New Email",
+      "new_email_placeholder": "Enter new email address",
+      "password": "Password",
+      "password_placeholder": "Enter your password to confirm",
+      "password_hint": "Enter your current password to confirm this change",
+      "verification_note": "After changing your email, you will receive a verification email at the new address. You must verify the new email to complete the change.",
+      "change": "Change Email",
+      "changing": "Changing...",
+      "success": "Email change initiated. Please check your new email for verification.",
+      "error": "Failed to change email address",
+      "fill_all_fields": "Please fill in all fields",
+      "same_email": "New email must be different from current email"
+    },
+    "account_deletion": {
+      "title": "Delete Account",
+      "description": "This action cannot be undone. All your data will be permanently deleted.",
+      "warning_title": "Warning: This action is permanent",
+      "warning_1": "All your account data will be permanently deleted",
+      "warning_2": "All your sessions will be terminated",
+      "warning_3": "This action cannot be undone",
+      "password": "Password",
+      "password_placeholder": "Enter your password",
+      "password_required": "Password is required",
+      "confirmation_label": "Type DELETE to confirm",
+      "confirmation_hint": "Type DELETE in the field above to confirm account deletion",
+      "confirmation_required": "Please type DELETE to confirm",
+      "delete": "Delete Account",
+      "deleting": "Deleting...",
+      "success": "Account deleted successfully. You will be logged out.",
+      "error": "Failed to delete account"
     },
     "activity": {
       "title": "Activity Timeline",
@@ -411,6 +452,45 @@
       "technical_details": "Technical Details",
       "metadata": "Metadata",
       "na": "N/A"
+    },
+    "tabs": {
+      "logs": "Logs",
+      "analytics": "Analytics",
+      "retention": "Retention"
+    },
+    "retention": {
+      "title": "Log Retention Settings",
+      "description": "Configure how long audit logs are retained before automatic cleanup",
+      "default_days": "Default Retention (Days)",
+      "default_days_description": "Default retention period for all audit logs",
+      "security_events_days": "Security Events Retention (Days)",
+      "security_events_days_description": "Retention period for security-related events",
+      "system_events_days": "System Events Retention (Days)",
+      "system_events_days_description": "Retention period for system-level events",
+      "user_activity_days": "User Activity Retention (Days)",
+      "user_activity_days_description": "Retention period for user activity logs",
+      "archive_before_delete": "Archive Before Delete",
+      "archive_before_delete_description": "Archive logs before deletion (if enabled)",
+      "archive_location": "Archive Location",
+      "save": "Save Settings",
+      "saving": "Saving...",
+      "refresh": "Refresh",
+      "load_error": "Failed to load retention settings",
+      "save_success": "Retention settings saved successfully",
+      "save_error": "Failed to save retention settings"
+    },
+    "analytics": {
+      "title": "Audit Log Analytics",
+      "description": "Analytics and insights from audit logs",
+      "days": "days",
+      "activity_trends": "Activity Trends",
+      "hourly_distribution": "Hourly Distribution",
+      "top_actions": "Top Actions",
+      "top_resources": "Top Resources",
+      "top_users": "Top Users",
+      "security_events": "Security Events",
+      "total_security_events": "Total Security Events",
+      "by_type": "By Type"
     }
   },
   "sessions_page": {
@@ -471,6 +551,33 @@
       "description": "This will terminate all {{count}} other session(s) and log you out from this device. You will need to log in again to continue. Are you sure you want to continue?",
       "confirm": "Terminate All & Logout",
       "terminating": "Terminating..."
+    },
+    "suspicious": {
+      "alert": {
+        "title": "Suspicious Activity Detected",
+        "description": "{{count}} session(s) have been flagged as suspicious. Review and terminate any sessions you don't recognize."
+      },
+      "severity": {
+        "low": "Low Risk",
+        "medium": "Medium Risk",
+        "high": "High Risk"
+      },
+      "reasons": {
+        "different_ip": "Different IP address",
+        "different_country": "Different country",
+        "multiple_ips": "Multiple IP addresses",
+        "multiple_countries": "Multiple countries",
+        "different_device": "Different device",
+        "unusual_time": "Unusual time",
+        "rapid_creation": "Rapid session creation",
+        "unknown_device": "Unknown device",
+        "unknown_location": "Unknown location"
+      }
+    },
+    "export": {
+      "button": "Export",
+      "success": "Exported {{count}} session(s) as {{format}}",
+      "failed": "Failed to export sessions"
     },
     "stats": {
       "total_sessions": "Total Sessions",
@@ -916,6 +1023,9 @@
       "description": "Create a new blog post with AI-powered assistance",
       "auto_save_enabled": "Auto-save enabled",
       "created_success": "Post created successfully",
+      "audit": {
+        "created": "Created blog post: {{title}}"
+      },
       "breadcrumb": "Blog Posts",
       "progress": {
         "title": "Title",

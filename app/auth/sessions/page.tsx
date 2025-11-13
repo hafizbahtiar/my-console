@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Download } from "lucide-react"
 import { toast } from "sonner"
 import {
   SessionsStats,
@@ -27,8 +27,17 @@ import {
   NoOtherSessionsCard,
   CurrentSessionCard,
   OtherSessionsList,
-  type Session
+  detectSuspiciousActivity,
+  SuspiciousActivityAlert,
+  type Session,
+  type SuspiciousActivityResult
 } from "@/components/app/auth/sessions"
+import {
+  exportSessionsToCSV,
+  exportSessionsToJSON,
+  exportSessionsToPDF
+} from "@/lib/session-export"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function SessionsPage() {
   const router = useRouter()
@@ -39,6 +48,8 @@ export default function SessionsPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [terminatingSession, setTerminatingSession] = useState<string | null>(null)
   const [showTerminateAllDialog, setShowTerminateAllDialog] = useState(false)
+  const [exportFormat, setExportFormat] = useState<'csv' | 'json' | 'pdf'>('csv')
+  const [suspiciousActivity, setSuspiciousActivity] = useState<SuspiciousActivityResult | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -50,7 +61,13 @@ export default function SessionsPage() {
     try {
       setRefreshing(true)
       const sessionsData = await account.listSessions()
-      setSessions(sessionsData.sessions || [])
+      const loadedSessions = sessionsData.sessions || []
+      setSessions(loadedSessions)
+      
+      // Detect suspicious activity
+      const currentSession = loadedSessions.find(s => s.current)
+      const activity = detectSuspiciousActivity(loadedSessions, currentSession)
+      setSuspiciousActivity(activity)
     } catch (error) {
       console.error('Failed to load sessions:', error)
       toast.error(t('sessions_page.failed_to_load'))
@@ -95,21 +112,21 @@ export default function SessionsPage() {
     try {
       setTerminatingSession('all')
       setShowTerminateAllDialog(false)
-      
+
       // Delete all other sessions
       await account.deleteSessions()
 
       // Log the mass session termination before logout
       try {
-      await auditLogger.logSecurityEvent(
-        user.$id,
-        'ALL_SESSIONS_TERMINATED',
-        {
-          terminatedBy: 'user',
+        await auditLogger.logSecurityEvent(
+          user.$id,
+          'ALL_SESSIONS_TERMINATED',
+          {
+            terminatedBy: 'user',
             includeCurrentSession: true,
-          timestamp: new Date().toISOString()
-        }
-      )
+            timestamp: new Date().toISOString()
+          }
+        )
       } catch (auditError) {
         console.warn('Failed to log session termination:', auditError)
       }
@@ -123,12 +140,13 @@ export default function SessionsPage() {
 
       // Logout current session
       await logout()
-      
+
       toast.success(t('sessions_page.all_sessions_terminated_success'))
-      
-      // Redirect to login page
+
+      // Use window.location for a full page reload to avoid hook issues during logout
+      // This ensures clean state and prevents "rendered more hooks" errors
       setTimeout(() => {
-        router.push('/')
+        window.location.href = '/'
       }, 500)
     } catch (error: any) {
       console.error('Failed to terminate sessions:', error)
@@ -203,6 +221,31 @@ export default function SessionsPage() {
 
   const currentSession = sessions.find(session => session.current)
   const otherSessions = sessions.filter(session => !session.current)
+  
+  // Export functionality
+  const handleExport = async () => {
+    try {
+      const suspiciousSessionIds = suspiciousActivity
+        ? new Set(suspiciousActivity.suspiciousSessions.keys())
+        : undefined
+
+      if (exportFormat === 'csv') {
+        exportSessionsToCSV(sessions, suspiciousSessionIds)
+      } else if (exportFormat === 'json') {
+        exportSessionsToJSON(sessions, suspiciousSessionIds)
+      } else if (exportFormat === 'pdf') {
+        await exportSessionsToPDF(sessions, undefined, suspiciousSessionIds)
+      }
+
+      toast.success(t('sessions_page.export.success', {
+        count: sessions.length.toString(),
+        format: exportFormat.toUpperCase()
+      }))
+    } catch (error: any) {
+      console.error('Export failed:', error)
+      toast.error(t('sessions_page.export.failed'))
+    }
+  }
 
   return (
     <div className="flex-1 space-y-4 p-3 sm:p-4 sm:pt-6">
@@ -216,14 +259,38 @@ export default function SessionsPage() {
             {t('sessions_page.description')}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadSessions} disabled={refreshing} className="w-full sm:w-auto shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
-          <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Select value={exportFormat} onValueChange={(value: 'csv' | 'json' | 'pdf') => setExportFormat(value)}>
+            <SelectTrigger className="w-20 sm:w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="csv">CSV</SelectItem>
+              <SelectItem value="json">JSON</SelectItem>
+              <SelectItem value="pdf">PDF</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={sessions.length === 0} className="flex-1 sm:flex-initial">
+            <Download className="h-4 w-4 mr-2 shrink-0" />
+            <span className="truncate" suppressHydrationWarning>{t('sessions_page.export.button')}</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadSessions} disabled={refreshing} className="flex-1 sm:flex-initial">
+            <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="truncate" suppressHydrationWarning>{t('refresh')}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Security Alert */}
       <SecurityAlert otherSessionsCount={otherSessions.length} />
+      
+      {/* Suspicious Activity Alert */}
+      {suspiciousActivity && suspiciousActivity.hasSuspiciousActivity && (
+        <SuspiciousActivityAlert
+          suspiciousCount={suspiciousActivity.totalSuspiciousCount}
+          t={t}
+        />
+      )}
 
       {/* Current Session */}
       {currentSession && (
@@ -236,6 +303,7 @@ export default function SessionsPage() {
         onTerminateSession={terminateSession}
         onTerminateAll={() => setShowTerminateAllDialog(true)}
         terminatingSession={terminatingSession}
+        suspiciousActivities={suspiciousActivity?.suspiciousSessions}
       />
 
       {/* Terminate All Sessions Confirmation Dialog */}
@@ -250,7 +318,7 @@ export default function SessionsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-3">
-            <AlertDialogCancel 
+            <AlertDialogCancel
               onClick={() => setShowTerminateAllDialog(false)}
               className="w-full sm:w-auto order-2 sm:order-1"
               suppressHydrationWarning

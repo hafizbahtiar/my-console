@@ -56,17 +56,30 @@ export function AccountSettingsForm({
             <Label htmlFor="email" suppressHydrationWarning>
               {t('profile_page.account_settings.email_address')}
             </Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder={t('profile_page.account_settings.email_placeholder')}
-              value={formData.email}
-              onChange={(e) => onInputChange('email', e.target.value)}
-              disabled={true}
-            />
-            <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-              {t('profile_page.account_settings.email_cannot_change')}
-            </p>
+            <div className="flex gap-2">
+              <Input
+                id="email"
+                type="email"
+                placeholder={t('profile_page.account_settings.email_placeholder')}
+                value={formData.email}
+                onChange={(e) => onInputChange('email', e.target.value)}
+                disabled={true}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const event = new CustomEvent('openEmailChangeDialog')
+                  window.dispatchEvent(event)
+                }}
+                className="shrink-0"
+                suppressHydrationWarning
+              >
+                {t('profile_page.account_settings.change_email')}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -225,6 +238,31 @@ export function AccountSettingsForm({
             )}
           </Button>
         </form>
+
+        <div className="mt-6 pt-6 border-t">
+          <div className="space-y-3">
+            <div>
+              <h4 className="text-sm font-semibold mb-2" suppressHydrationWarning>
+                {t('profile_page.account_settings.danger_zone')}
+              </h4>
+              <p className="text-xs text-muted-foreground mb-3" suppressHydrationWarning>
+                {t('profile_page.account_settings.danger_zone_description')}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full"
+              onClick={() => {
+                const event = new CustomEvent('openAccountDeletionDialog')
+                window.dispatchEvent(event)
+              }}
+              suppressHydrationWarning
+            >
+              {t('profile_page.account_settings.delete_account')}
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

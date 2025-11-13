@@ -14,7 +14,29 @@ This document outlines the audit log retention policy for My Console. The retent
 
 ### Configuration
 
-Retention periods can be configured via environment variables:
+Retention periods can be configured in two ways:
+
+#### 1. UI Configuration (Recommended)
+
+The audit logs page (`/auth/audit`) includes a **Retention** tab where administrators can configure retention settings through a user-friendly interface:
+
+- Navigate to `/auth/audit` and select the **Retention** tab
+- Configure retention periods for:
+  - Default retention (all logs)
+  - Security events retention
+  - System events retention
+  - User activity retention
+- Enable/disable archiving before deletion
+- Set archive location (if archiving is enabled)
+- Settings are saved immediately and take effect for future cleanup operations
+
+**API Endpoints:**
+- `GET /api/audit/retention` - Retrieve current retention configuration
+- `POST /api/audit/retention` - Update retention configuration
+
+#### 2. Environment Variables
+
+Retention periods can also be configured via environment variables (used as defaults):
 
 ```env
 # Default retention (days)
@@ -171,8 +193,10 @@ GET /api/audit/cleanup
 ## Implementation
 
 The retention policy is implemented in:
-- `lib/audit-retention.ts` - Core retention logic
+- `lib/audit-retention.ts` - Core retention logic with runtime configuration support
 - `app/api/audit/cleanup/route.ts` - API endpoints for cleanup and statistics
+- `app/api/audit/retention/route.ts` - API endpoints for retention configuration management
+- `components/app/auth/audit/retention-settings.tsx` - UI component for retention configuration
 
 ## Troubleshooting
 
@@ -191,12 +215,26 @@ The retention policy is implemented in:
 - Reduce retention periods
 - Enable archiving for older logs
 
+## Analytics and Insights
+
+The audit logs page (`/auth/audit`) includes an **Analytics** tab that provides comprehensive insights:
+
+- **Activity Trends**: Daily activity charts showing log volume over time
+- **Hourly Distribution**: 24-hour activity patterns
+- **Top Actions**: Most common actions with percentages
+- **Top Resources**: Most frequently accessed resources
+- **Top Users**: Most active users by log count
+- **Security Events**: Summary of security events with breakdown by type
+
+**API Endpoint:**
+- `GET /api/audit/analytics?days=30` - Retrieve analytics data for specified time period (7, 30, 90, or 365 days)
+
 ## Future Enhancements
 
 - [ ] Automatic scheduled cleanup via cron
 - [ ] Cloud storage integration for archiving
 - [ ] Compression of archived logs
 - [ ] Search and retrieval of archived logs
-- [ ] Retention policy UI in admin dashboard
 - [ ] Email notifications for cleanup results
+- [ ] Alert rules for specific audit events
 

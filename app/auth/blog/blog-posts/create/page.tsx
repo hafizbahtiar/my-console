@@ -348,10 +348,10 @@ export default function CreateBlogPostPage() {
   // Check if form has unsaved changes
   const hasUnsavedChanges = useCallback(() => {
     if (!initialFormData || isFormSubmitted) return false;
-    
+
     // For create page, compare against initial form data
     // Only check fields that the user can actually modify (not auto-filled user data)
-    const hasChanges = 
+    const hasChanges =
       formData.title.trim() !== initialFormData.title.trim() ||
       formData.content.trim() !== initialFormData.content.trim() ||
       (formData.excerpt || '').trim() !== (initialFormData.excerpt || '').trim() ||
@@ -365,7 +365,7 @@ export default function CreateBlogPostPage() {
       formData.status !== initialFormData.status ||
       formData.isFeatured !== initialFormData.isFeatured ||
       formData.allowComments !== initialFormData.allowComments;
-    
+
     return hasChanges;
   }, [formData, initialFormData, isFormSubmitted]);
 
@@ -402,7 +402,7 @@ export default function CreateBlogPostPage() {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     // Push state to enable back button detection
     window.history.pushState(null, '', window.location.pathname);
     window.addEventListener('popstate', handlePopState);
@@ -509,6 +509,11 @@ export default function CreateBlogPostPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prevent double submission
+    if (isSubmitting || isFormSubmitted) {
+      return;
+    }
+
     if (!formData.title.trim()) {
       toast.error(t('blog_posts_page.create_page.validation.title_required'));
       return;
@@ -551,12 +556,19 @@ export default function CreateBlogPostPage() {
     }
 
     setIsSubmitting(true);
+    setIsFormSubmitted(true); // Set early to prevent double submission
+
     try {
-      if (!user) return;
+      if (!user) {
+        setIsSubmitting(false);
+        setIsFormSubmitted(false);
+        return;
+      }
 
       // Sanitize HTML content before saving
       const { sanitizeHTMLForStorage } = await import('@/lib/html-sanitizer');
 
+      const postId = `post_${Date.now()}`;
       const newPost = {
         ...formData,
         content: sanitizeHTMLForStorage(formData.content), // Sanitize HTML content
@@ -571,33 +583,41 @@ export default function CreateBlogPostPage() {
       await tablesDB.createRow({
         databaseId: DATABASE_ID,
         tableId: BLOG_POSTS_COLLECTION_ID,
-        rowId: `post_${Date.now()}`,
+        rowId: postId,
         data: newPost,
       });
 
       // Note: Category post counts are calculated dynamically from relationships
       // No manual updates needed
 
-      // Log audit event
-      await auditLogger.log({
+      // Log audit event (non-blocking - don't wait for it)
+      auditLogger.log({
         action: 'BLOG_POST_CREATED',
         resource: 'blog_posts',
-        resourceId: `post_${Date.now()}`,
+        resourceId: postId,
         userId: user!.$id,
         metadata: {
           postTitle: newPost.title,
           postSlug: newPost.slug,
-          description: `Created blog post: ${newPost.title}`
+          description: t('blog_posts_page.create_page.audit.created', { title: newPost.title })
         }
+      }).catch(err => {
+        console.warn('Failed to log audit event:', err);
+        // Don't block navigation if audit logging fails
       });
 
-      setIsFormSubmitted(true);
+      // Reset loading state immediately after successful save
+      setIsSubmitting(false);
+
+      // Show success message with proper translation
       toast.success(t('blog_posts_page.create_page.created_success'));
-      router.push('/auth/blog/blog-posts');
+
+      // Navigate immediately - data is already saved
+      window.location.href = '/auth/blog/blog-posts';
     } catch (error: any) {
       console.error('Failed to create blog post:', error);
+      setIsFormSubmitted(false); // Reset on error to allow retry
       toast.error(error.message || t('blog_posts_page.create_page.create_failed'));
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -616,7 +636,7 @@ export default function CreateBlogPostPage() {
       <div className="flex-1 space-y-4 p-4 sm:p-6 pt-6">
         {/* Breadcrumb Skeleton */}
         <Skeleton className="h-10 w-full" />
-        
+
         {/* Header Skeleton */}
         <div className="flex flex-col gap-4 sm:gap-6 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
@@ -654,9 +674,9 @@ export default function CreateBlogPostPage() {
       <div className="sticky top-16 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="px-4 sm:px-6 py-2 sm:py-3">
           <nav className="flex items-center space-x-2 text-xs sm:text-sm">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-7 sm:h-8 px-2 text-muted-foreground hover:text-foreground shrink-0"
               onClick={() => handleNavigation('/auth/blog/blog-posts')}
             >
@@ -737,16 +757,16 @@ export default function CreateBlogPostPage() {
                 onTagInputFocus={() => setIsTagInputFocused(true)}
                 onTagInputBlur={() => setTimeout(() => setIsTagInputFocused(false), 200)}
                 onTagInputKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const value = tagInputValue.trim();
-                              if (value) {
-                                await addTag(value);
-                                setTagInputValue('');
-                                setIsTagInputFocused(false);
-                              }
-                            }
-                          }}
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = tagInputValue.trim();
+                    if (value) {
+                      await addTag(value);
+                      setTagInputValue('');
+                      setIsTagInputFocused(false);
+                    }
+                  }
+                }}
                 onAddTag={addTag}
                 onRemoveTag={removeTag}
               />
@@ -764,7 +784,7 @@ export default function CreateBlogPostPage() {
           </div>
 
           {/* Submit Actions - Fixed at bottom */}
-          <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-3 sm:py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-x">
+          <div className="sticky z-40 bottom-0 -mb-8 px-4 sm:px-6 py-3 sm:py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
               <div className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                 {formData.content && (
@@ -774,10 +794,10 @@ export default function CreateBlogPostPage() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-                <Button 
-                  variant="outline" 
-                  type="button" 
-                  size="lg" 
+                <Button
+                  variant="outline"
+                  type="button"
+                  size="default"
                   className="w-full sm:w-auto"
                   onClick={() => handleNavigation('/auth/blog/blog-posts')}
                 >
@@ -786,11 +806,11 @@ export default function CreateBlogPostPage() {
                     {t('cancel')}
                   </span>
                 </Button>
-                <Button type="submit" disabled={isSubmitting} size="lg" className="w-full sm:w-auto">
+                <Button type="submit" variant="outline" disabled={isSubmitting || isFormSubmitted} size="default" className="w-full sm:w-auto">
                   {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin shrink-0" />}
                   <Save className="h-4 w-4 mr-2 shrink-0" />
                   <span className="truncate" suppressHydrationWarning>
-                    {t('create_item', {item: t('post')})}
+                    {isFormSubmitted ? t('redirecting') : t('create_item', { item: t('post') })}
                   </span>
                 </Button>
               </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { useTranslation } from "@/lib/language-context"
 import { auditLogger } from "@/lib/audit-log"
@@ -35,15 +35,19 @@ export default function AuthLayout({
     const pathname = usePathname()
     const router = useRouter()
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+    const isRedirectingRef = useRef(false)
 
     // Redirect to login if not authenticated
     useEffect(() => {
-        if (!loading && !user) {
-            router.push('/')
+        if (!loading && !user && !isRedirectingRef.current) {
+            isRedirectingRef.current = true
+            // Use window.location for a full page reload to avoid hook issues
+            // This prevents "rendered more hooks" errors during logout
+            window.location.href = '/'
         }
-    }, [loading, user, router])
+    }, [loading, user])
 
-    // Don't render anything while redirecting
+    // Don't render anything while redirecting or if not authenticated
     if (!loading && !user) {
         return null
     }
@@ -72,10 +76,9 @@ export default function AuthLayout({
             await logout()
             toast.success(t('logout_success'))
 
-            // Use setTimeout to avoid router update during render
-            setTimeout(() => {
-                router.push('/')
-            }, 0)
+            // Use window.location for a full page reload to avoid hook issues during logout
+            // This ensures clean state and prevents "rendered more hooks" errors
+            window.location.href = '/'
         } catch (error) {
             toast.error(t('logout_failed'))
         } finally {

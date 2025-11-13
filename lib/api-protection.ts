@@ -102,7 +102,7 @@ export async function protectedAPI(
 
       try {
         const rawBody = await request.json();
-        
+
         // Double-check size after parsing (for cases where content-length header is missing)
         const bodySize = JSON.stringify(rawBody).length;
         if (bodySize > maxBodySize) {
@@ -244,36 +244,66 @@ export async function protectedAPI(
 
 /**
  * Helper to create protected GET handler
+ * Supports dynamic route params from Next.js 15
  */
 export function createProtectedGET(
   handler: APIHandler,
   options: Omit<APIHandlerOptions, 'requireCSRF'> = {}
 ) {
-  return async (request: NextRequest) => {
-    return protectedAPI(request, handler, {
-      ...options,
-      requireCSRF: false, // GET requests don't need CSRF
-    });
+  return async (
+    request: NextRequest,
+    context?: { params: Promise<Record<string, string>> | Record<string, string> }
+  ) => {
+    const params = context?.params
+      ? await Promise.resolve(context.params)
+      : {};
+    return protectedAPI(
+      request,
+      async (ctx) => {
+        return handler({ ...ctx, params });
+      },
+      {
+        ...options,
+        requireCSRF: false, // GET requests don't need CSRF
+      }
+    );
   };
 }
 
 /**
  * Helper to create protected POST handler
+ * Supports dynamic route params from Next.js 15
+ * CSRF is enabled by default for POST requests
  */
 export function createProtectedPOST(
   handler: APIHandler,
   options: APIHandlerOptions = {}
 ) {
-  return async (request: NextRequest) => {
-    return protectedAPI(request, handler, {
-      ...options,
-      requireCSRF: options.requireCSRF !== undefined ? options.requireCSRF : true, // POST requests need CSRF by default, but allow override
-    });
+  return async (
+    request: NextRequest,
+    context?: { params: Promise<Record<string, string>> | Record<string, string> }
+  ) => {
+    const params = context?.params
+      ? await Promise.resolve(context.params)
+      : {};
+    return protectedAPI(
+      request,
+      async (ctx) => {
+        return handler({ ...ctx, params });
+      },
+      {
+        ...options,
+        // POST requests need CSRF by default, but allow explicit override
+        requireCSRF: options.requireCSRF !== undefined ? options.requireCSRF : true,
+      }
+    );
   };
 }
 
 /**
  * Helper to create protected DELETE handler
+ * Supports dynamic route params from Next.js 15
+ * CSRF is always enabled for DELETE requests
  */
 export function createProtectedDELETE(
   handler: APIHandler,
@@ -293,7 +323,7 @@ export function createProtectedDELETE(
       },
       {
         ...options,
-        requireCSRF: true, // DELETE requests need CSRF
+        requireCSRF: true, // DELETE requests always need CSRF
       }
     );
   };
@@ -301,16 +331,30 @@ export function createProtectedDELETE(
 
 /**
  * Helper to create protected PUT/PATCH handler
+ * Supports dynamic route params from Next.js 15
+ * CSRF is always enabled for PUT/PATCH requests
  */
 export function createProtectedPUT(
   handler: APIHandler,
   options: APIHandlerOptions = {}
 ) {
-  return async (request: NextRequest) => {
-    return protectedAPI(request, handler, {
-      ...options,
-      requireCSRF: true, // PUT/PATCH requests need CSRF
-    });
+  return async (
+    request: NextRequest,
+    context?: { params: Promise<Record<string, string>> | Record<string, string> }
+  ) => {
+    const params = context?.params
+      ? await Promise.resolve(context.params)
+      : {};
+    return protectedAPI(
+      request,
+      async (ctx) => {
+        return handler({ ...ctx, params });
+      },
+      {
+        ...options,
+        requireCSRF: true, // PUT/PATCH requests always need CSRF
+      }
+    );
   };
 }
 

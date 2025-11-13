@@ -97,6 +97,54 @@ The application uses these standardized event types:
 - **SECURITY_EVENT**: Security-related events (failed logins, suspicious activity)
 - **SYSTEM_EVENT**: System-level events (backups, maintenance)
 
+## Retention and Analytics
+
+### Retention Settings
+
+Audit log retention can be configured through the UI at `/auth/audit` (Retention tab) or via API:
+
+```typescript
+// Get current retention configuration
+const response = await fetch('/api/audit/retention')
+const { data } = await response.json()
+console.log(data.retentionConfig)
+
+// Update retention configuration
+await fetch('/api/audit/retention', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    defaultDays: 90,
+    securityEventsDays: 365,
+    systemEventsDays: 30,
+    userActivityDays: 90,
+    archiveBeforeDelete: false
+  })
+})
+```
+
+### Analytics
+
+The audit logs page includes comprehensive analytics:
+
+- Activity trends (daily charts)
+- Hourly distribution patterns
+- Top actions, resources, and users
+- Security event analysis
+
+Access analytics via API:
+
+```typescript
+// Get analytics for last 30 days
+const response = await fetch('/api/audit/analytics?days=30')
+const { data } = await response.json()
+console.log(data.activityTrends)
+console.log(data.topActions)
+console.log(data.securityEvents)
+```
+
+See `docs/AUDIT_RETENTION_POLICY.md` for detailed retention policy documentation.
+
 ## Usage in Code
 
 ### Automatic Logging

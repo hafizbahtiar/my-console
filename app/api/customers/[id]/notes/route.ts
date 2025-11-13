@@ -20,116 +20,99 @@ const noteSchema = z.object({
 });
 
 // GET /api/customers/[id]/notes - Get all notes for a customer
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const resolvedParams = await params;
-  return createProtectedGET(
-    async ({ request }) => {
-      const user = await account.get();
-      if (!resolvedParams?.id) {
-        throw APIError.badRequest('Customer ID is required');
-      }
-
-      const customerId = resolvedParams.id;
-
-      // Verify customer exists and user owns it
-      const customer = await tablesDB.getRow({
-        databaseId: DATABASE_ID,
-        tableId: CUSTOMERS_COLLECTION_ID,
-        rowId: customerId,
-      });
-
-      if ((customer as any).userId !== user.$id) {
-        throw APIError.forbidden('You do not have permission to view notes for this customer');
-      }
-
-      // Get notes
-      const notes = await tablesDB.listRows({
-        databaseId: DATABASE_ID,
-        tableId: CUSTOMER_NOTES_COLLECTION_ID,
-        queries: [
-          Query.equal('customerId', customerId),
-          Query.orderDesc('isPinned'),
-          Query.orderDesc('$createdAt'),
-        ],
-      });
-
-      return createSuccessResponse(notes.rows);
-    },
-    {
-      rateLimit: 'api',
+export const GET = createProtectedGET(
+  async ({ request, params }) => {
+    const user = await account.get();
+    if (!params?.id) {
+      throw APIError.badRequest('Customer ID is required');
     }
-  )(request);
-}
+
+    const customerId = params.id;
+
+    // Verify customer exists and user owns it
+    const customer = await tablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CUSTOMERS_COLLECTION_ID,
+      rowId: customerId,
+    });
+
+    if ((customer as any).userId !== user.$id) {
+      throw APIError.forbidden('You do not have permission to view notes for this customer');
+    }
+
+    // Get notes
+    const notes = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: CUSTOMER_NOTES_COLLECTION_ID,
+      queries: [
+        Query.equal('customerId', customerId),
+        Query.orderDesc('isPinned'),
+        Query.orderDesc('$createdAt'),
+      ],
+    });
+
+    return createSuccessResponse(notes.rows);
+  },
+  {
+    rateLimit: 'api',
+  }
+);
 
 // POST /api/customers/[id]/notes - Create a new note
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const resolvedParams = await params;
-  return createProtectedPOST(
-    async ({ body }) => {
-      const user = await account.get();
-      if (!resolvedParams?.id) {
-        throw APIError.badRequest('Customer ID is required');
-      }
-
-      const customerId = resolvedParams.id;
-
-      // Validate request body
-      const validationResult = noteSchema.safeParse(body);
-      if (!validationResult.success) {
-        throw APIError.validationError('Validation failed', validationResult.error.issues);
-      }
-
-      const data = validationResult.data;
-
-      // Verify customer exists and user owns it
-      const customer = await tablesDB.getRow({
-        databaseId: DATABASE_ID,
-        tableId: CUSTOMERS_COLLECTION_ID,
-        rowId: customerId,
-      });
-
-      if ((customer as any).userId !== user.$id) {
-        throw APIError.forbidden('You do not have permission to create notes for this customer');
-      }
-
-      // Create note
-      const noteData = {
-        customerId: customerId,
-        userId: user.$id,
-        noteType: data.noteType,
-        title: data.title || null,
-        content: data.content,
-        isImportant: data.isImportant || false,
-        isPinned: data.isPinned || false,
-        tags: data.tags || [],
-        relatedEntityType: data.relatedEntityType || null,
-        relatedEntityId: data.relatedEntityId || null,
-        metadata: data.metadata || null,
-        createdBy: user.$id,
-      };
-
-      const note = await tablesDB.createRow({
-        databaseId: DATABASE_ID,
-        tableId: CUSTOMER_NOTES_COLLECTION_ID,
-        rowId: ID.unique(),
-        data: noteData,
-      });
-
-      // Log in audit
-      await auditLogger.logCustomerNoteCreated(user.$id, note.$id, customerId).catch(() => {});
-
-      return createSuccessResponse(note);
-    },
-    {
-      rateLimit: 'api',
-      requireCSRF: true,
+export const POST = createProtectedPOST(
+  async ({ body, params }) => {
+    const user = await account.get();
+    if (!params?.id) {
+      throw APIError.badRequest('Customer ID is required');
     }
-  )(request);
-}
+
+    const customerId = params.id;
+
+    // Body is already validated by schema in options
+    const data = body;
+
+    // Verify customer exists and user owns it
+    const customer = await tablesDB.getRow({
+      databaseId: DATABASE_ID,
+      tableId: CUSTOMERS_COLLECTION_ID,
+      rowId: customerId,
+    });
+
+    if ((customer as any).userId !== user.$id) {
+      throw APIError.forbidden('You do not have permission to create notes for this customer');
+    }
+
+    // Create note
+    const noteData = {
+      customerId: customerId,
+      userId: user.$id,
+      noteType: data.noteType,
+      title: data.title || null,
+      content: data.content,
+      isImportant: data.isImportant || false,
+      isPinned: data.isPinned || false,
+      tags: data.tags || [],
+      relatedEntityType: data.relatedEntityType || null,
+      relatedEntityId: data.relatedEntityId || null,
+      metadata: data.metadata || null,
+      createdBy: user.$id,
+    };
+
+    const note = await tablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: CUSTOMER_NOTES_COLLECTION_ID,
+      rowId: ID.unique(),
+      data: noteData,
+    });
+
+    // Log in audit
+    await auditLogger.logCustomerNoteCreated(user.$id, note.$id, customerId).catch(() => {});
+
+    return createSuccessResponse(note);
+  },
+  {
+    rateLimit: 'api',
+    schema: noteSchema,
+  }
+);
 

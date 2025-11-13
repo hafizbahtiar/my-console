@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createProtectedPOST, createProtectedGET } from '@/lib/api-protection'
-import { cleanupAuditLogs, getAuditLogStats, DEFAULT_RETENTION_CONFIG } from '@/lib/audit-retention'
+import { cleanupAuditLogs, getAuditLogStats, DEFAULT_RETENTION_CONFIG, getCurrentRetentionConfig } from '@/lib/audit-retention'
 import { logger } from '@/lib/logger'
 
 /**
@@ -21,7 +21,9 @@ export const POST = createProtectedPOST(
 
             logger.info('Manual audit log cleanup triggered', 'api/audit/cleanup', { force })
 
-            const result = await cleanupAuditLogs(DEFAULT_RETENTION_CONFIG)
+            // Use current retention config (runtime or default)
+            const retentionConfig = getCurrentRetentionConfig()
+            const result = await cleanupAuditLogs(retentionConfig)
 
             return NextResponse.json({
                 success: true,

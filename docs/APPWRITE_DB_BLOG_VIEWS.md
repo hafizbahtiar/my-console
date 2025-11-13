@@ -14,7 +14,7 @@ The `blog_views` collection tracks audience engagement by recording view events 
 | `postId` | String (Relation) | - | ✅ | - | Reference to blog post ID (relation with cascade delete) | ✅ |
 | `userId` | String | 50 | ❌ | null | Authenticated user ID | ✅ |
 | `sessionId` | String | 100 | ✅ | - | Anonymous session identifier | ✅ |
-| `ipAddress` | String | 45 | ❌ | null | Client IP address | ❌ |
+| `ipAddress` | String | 45 | ❌ | null | Client IP address (required for anonymous users) | ✅ |
 | `userAgent` | String | 500 | ❌ | null | Browser/device info | ❌ |
 | `referrer` | String | 2000 | ❌ | null | Referring URL | ❌ |
 | `viewDuration` | Integer | - | ❌ | null | Time spent in seconds (0-3600) | ❌ |
@@ -32,15 +32,22 @@ The `blog_views` collection tracks audience engagement by recording view events 
 5. **country** (ascending) - For geographic analytics
 
 ### Compound Indexes
-6. **Unique View Index** (postId + sessionId):
+6. **Unique View Index (Authenticated)** (postId + userId):
    - Type: Unique
-   - Prevents duplicate views from same session
-   - Ensures accurate unique visitor counts
+   - Prevents duplicate views from same authenticated user per post
+   - Only applies when userId is not null
+   - Ensures 1 view per authenticated user per post
+
+7. **Unique View Index (Anonymous)** (postId + ipAddress):
+   - Type: Unique
+   - Prevents duplicate views from same IP address per post
+   - Only applies when userId is null
+   - Ensures 1 view per IP address per post
 
 ## Permissions
 
-- **Create**: `users` (authenticated users can create views)
-- **Read**: `users` (users can read their own views)
+- **Create**: `*` (both authenticated and anonymous users can create views)
+- **Read**: `*` (views are readable by all)
 - **Update**: `role:super_admin` (only admins can update)
 - **Delete**: `role:super_admin` (only admins can delete)
 
@@ -57,14 +64,14 @@ interface BlogView {
   $createdAt: string;
   postId: string; // Reference to blog post
   sessionId: string; // User session identifier
-  userId?: string; // Null for anonymous users
-  userAgent: string; // Browser/device info
+  userId?: string; // Authenticated user ID (null for anonymous users)
+  ipAddress?: string; // Client IP address (required for anonymous users)
+  userAgent?: string; // Browser/device info
   referrer?: string; // Traffic source
   isUnique: boolean; // Whether this is a unique view
-  country?: string; // Geographic data (future)
-  city?: string; // Geographic data (future)
-  ipAddress?: string; // Client IP address
-  viewDuration?: number; // Time spent in seconds
+  country?: string; // Geographic data
+  city?: string; // Geographic data
+  viewDuration?: number; // Time spent in seconds (0-3600)
 }
 ```
 
@@ -200,52 +207,120 @@ Size: 100
    - Key: country
    - Order: ASC
 
-6. **Unique View Index** (Compound):
+6. **ipAddress Index**:
+   - Type: Key
+   - Key: ipAddress
+   - Order: ASC
+
+7. **Unique View Index (Authenticated)** (Compound):
    - Type: Unique
-   - Attributes: postId, sessionId
+   - Attributes: postId, userId
+   - Condition: Only enforces uniqueness when userId is not null
+
+8. **Unique View Index (Anonymous)** (Compound):
+   - Type: Unique
+   - Attributes: postId, ipAddress
+   - Condition: Only enforces uniqueness when userId is null and ipAddress is not null
 
 ## View Tracking Strategy
 
-### Admin vs Audience Pages
-- **Admin Pages** (`/auth/blog/blog-posts/[id]`): No view tracking, analytics dashboard for creators
-- **Audience Pages** (Future `/blog/[slug]`): View tracking enabled for engagement metrics
-- **Current Implementation**: Views tracked only for non-authenticated users on admin pages (transitional)
+### View Limitation Rules
+- **Authenticated Users**: Only 1 view per authenticated user per post (enforced by unique index on `postId + userId`)
+- **Anonymous Users**: Only 1 view per IP address per post (enforced by unique index on `postId + ipAddress`)
+- **Implementation**: Application logic checks for existing view before creating new one
+- **Data Integrity**: Unique indexes prevent duplicate views at database level
 
-### Content Management Flow
-1. **Admin Creation**: Content created/edited in admin panel
-2. **Admin Review**: Content reviewed via admin view page (this page)
-3. **Analytics Access**: Creators see audience engagement data
-4. **Future**: Public audience pages with full view tracking
+### View Tracking Flow
+1. **Check Authentication**: Determine if user is authenticated
+2. **Authenticated User**:
+   - Check for existing view with `postId + userId`
+   - If exists, skip tracking (already viewed)
+   - If not exists, create view with `userId` and optional `ipAddress`
+3. **Anonymous User**:
+   - Get client IP address (required)
+   - Check for existing view with `postId + ipAddress`
+   - If exists, skip tracking (already viewed from this IP)
+   - If not exists, create view with `ipAddress` and `userId = null`
+4. **Update Counter**: Increment view count in `blog_posts` collection
 
 ## Implementation Examples
 
-### View Tracking System (Audience Only)
+### View Tracking System
 ```typescript
-// Track a blog post view (only for non-authenticated audience users)
-async function trackAudienceView(postId: string) {
-  // Skip tracking for authenticated admin users
-  if (isAuthenticatedUser()) return;
+// Track a blog post view (supports both authenticated and anonymous users)
+async function trackView(postId: string, userId?: string, ipAddress?: string) {
+  // Get IP address if not provided (required for anonymous users)
+  const clientIp = ipAddress || getClientIP();
+  
+  if (!clientIp) {
+    throw new Error('IP address is required for view tracking');
+  }
 
-  const sessionId = getSessionId(); // Generate or retrieve session ID
+  // Check for existing view
+  const existingView = await findExistingView(postId, userId, clientIp);
+  if (existingView) {
+    // View already exists, skip tracking
+    return;
+  }
+
   const viewData = {
     postId,
-    userId: null, // Always null for audience views
-    sessionId,
-    ipAddress: getClientIP(), // Optional
+    userId: userId || null, // Set to null for anonymous users
+    sessionId: getSessionId(),
+    ipAddress: clientIp, // Required for anonymous users
     userAgent: navigator.userAgent,
     referrer: document.referrer,
-    isUnique: await isFirstVisit(sessionId, postId)
+    isUnique: true
   };
 
-  await tablesDB.createRow({
-    databaseId: DATABASE_ID,
-    tableId: 'blog_views',
-    rowId: `view_${Date.now()}_${sessionId}`,
-    data: viewData
-  });
+  try {
+    await tablesDB.createRow({
+      databaseId: DATABASE_ID,
+      tableId: 'blog_views',
+      rowId: `view_${Date.now()}_${userId || clientIp}`,
+      data: viewData
+    });
 
-  // Update view counter in blog_posts
-  await incrementViewCount(postId);
+    // Update view counter in blog_posts
+    await incrementViewCount(postId);
+  } catch (error: any) {
+    // Handle unique constraint violation (view already exists)
+    if (error.code === 409) {
+      // View already tracked, ignore
+      return;
+    }
+    throw error;
+  }
+}
+
+// Find existing view based on authentication status
+async function findExistingView(postId: string, userId?: string, ipAddress?: string) {
+  if (userId) {
+    // Check for authenticated user view
+    const views = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: 'blog_views',
+      queries: [
+        Query.equal('postId', postId),
+        Query.equal('userId', userId)
+      ]
+    });
+    return views.rows[0] || null;
+  } else {
+    // Check for anonymous user view by IP
+    if (!ipAddress) return null;
+    
+    const views = await tablesDB.listRows({
+      databaseId: DATABASE_ID,
+      tableId: 'blog_views',
+      queries: [
+        Query.equal('postId', postId),
+        Query.equal('ipAddress', ipAddress),
+        Query.isNull('userId')
+      ]
+    });
+    return views.rows[0] || null;
+  }
 }
 ```
 
@@ -269,7 +344,7 @@ async function getPostAnalytics(postId: string) {
 }
 ```
 
-### Session Management
+### Helper Functions
 ```typescript
 // Generate or retrieve session ID
 function getSessionId(): string {
@@ -281,18 +356,43 @@ function getSessionId(): string {
   return sessionId;
 }
 
-// Check if this is first visit from session
-async function isFirstVisit(sessionId: string, postId: string): Promise<boolean> {
-  const existingViews = await tablesDB.listRows({
-    databaseId: DATABASE_ID,
-    tableId: 'blog_views',
-    queries: [
-      `equal("sessionId", "${sessionId}")`,
-      `equal("postId", "${postId}")`
-    ]
-  });
+// Get client IP address (server-side)
+function getClientIP(request: Request): string {
+  // Try various headers for IP address
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIp) {
+    return realIp;
+  }
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  
+  // Fallback (should not happen in production)
+  return 'unknown';
+}
 
-  return existingViews.rows.length === 0;
+// Increment view count in blog_posts
+async function incrementViewCount(postId: string) {
+  const post = await tablesDB.getRow({
+    databaseId: DATABASE_ID,
+    tableId: 'blog_posts',
+    rowId: postId
+  });
+  
+  await tablesDB.updateRow({
+    databaseId: DATABASE_ID,
+    tableId: 'blog_posts',
+    rowId: postId,
+    data: {
+      views: (post.views || 0) + 1
+    }
+  });
 }
 ```
 

@@ -47,6 +47,23 @@ export const DEFAULT_RETENTION_CONFIG: RetentionConfig = {
   archiveLocation: process.env.AUDIT_LOG_ARCHIVE_LOCATION || './backup/audit-archive',
 }
 
+// In-memory storage for runtime retention config (can be updated via API)
+let runtimeRetentionConfig: RetentionConfig | null = null
+
+/**
+ * Set runtime retention configuration (called by API route)
+ */
+export function setRuntimeRetentionConfig(config: RetentionConfig): void {
+  runtimeRetentionConfig = { ...config }
+}
+
+/**
+ * Get current retention configuration (prioritizes runtime config over default)
+ */
+export function getCurrentRetentionConfig(): RetentionConfig {
+  return runtimeRetentionConfig || DEFAULT_RETENTION_CONFIG
+}
+
 /**
  * Determine retention period for a log entry based on its type
  */

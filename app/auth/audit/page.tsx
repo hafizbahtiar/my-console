@@ -7,7 +7,7 @@ import { useTranslation } from "@/lib/language-context"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { AuditStats, AuditFilters, AuditTable } from "@/components/app/auth/audit"
+import { AuditStats, AuditFilters, AuditTable, RetentionSettings, AuditAnalytics } from "@/components/app/auth/audit"
 import { createPaginationParams, DEFAULT_PAGE_SIZE, getTotalPages } from "@/lib/pagination"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +21,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface AuditLog {
   $id: string
@@ -60,6 +61,7 @@ export default function AuditPage() {
   const [exportFormat, setExportFormat] = useState<string>("csv")
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState<string>("logs")
 
 
   useEffect(() => {
@@ -420,126 +422,150 @@ export default function AuditPage() {
             {t('audit_page.description')}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto shrink-0">
-          <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
-          <span className="truncate" suppressHydrationWarning>{t('audit_page.refresh')}</span>
-        </Button>
+        {activeTab === 'logs' && (
+          <Button variant="outline" size="sm" onClick={loadAuditLogs} disabled={refreshing} className="w-full sm:w-auto shrink-0">
+            <RefreshCw className={`h-4 w-4 mr-2 shrink-0 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="truncate" suppressHydrationWarning>{t('audit_page.refresh')}</span>
+          </Button>
+        )}
       </div>
 
-      {/* Stats Cards */}
-      <AuditStats
-        totalLogs={totalFilteredLogs}
-        todaysLogs={filteredAllLogs.filter(log =>
-          new Date(log.$createdAt).toDateString() === new Date().toDateString()
-        ).length}
-        securityEvents={filteredAllLogs.filter(log => log.action === 'SECURITY_EVENT').length}
-      />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="logs" suppressHydrationWarning>{t('audit_page.tabs.logs')}</TabsTrigger>
+          <TabsTrigger value="analytics" suppressHydrationWarning>{t('audit_page.tabs.analytics')}</TabsTrigger>
+          <TabsTrigger value="retention" suppressHydrationWarning>{t('audit_page.tabs.retention')}</TabsTrigger>
+        </TabsList>
 
-      {/* Filters & Export */}
-      <AuditFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        searchField={searchField}
-        setSearchField={setSearchField}
-        searchHistory={searchHistory}
-        actionFilter={actionFilter}
-        setActionFilter={setActionFilter}
-        resourceFilter={resourceFilter}
-        setResourceFilter={setResourceFilter}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
-        severityFilter={severityFilter}
-        setSeverityFilter={setSeverityFilter}
-        showAdvancedFilters={showAdvancedFilters}
-        setShowAdvancedFilters={setShowAdvancedFilters}
-        exportFormat={exportFormat}
-        setExportFormat={setExportFormat}
-        onExport={exportLogs}
-        onComplianceReport={generateComplianceReport}
-        filteredLogsCount={filteredAllLogs.length}
-        uniqueActions={uniqueActions}
-        uniqueResources={uniqueResources}
-      />
+        {/* Logs Tab */}
+        <TabsContent value="logs" className="space-y-4">
+          {/* Stats Cards */}
+          <AuditStats
+            totalLogs={totalFilteredLogs}
+            todaysLogs={filteredAllLogs.filter(log =>
+              new Date(log.$createdAt).toDateString() === new Date().toDateString()
+            ).length}
+            securityEvents={filteredAllLogs.filter(log => log.action === 'SECURITY_EVENT').length}
+          />
 
-      {/* Audit Logs Table */}
-      <AuditTable
-        filteredLogs={filteredLogs}
-        totalLogs={totalFilteredLogs}
-      />
-      
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="border-t p-4 sm:p-6">
-          <Pagination>
-            <PaginationContent className="flex-wrap gap-2">
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) {
-                      setCurrentPage(currentPage - 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                  className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-              
-              {/* Page numbers */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <PaginationItem key={pageNum}>
-                    <PaginationLink
+          {/* Filters & Export */}
+          <AuditFilters
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            searchField={searchField}
+            setSearchField={setSearchField}
+            searchHistory={searchHistory}
+            actionFilter={actionFilter}
+            setActionFilter={setActionFilter}
+            resourceFilter={resourceFilter}
+            setResourceFilter={setResourceFilter}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            severityFilter={severityFilter}
+            setSeverityFilter={setSeverityFilter}
+            showAdvancedFilters={showAdvancedFilters}
+            setShowAdvancedFilters={setShowAdvancedFilters}
+            exportFormat={exportFormat}
+            setExportFormat={setExportFormat}
+            onExport={exportLogs}
+            onComplianceReport={generateComplianceReport}
+            filteredLogsCount={filteredAllLogs.length}
+            uniqueActions={uniqueActions}
+            uniqueResources={uniqueResources}
+          />
+
+          {/* Audit Logs Table */}
+          <AuditTable
+            filteredLogs={filteredLogs}
+            totalLogs={totalFilteredLogs}
+          />
+          
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="border-t p-4 sm:p-6">
+              <Pagination>
+                <PaginationContent className="flex-wrap gap-2">
+                  <PaginationItem>
+                    <PaginationPrevious
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        setCurrentPage(pageNum);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (currentPage > 1) {
+                          setCurrentPage(currentPage - 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
                       }}
-                      isActive={currentPage === pageNum}
-                      className="text-xs sm:text-sm"
-                    >
-                      {pageNum}
-                    </PaginationLink>
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
                   </PaginationItem>
-                );
-              })}
-              
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-              
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) {
-                      setCurrentPage(currentPage + 1);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
                     }
-                  }}
-                  className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+                    
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(pageNum);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          isActive={currentPage === pageNum}
+                          className="text-xs sm:text-sm"
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <PaginationItem>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )}
+                  
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (currentPage < totalPages) {
+                          setCurrentPage(currentPage + 1);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-4">
+          <AuditAnalytics />
+        </TabsContent>
+
+        {/* Retention Settings Tab */}
+        <TabsContent value="retention" className="space-y-4">
+          <RetentionSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

@@ -49,6 +49,10 @@ My Console is a full-featured admin dashboard application with:
 - **Rich Text Editor**: TipTap-powered WYSIWYG editor with advanced formatting, tables, images, and math expressions
 - **AI-Powered Content**: OpenRouter API integration for automated excerpt generation and content improvement with multiple AI models
 - **Content Analytics**: View tracking, like counts, and automated read time calculation (blog_views, blog_likes tables)
+  - **View Tracking**: 1 view per authenticated user OR 1 view per IP address with sessionStorage duplicate prevention
+  - **Like System**: Toggle like/unlike with 1 like per authenticated user OR 1 like per IP address
+  - **IP Detection**: Proper handling of localhost/development scenarios with sessionId fallback
+  - **Session Management**: Browser session tracking to prevent duplicate views/likes
 - **SEO Optimization**: Meta titles, descriptions, and keyword management for search engines
 - **Content Categorization**: Hierarchical categories with bidirectional relationship-based organization and many-to-many tag relationships
 - **Publishing Workflow**: Draft, published, and archived content states with status badges
@@ -56,6 +60,7 @@ My Console is a full-featured admin dashboard application with:
 - **Content Preview**: Dynamic view dialogs with full content rendering and metadata display
 - **AI Content Enhancement**: Five AI-powered improvement options (improve, rephrase, shorten, expand, fix grammar)
 - **Comments Display**: Threaded comment system with hierarchical display, author information, engagement metrics, and visual indentation for nested replies
+- **Form Improvements**: Fixed double submission prevention, immediate navigation after save, and multi-language support for all messages
 
 #### 👥 Customer Management System
 - **Self-Service Model**: Users own and manage their own customer records
@@ -106,6 +111,8 @@ My Console is a full-featured admin dashboard application with:
 - **Backup History**: Complete backup history with delete functionality using actual backup logs
 - **Activity Tracking**: Real-time audit log integration with live user activity
 - **System Health**: Dynamic database performance and connection monitoring metrics
+- **Migration System**: Version-controlled database schema migrations with CLI tools and rollback support
+- **Performance Tuning**: Comprehensive performance optimization guide with query caching, component optimization, and bundle size strategies
 
 #### 🔍 SEO & Metadata
 - **Enhanced Metadata**: Comprehensive OpenGraph, Twitter Card, and structured data (JSON-LD)
@@ -152,6 +159,12 @@ bun run lint
 # Database backup commands
 bun run backup          # Manual backup
 bun run backup:cron     # Start automated backups
+
+# Database migration commands
+bun run migrations:up      # Apply pending migrations
+bun run migrations:down    # Rollback migrations
+bun run migrations:status # Check migration status
+bun run migrations:create  # Create new migration
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
@@ -160,15 +173,17 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 1. **Appwrite Configuration**: Follow the setup guide in `docs/APPWRITE_SETUP.md`
 2. **Database Administration**: Read `docs/DATABASE_ADMIN.md` for backup and monitoring features
-3. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
-4. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
-5. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md` (includes import/export and tags documentation), `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
-6. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
-7. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
-8. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
-9. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-10. **Security Audit**: Review `docs/SECURITY_AUDIT.md` for security analysis and recommendations
-11. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+3. **Database Migrations**: See `scripts/migrations/README.md` for migration system usage
+4. **Performance Tuning**: See `docs/PERFORMANCE_TUNING.md` for optimization strategies
+5. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
+6. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
+7. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md` (includes import/export and tags documentation), `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
+8. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
+9. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
+10. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
+11. **Development Tasks**: Check `TODO.md` for current development priorities and progress
+12. **Security Audit**: Review `docs/SECURITY_AUDIT.md` for security analysis and recommendations
+13. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -234,6 +249,16 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - Centralized database and collection ID constants
 - Environment variable management
 - All collection IDs exported for consistent usage across the application
+
+#### API Protection System (`lib/api-protection.ts`)
+- Standardized API route protection wrappers
+- CSRF protection for all state-changing operations
+- Rate limiting with configurable limits
+- Input validation via Zod schemas
+- Request size limits (10MB default, configurable)
+- Standardized error handling and responses
+- Support for Next.js 15 dynamic route parameters
+- Automatic security headers application
 
 #### Pagination System (`lib/pagination.ts`)
 - Optimized pagination utility with server-side/client-side fallback
@@ -653,6 +678,7 @@ npx shadcn@latest add toast
 ├── docs/                        # Documentation
 │   ├── APPWRITE_SETUP.md        # Appwrite configuration guide
 │   ├── DATABASE_ADMIN.md        # Database administration guide
+│   ├── API_ROUTES.md            # API routes standardization and security guide
 │   ├── BLOG_MANAGEMENT.md       # Blog CMS documentation
 │   ├── APPWRITE_DB_BLOG_POSTS.md # Blog posts database schema
 │   ├── APPWRITE_DB_BLOG_CATEGORIES.md # Blog categories schema
@@ -696,11 +722,16 @@ Built-in protection against abuse:
 - **Error Handling**: Comprehensive error handling without information leakage
 - **Input Validation**: Type-safe inputs with Zod validation
 - **Environment Security**: Sensitive data stored in environment variables
-- **CSRF Protection**: All state-changing operations protected
+- **CSRF Protection**: All state-changing operations (POST/PUT/DELETE/PATCH) protected by default
+- **API Route Standardization**: All API routes follow consistent patterns with protection wrappers
+- **Standardized Responses**: Consistent API response format across all endpoints
 - **Rate Limiting**: Comprehensive rate limiting on API routes
-- **Audit Logging**: Comprehensive activity tracking
+- **Audit Logging**: Comprehensive activity tracking with multi-language support
 - **Security Headers**: Applied via middleware
 - **Input Sanitization**: HTML sanitization for user content
+- **Request Size Limits**: Configurable request body size limits (10MB default)
+- **Dynamic Route Support**: API protection utilities support Next.js 15 dynamic route parameters
+- **Reliable Navigation**: Window.location.href for critical navigation to prevent React hook errors
 
 **Security Audit**: See `docs/SECURITY_AUDIT.md` for detailed security analysis, vulnerabilities, and recommendations.
 

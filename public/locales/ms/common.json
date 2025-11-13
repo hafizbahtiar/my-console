@@ -15,6 +15,8 @@
   "save_item": "Simpan {{item}}",
   "refresh": "Segarkan",
   "loading": "Sedang Memuat...",
+  "redirecting": "Sedang Mengalihkan...",
+  "redirect": "Alihkan",
   "back": "Kembali",
   "next": "Seterusnya",
   "previous": "Sebelumnya",
@@ -301,7 +303,46 @@
       "theme": "Tema",
       "notifications_enabled": "Notifikasi Diaktifkan",
       "updating": "Mengemaskini...",
-      "update": "Kemaskini"
+      "update": "Kemaskini",
+      "change_email": "Tukar E-mel",
+      "danger_zone": "Zon Bahaya",
+      "danger_zone_description": "Tindakan yang tidak boleh dibatalkan dan merosakkan",
+      "delete_account": "Padam Akaun"
+    },
+    "email_change": {
+      "title": "Tukar Alamat E-mel",
+      "description": "Kemaskini alamat e-mel anda. Anda perlu mengesahkan e-mel baharu.",
+      "current_email": "E-mel Semasa",
+      "new_email": "E-mel Baharu",
+      "new_email_placeholder": "Masukkan alamat e-mel baharu",
+      "password": "Kata Laluan",
+      "password_placeholder": "Masukkan kata laluan anda untuk mengesahkan",
+      "password_hint": "Masukkan kata laluan semasa anda untuk mengesahkan perubahan ini",
+      "verification_note": "Selepas menukar e-mel anda, anda akan menerima e-mel pengesahan di alamat baharu. Anda mesti mengesahkan e-mel baharu untuk melengkapkan perubahan.",
+      "change": "Tukar E-mel",
+      "changing": "Menukar...",
+      "success": "Perubahan e-mel dimulakan. Sila semak e-mel baharu anda untuk pengesahan.",
+      "error": "Gagal menukar alamat e-mel",
+      "fill_all_fields": "Sila isi semua medan",
+      "same_email": "E-mel baharu mesti berbeza daripada e-mel semasa"
+    },
+    "account_deletion": {
+      "title": "Padam Akaun",
+      "description": "Tindakan ini tidak boleh dibatalkan. Semua data anda akan dipadam secara kekal.",
+      "warning_title": "Amaran: Tindakan ini adalah kekal",
+      "warning_1": "Semua data akaun anda akan dipadam secara kekal",
+      "warning_2": "Semua sesi anda akan ditamatkan",
+      "warning_3": "Tindakan ini tidak boleh dibatalkan",
+      "password": "Kata Laluan",
+      "password_placeholder": "Masukkan kata laluan anda",
+      "password_required": "Kata laluan diperlukan",
+      "confirmation_label": "Taip PADAM untuk mengesahkan",
+      "confirmation_hint": "Taip PADAM dalam medan di atas untuk mengesahkan pemadaman akaun",
+      "confirmation_required": "Sila taip PADAM untuk mengesahkan",
+      "delete": "Padam Akaun",
+      "deleting": "Memadam...",
+      "success": "Akaun berjaya dipadam. Anda akan dilog keluar.",
+      "error": "Gagal memadam akaun"
     },
     "activity": {
       "title": "Garis Masa Aktiviti",
@@ -411,6 +452,45 @@
       "technical_details": "Butiran Teknikal",
       "metadata": "Metadata",
       "na": "T/A"
+    },
+    "tabs": {
+      "logs": "Log",
+      "analytics": "Analitik",
+      "retention": "Pengekalan"
+    },
+    "retention": {
+      "title": "Tetapan Pengekalan Log",
+      "description": "Konfigurasi berapa lama log audit dikekalkan sebelum pembersihan automatik",
+      "default_days": "Pengekalan Lalai (Hari)",
+      "default_days_description": "Tempoh pengekalan lalai untuk semua log audit",
+      "security_events_days": "Pengekalan Peristiwa Keselamatan (Hari)",
+      "security_events_days_description": "Tempoh pengekalan untuk peristiwa berkaitan keselamatan",
+      "system_events_days": "Pengekalan Peristiwa Sistem (Hari)",
+      "system_events_days_description": "Tempoh pengekalan untuk peristiwa peringkat sistem",
+      "user_activity_days": "Pengekalan Aktiviti Pengguna (Hari)",
+      "user_activity_days_description": "Tempoh pengekalan untuk log aktiviti pengguna",
+      "archive_before_delete": "Arkib Sebelum Padam",
+      "archive_before_delete_description": "Arkib log sebelum dipadam (jika didayakan)",
+      "archive_location": "Lokasi Arkib",
+      "save": "Simpan Tetapan",
+      "saving": "Menyimpan...",
+      "refresh": "Segarkan",
+      "load_error": "Gagal memuatkan tetapan pengekalan",
+      "save_success": "Tetapan pengekalan berjaya disimpan",
+      "save_error": "Gagal menyimpan tetapan pengekalan"
+    },
+    "analytics": {
+      "title": "Analitik Log Audit",
+      "description": "Analitik dan pandangan dari log audit",
+      "days": "hari",
+      "activity_trends": "Tren Aktiviti",
+      "hourly_distribution": "Taburan Setiap Jam",
+      "top_actions": "Tindakan Teratas",
+      "top_resources": "Sumber Teratas",
+      "top_users": "Pengguna Teratas",
+      "security_events": "Peristiwa Keselamatan",
+      "total_security_events": "Jumlah Peristiwa Keselamatan",
+      "by_type": "Mengikut Jenis"
     }
   },
   "sessions_page": {
@@ -471,6 +551,33 @@
       "description": "Ini akan menamatkan semua {{count}} sesi lain dan log keluar anda dari peranti ini. Anda perlu log masuk semula untuk meneruskan. Adakah anda pasti ingin meneruskan?",
       "confirm": "Tamatkan Semua & Log Keluar",
       "terminating": "Menamatkan..."
+    },
+    "suspicious": {
+      "alert": {
+        "title": "Aktiviti Mencurigakan Dikesan",
+        "description": "{{count}} sesi telah ditandakan sebagai mencurigakan. Semak dan tamatkan mana-mana sesi yang anda tidak kenali."
+      },
+      "severity": {
+        "low": "Risiko Rendah",
+        "medium": "Risiko Sederhana",
+        "high": "Risiko Tinggi"
+      },
+      "reasons": {
+        "different_ip": "Alamat IP berbeza",
+        "different_country": "Negara berbeza",
+        "multiple_ips": "Pelbagai alamat IP",
+        "multiple_countries": "Pelbagai negara",
+        "different_device": "Peranti berbeza",
+        "unusual_time": "Masa tidak biasa",
+        "rapid_creation": "Pembuatan sesi pantas",
+        "unknown_device": "Peranti tidak diketahui",
+        "unknown_location": "Lokasi tidak diketahui"
+      }
+    },
+    "export": {
+      "button": "Eksport",
+      "success": "{{count}} sesi telah dieksport sebagai {{format}}",
+      "failed": "Gagal mengeksport sesi"
     },
     "stats": {
       "total_sessions": "Jumlah Sesi",
@@ -916,6 +1023,9 @@
       "description": "Cipta siaran blog baharu dengan AI",
       "auto_save_enabled": "Simpan automatik diaktifkan",
       "created_success": "Siaran telah diwujudkan",
+      "audit": {
+        "created": "Siaran blog telah dicipta: {{title}}"
+      },
       "breadcrumb": "Siaran Blog",
       "progress": {
         "title": "Tajuk",

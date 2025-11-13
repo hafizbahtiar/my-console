@@ -187,16 +187,52 @@ Only return the JSON, no other text.`;
             suggestionsText = data.choices[0].message.reasoning.trim();
         }
 
-        // Extract JSON from text (handle markdown code blocks)
+        // Extract JSON from text (handle markdown code blocks and reasoning text)
         let jsonText = suggestionsText;
-        const jsonMatch = suggestionsText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+        
+        // First, try to find JSON in markdown code blocks
+        const jsonMatch = suggestionsText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
         if (jsonMatch) {
             jsonText = jsonMatch[1];
         } else {
-            // Try to find JSON object - get everything from first { to end (even if incomplete)
-            const firstBrace = suggestionsText.indexOf('{');
-            if (firstBrace !== -1) {
-                jsonText = suggestionsText.substring(firstBrace);
+            // Try to find JSON object - look for the last complete JSON object
+            // This handles cases where AI returns reasoning text before/after JSON
+            const jsonObjects = [];
+            let braceCount = 0;
+            let startIndex = -1;
+            
+            for (let i = 0; i < suggestionsText.length; i++) {
+                if (suggestionsText[i] === '{') {
+                    if (braceCount === 0) {
+                        startIndex = i;
+                    }
+                    braceCount++;
+                } else if (suggestionsText[i] === '}') {
+                    braceCount--;
+                    if (braceCount === 0 && startIndex !== -1) {
+                        // Found a complete JSON object
+                        jsonObjects.push({
+                            start: startIndex,
+                            end: i + 1,
+                            text: suggestionsText.substring(startIndex, i + 1)
+                        });
+                        startIndex = -1;
+                    }
+                }
+            }
+            
+            // Use the largest JSON object found (most likely the main response)
+            if (jsonObjects.length > 0) {
+                const largestObject = jsonObjects.reduce((prev, current) => 
+                    current.text.length > prev.text.length ? current : prev
+                );
+                jsonText = largestObject.text;
+            } else {
+                // Fallback: get everything from first { to end (even if incomplete)
+                const firstBrace = suggestionsText.indexOf('{');
+                if (firstBrace !== -1) {
+                    jsonText = suggestionsText.substring(firstBrace);
+                }
             }
         }
 
@@ -316,60 +352,104 @@ Only return the JSON, no other text.`;
                         }
                     }
                     
-                    if (titleMatch || descMatch) {
+                    if (titleMatch || descMatch || keywords.length > 0) {
                         // Create minimal valid response with whatever we can extract
                         suggestions = {
                             title: {
-                                current: titleMatch?.[1] || '',
-                                suggested: titleMatch?.[1] || '',
+                                current: titleMatch?.[1] || body.title || '',
+                                suggested: titleMatch?.[1] || body.title || '',
                                 score: 50,
-                                feedback: []
+                                feedback: ['Partial extraction from AI response']
                             },
                             description: {
-                                current: '',
-                                suggested: descMatch?.[1] || '',
+                                current: body.description || '',
+                                suggested: descMatch?.[1] || body.description || '',
                                 score: 50,
-                                feedback: []
+                                feedback: ['Partial extraction from AI response']
                             },
                             keywords: {
-                                suggested: keywords,
+                                suggested: keywords.length > 0 ? keywords : (body.keywords || []),
                                 score: 50,
-                                feedback: []
+                                feedback: ['Partial extraction from AI response']
                             },
                             overall: {
                                 score: 50,
-                                feedback: []
+                                feedback: ['AI response was partially parsed']
                             }
                         };
                     } else {
-                        throw secondError;
+                        // If we can't extract anything, create a default response
+                        console.warn('Could not extract any SEO suggestions from AI response, using defaults');
+                        suggestions = {
+                            title: {
+                                current: body.title || '',
+                                suggested: body.title || '',
+                                score: 50,
+                                feedback: ['Unable to analyze title - AI response format was invalid']
+                            },
+                            description: {
+                                current: body.description || '',
+                                suggested: body.description || '',
+                                score: 50,
+                                feedback: ['Unable to analyze description - AI response format was invalid']
+                            },
+                            keywords: {
+                                suggested: body.keywords || [],
+                                score: 50,
+                                feedback: ['Unable to analyze keywords - AI response format was invalid']
+                            },
+                            overall: {
+                                score: 50,
+                                feedback: ['AI response could not be parsed. Please try again or check your content.']
+                            }
+                        };
                     }
                 }
             }
             
             // Validate and clean suggestions - make fields optional and provide defaults
+            // Don't throw errors, just provide sensible defaults
             if (!suggestions.title) {
                 suggestions.title = {
-                    current: '',
-                    suggested: '',
-                    score: 0,
-                    feedback: []
+                    current: body.title || '',
+                    suggested: body.title || '',
+                    score: 50,
+                    feedback: ['Title analysis not available']
                 };
+            } else {
+                // Ensure title has required fields
+                if (!suggestions.title.current) suggestions.title.current = body.title || '';
+                if (!suggestions.title.suggested) suggestions.title.suggested = body.title || '';
+                if (typeof suggestions.title.score !== 'number') suggestions.title.score = 50;
+                if (!Array.isArray(suggestions.title.feedback)) suggestions.title.feedback = [];
             }
+            
             if (!suggestions.description) {
                 suggestions.description = {
-                    current: '',
-                    suggested: '',
-                    score: 0,
-                    feedback: []
+                    current: body.description || '',
+                    suggested: body.description || '',
+                    score: 50,
+                    feedback: ['Description analysis not available']
                 };
+            } else {
+                // Ensure description has required fields
+                if (suggestions.description.current === undefined) suggestions.description.current = body.description || '';
+                if (!suggestions.description.suggested) suggestions.description.suggested = body.description || '';
+                if (typeof suggestions.description.score !== 'number') suggestions.description.score = 50;
+                if (!Array.isArray(suggestions.description.feedback)) suggestions.description.feedback = [];
             }
+            
             if (!suggestions.keywords) {
                 suggestions.keywords = {
-                    suggested: [],
-                    score: 0,
-                    feedback: []
+                    suggested: body.keywords || [],
+                    score: 50,
+                    feedback: ['Keywords analysis not available']
                 };
+            } else {
+                // Ensure keywords has required fields
+                if (!Array.isArray(suggestions.keywords.suggested)) suggestions.keywords.suggested = body.keywords || [];
+                if (typeof suggestions.keywords.score !== 'number') suggestions.keywords.score = 50;
+                if (!Array.isArray(suggestions.keywords.feedback)) suggestions.keywords.feedback = [];
             }
 
             // Ensure scores are valid
@@ -412,7 +492,6 @@ Only return the JSON, no other text.`;
     },
     {
         rateLimit: 'api',
-        requireCSRF: false,
         schema: z.object({
             title: z.string().min(1, 'Title is required'),
             content: z.string().min(50, 'Content must be at least 50 characters'),

@@ -13,20 +13,23 @@ import { ProfileOverview } from "@/components/app/auth/profile/profile-overview"
 import { AccountSettingsForm } from "@/components/app/auth/profile/account-settings-form"
 import { AccountStatistics } from "@/components/app/auth/profile/account-statistics"
 import { TeamsSection } from "@/components/app/auth/profile/teams-section"
-import { PersonalActivityTimeline } from "@/components/app/auth/profile/personal-activity-timeline"
+import { EmailChangeDialog } from "@/components/app/auth/profile/email-change-dialog"
+import { AccountDeletionDialog } from "@/components/app/auth/profile/account-deletion-dialog"
 import { ProfileFormData } from "@/components/app/auth/profile/types"
 import { DEFAULT_TIMEZONE } from "@/components/app/auth/profile/timezones"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function ProfilePage() {
-  const { user, loading, logout } = useAuth()
+  const { user, loading, logout, checkUser } = useAuth()
   const { t, loading: translationLoading } = useTranslation()
   const [isUpdating, setIsUpdating] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [sessions, setSessions] = useState<any[]>([])
   const [userTeams, setUserTeams] = useState<any[]>([])
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [emailChangeDialogOpen, setEmailChangeDialogOpen] = useState(false)
+  const [accountDeletionDialogOpen, setAccountDeletionDialogOpen] = useState(false)
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
     email: '',
@@ -55,14 +58,48 @@ export default function ProfilePage() {
     }
   }, [user])
 
+  // Handle custom events for dialogs
+  useEffect(() => {
+    const handleEmailChangeDialog = () => setEmailChangeDialogOpen(true)
+    const handleAccountDeletionDialog = () => setAccountDeletionDialogOpen(true)
+
+    window.addEventListener('openEmailChangeDialog', handleEmailChangeDialog)
+    window.addEventListener('openAccountDeletionDialog', handleAccountDeletionDialog)
+
+    return () => {
+      window.removeEventListener('openEmailChangeDialog', handleEmailChangeDialog)
+      window.removeEventListener('openAccountDeletionDialog', handleAccountDeletionDialog)
+    }
+  }, [])
+
+  const handleEmailChanged = async () => {
+    // Refresh user data after email change
+    try {
+      await checkUser()
+      // Wait a moment for user state to update
+      setTimeout(() => {
+        fetchUserProfile()
+        // Update form data with new email from updated user
+        if (user) {
+          setFormData(prev => ({
+            ...prev,
+            email: user.email || prev.email
+          }))
+        }
+      }, 1000)
+    } catch (error) {
+      console.error('Failed to refresh user data:', error)
+    }
+  }
+
   const fetchUserProfile = async () => {
     if (!user) return
-    
+
     setIsLoadingProfile(true)
     try {
       const profile = await getUserProfileByUserId(user.$id)
       setUserProfile(profile)
-      
+
       if (profile) {
         setFormData(prev => ({
           ...prev,
@@ -151,7 +188,7 @@ export default function ProfilePage() {
         // Profile doesn't exist, create it
         const { createUserProfile } = await import('@/lib/user-profile')
         await createUserProfile(user.$id)
-        
+
         // Then update it with the form data
         const newProfile = await getUserProfileByUserId(user.$id)
         if (newProfile) {
@@ -176,13 +213,13 @@ export default function ProfilePage() {
       try {
         await auditLogger.logProfileUpdate(
           user.$id,
-          { 
+          {
             name: oldName,
             bio: oldProfile?.bio,
             location: oldProfile?.location,
             website: oldProfile?.website
           },
-          { 
+          {
             name: formData.name,
             bio: formData.bio,
             location: formData.location,
@@ -336,6 +373,16 @@ export default function ProfilePage() {
         onSubmit={handleUpdateProfile}
         t={t}
       />
+      <EmailChangeDialog
+        open={emailChangeDialogOpen}
+        onOpenChange={setEmailChangeDialogOpen}
+        currentEmail={user.email || ''}
+        onEmailChanged={handleEmailChanged}
+      />
+      <AccountDeletionDialog
+        open={accountDeletionDialogOpen}
+        onOpenChange={setAccountDeletionDialogOpen}
+      />
     </Suspense>
   )
 }
@@ -366,7 +413,7 @@ function ProfilePageContent({
   const { checkUser } = useAuth()
   const [isVerifying, setIsVerifying] = useState(false)
   const verificationProcessed = useRef(false)
-  
+
   // Extract search params values to avoid dependency on searchParams object
   const userIdParam = useMemo(() => searchParams.get('userId'), [searchParams])
   const secretParam = useMemo(() => searchParams.get('secret'), [searchParams])
@@ -388,15 +435,15 @@ function ProfilePageContent({
 
     try {
       setIsVerifying(true)
-      
+
       // Complete email verification using Appwrite
       await account.updateVerification(userId, secret)
-      
+
       // Refresh user data to get updated verification status
       await checkUser()
-      
+
       toast.success(t('profile_page.verification.success'))
-      
+
       // Log critical security event - email verified
       const userAgent = typeof window !== 'undefined' ? navigator.userAgent : 'unknown'
       auditLogger.logSecurityEvent(
@@ -409,7 +456,7 @@ function ProfilePageContent({
       ).catch(() => {
         // Silently fail audit logging
       })
-      
+
       // Clean up URL by removing query parameters
       router.replace('/auth/profile')
     } catch (error: any) {
@@ -417,26 +464,26 @@ function ProfilePageContent({
       // Handle specific error types
       const errorMessage = error?.message || ''
       const errorCode = error?.code
-      
-      const isInvalidToken = 
+
+      const isInvalidToken =
         errorMessage.toLowerCase().includes('invalid token') ||
         errorMessage.toLowerCase().includes('invalid_token') ||
         errorCode === 401 ||
         errorCode === 400 ||
         errorCode === 401 ||
         error?.type === 'general_invalid_argument'
-      
-      const isExpired = 
+
+      const isExpired =
         errorMessage.toLowerCase().includes('expired') ||
         errorMessage.toLowerCase().includes('expire') ||
         errorMessage.toLowerCase().includes('expir')
-      
-      const isAlreadyVerified = 
+
+      const isAlreadyVerified =
         errorCode === 409 ||
         errorMessage.toLowerCase().includes('already verified') ||
         errorMessage.toLowerCase().includes('already_verified') ||
         errorMessage.toLowerCase().includes('verified')
-      
+
       // Show user-friendly error messages
       if (isInvalidToken) {
         toast.error(t('profile_page.verification.invalid_link'), {
@@ -457,7 +504,7 @@ function ProfilePageContent({
           duration: 8000,
         })
       }
-      
+
       // Clean up URL even on error
       router.replace('/auth/profile')
     } finally {
@@ -476,7 +523,7 @@ function ProfilePageContent({
     // Decode URL-encoded parameters safely
     let decodedUserId: string
     let decodedSecret: string
-    
+
     try {
       decodedUserId = decodeURIComponent(userIdParam)
       decodedSecret = decodeURIComponent(secretParam)
@@ -485,7 +532,7 @@ function ProfilePageContent({
       decodedUserId = userIdParam
       decodedSecret = secretParam
     }
-    
+
     // Validate decoded values
     if (!decodedUserId || !decodedSecret || decodedUserId.length === 0 || decodedSecret.length === 0) {
       // Invalid parameters - clean up silently
@@ -495,7 +542,7 @@ function ProfilePageContent({
 
     // Mark as processed before async operation
     verificationProcessed.current = true
-    
+
     // Call verification handler
     handleEmailVerification(decodedUserId, decodedSecret).catch(() => {
       // Error already handled in handleEmailVerification
@@ -543,7 +590,6 @@ function ProfilePageContent({
           userProfile={userProfile}
         />
         <TeamsSection teams={userTeams} />
-        <PersonalActivityTimeline userId={user.$id} />
       </div>
     </div>
   )

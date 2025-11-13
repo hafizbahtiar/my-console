@@ -13,7 +13,11 @@
     "backup:docker-cron": "bun scripts/backup/cronjob.ts --docker-cron",
     "backup:daily": "bun scripts/backup/cronjob.ts --trigger-daily",
     "backup:weekly": "bun scripts/backup/cronjob.ts --trigger-weekly",
-    "backup:monthly": "bun scripts/backup/cronjob.ts --trigger-monthly"
+    "backup:monthly": "bun scripts/backup/cronjob.ts --trigger-monthly",
+    "migrations:up": "bun scripts/migrations/cli.ts up",
+    "migrations:down": "bun scripts/migrations/cli.ts down",
+    "migrations:status": "bun scripts/migrations/cli.ts status",
+    "migrations:create": "bun scripts/migrations/cli.ts create"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

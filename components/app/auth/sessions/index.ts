@@ -5,5 +5,7 @@ export { CurrentSessionCard } from './current-session-card'
 export { OtherSessionsList } from './other-sessions-list'
 export { SessionDetailsModal } from './session-details-modal'
 export { SessionActivityTimeline } from './session-activity-timeline'
+export { detectSuspiciousActivity, SuspiciousActivityAlert, SuspiciousActivityBadge } from './suspicious-activity-detector'
 export type { Session } from './session-utils'
+export type { SuspiciousActivity, SuspiciousActivityResult } from './suspicious-activity-detector'
 

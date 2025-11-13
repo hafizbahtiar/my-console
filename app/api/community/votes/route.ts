@@ -23,13 +23,8 @@ export const POST = createProtectedPOST(
   async ({ body }) => {
     const user = await account.get();
 
-    // Validate request body
-    const validationResult = voteSchema.safeParse(body);
-    if (!validationResult.success) {
-      throw APIError.validationError('Validation failed', validationResult.error.issues);
-    }
-
-    const data = validationResult.data;
+    // Body is already validated by schema in options
+    const data = body;
 
     // Check if user already voted on this post/reply
     const existingVoteQuery: any[] = [
@@ -114,7 +109,7 @@ export const POST = createProtectedPOST(
   },
   {
     rateLimit: 'api',
-    requireCSRF: true,
+    schema: voteSchema,
   }
 );
 

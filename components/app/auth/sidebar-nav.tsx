@@ -36,6 +36,11 @@ import {
   FolderTree,
   ClipboardList,
   Clock,
+  Network,
+  UserCircle,
+  Heart,
+  Link as LinkIcon,
+  Edit,
 } from "lucide-react"
 
 // Navigation items will be created inside component to use translations
@@ -138,6 +143,40 @@ export function SidebarNav() {
       icon: Users,
       requiresSuperAdmin: false,
     },
+  ]
+
+  const familyTreeItems = [
+    {
+      title: t('sidebar.family_tree.persons'),
+      url: "/auth/family-tree/persons",
+      icon: UserCircle,
+      requiresSuperAdmin: true,
+    },
+    {
+      title: t('sidebar.family_tree.families'),
+      url: "/auth/family-tree/families",
+      icon: Heart,
+      requiresSuperAdmin: true,
+    },
+    {
+      title: t('sidebar.family_tree.relationships'),
+      url: "/auth/family-tree/relationships",
+      icon: LinkIcon,
+      requiresSuperAdmin: true,
+    },
+    {
+      title: t('sidebar.family_tree.tree'),
+      url: "/auth/family-tree/tree",
+      icon: Network,
+      requiresSuperAdmin: true,
+    },
+    // Commented out: Edit Tree (hide until feature is ready)
+    // {
+    //   title: t('family_tree.tree.edit.title') || 'Edit Tree',
+    //   url: "/auth/family-tree/tree/edit",
+    //   icon: Edit,
+    //   requiresSuperAdmin: true,
+    // },
   ]
 
 
@@ -278,6 +317,15 @@ export function SidebarNav() {
     return true
   })
 
+  // Filter family tree items - all require Super Admin access
+  const filteredFamilyTreeItems = familyTreeItems.filter(item => {
+    // All family tree items require Super Admin access
+    if (item.requiresSuperAdmin) {
+      return isSuperAdmin
+    }
+    return true
+  })
+
 
   // Show skeleton while translations are loading
   if (translationLoading) {
@@ -359,6 +407,22 @@ export function SidebarNav() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {[1, 2].map((i) => (
+                  <SidebarMenuItem key={i}>
+                    <Skeleton className="h-9 w-full rounded-md" />
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Family Tree Management Skeleton */}
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Skeleton className="h-4 w-32" />
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {[1, 2, 3, 4].map((i) => (
                   <SidebarMenuItem key={i}>
                     <Skeleton className="h-9 w-full rounded-md" />
                   </SidebarMenuItem>
@@ -503,6 +567,30 @@ export function SidebarNav() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {filteredCustomerItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url || pathname?.startsWith(item.url + '/')}
+                      tooltip={item.title}
+                    >
+                      <Link href={item.url} onClick={handleNavClick}>
+                        <item.icon className="h-4 w-4" />
+                        <span suppressHydrationWarning>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {filteredFamilyTreeItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel suppressHydrationWarning>{t('sidebar.family_tree.title')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredFamilyTreeItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild

@@ -29,6 +29,7 @@ My Console is a full-featured admin dashboard application with:
 - **📦 Automated Backups**: Cron-based data exports with daily replacement strategy
 - **📝 Blog Management**: Full-featured CMS with rich text editor, SEO optimization, and content analytics
 - **👥 Customer Management**: Self-service CRM module for managing customer profiles, interactions, and relationships
+- **🌳 Family Tree Management**: Interactive family tree visualization with real-time editing, relationship management, and complex genealogy support
 - **🔍 SEO Optimized**: Comprehensive metadata, OpenGraph tags, Twitter Cards, and structured data
 - **⚡ Auto-save Settings**: Immediate settings updates without save buttons
 - **⚡ Optimized Pagination**: Smart server-side/client-side pagination for efficient data loading
@@ -77,6 +78,22 @@ My Console is a full-featured admin dashboard application with:
 - **Empty States**: Beautiful shadcn UI empty states with create button when list is empty
 - **Mobile Responsive**: Fully responsive design with mobile-optimized layouts
 - **Internationalization**: Complete English and Malay support for all customer pages
+
+#### 🌳 Family Tree Management System
+- **Interactive Visualization**: Real-time family tree visualization using family-chart library with D3.js
+- **Direct Chart Editing**: Edit person information directly on the chart with inline forms
+- **Complex Relationships**: Support for multiple spouses, polygamy, half-siblings, adopted children, and complex relationship mapping
+- **Smart Data Transformation**: Automatic conversion between Appwrite normalized schema and family-chart format
+- **Intelligent Saving**: Smart filtering to prevent saving temporary chart placeholders (father, mother, spouse, etc.)
+- **Auto-Relationship Creation**: Automatically creates spouse relationships when two people share children
+- **Duplicate Prevention**: Prevents saving duplicate persons and relationships
+- **Relationship Cleanup**: Automatically deletes relationships when persons are removed
+- **Real-time Change Tracking**: Tracks unsaved changes with visual indicators
+- **Data Validation**: Comprehensive validation before saving to prevent data corruption
+- **TypeScript Types**: Complete type definitions for all data structures
+- **Internationalization**: Full English and Malay support for all UI elements
+- **Error Handling**: Comprehensive error handling with user-friendly feedback
+- **Cleanup Tools**: API route for resetting family tree data during development/testing
 
 #### 🌍 Internationalization
 - **Multi-language Support**: Complete English and Malay (Bahasa Melayu) support across all 19 pages
@@ -178,12 +195,13 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 5. **Blog Management**: See `docs/BLOG_MANAGEMENT.md` for content management features
 6. **Blog Database Schemas**: Check `docs/APPWRITE_DB_BLOG_POSTS.md`, `docs/APPWRITE_DB_BLOG_CATEGORIES.md`, `docs/APPWRITE_DB_BLOG_TAGS.md`, `docs/APPWRITE_DB_BLOG_COMMENTS.md`, `docs/APPWRITE_DB_BLOG_VIEWS.md`, `docs/APPWRITE_DB_BLOG_LIKES.md` for database schemas
 7. **Customer Management**: See `docs/APPWRITE_DB_CUSTOMERS.md` (includes import/export and tags documentation), `docs/APPWRITE_DB_CUSTOMER_INTERACTIONS.md`, `docs/APPWRITE_DB_CUSTOMER_NOTES.md` for customer module schemas
-8. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
-9. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
-10. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
-11. **Development Tasks**: Check `TODO.md` for current development priorities and progress
-12. **Security Audit**: Review `docs/SECURITY_AUDIT.md` for security analysis and recommendations
-13. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
+8. **Family Tree Management**: See `docs/APPWRITE_DB_PERSONS.md`, `docs/APPWRITE_DB_FAMILIES.md`, `docs/APPWRITE_DB_RELATIONSHIPS.md`, `docs/FAMILY_TREE_SCHEMA_DIAGNOSIS.md`, `docs/FAMILY_TREE_API_TRANSFORMATION.md` for family tree schemas and transformation logic
+9. **TipTap Editor**: Check `docs/TIPTAP_COMPONENTS.md` for rich text editor documentation
+10. **Pagination Optimization**: See `docs/PAGINATION_OPTIMIZATION.md` for efficient data loading strategies
+11. **Future Roadmap**: Review `docs/NICE_TO_HAVE.md` for planned enhancements
+12. **Development Tasks**: Check `TODO.md` for current development priorities and progress
+13. **Security Audit**: Review `docs/SECURITY_AUDIT.md` for security analysis and recommendations
+14. **Environment Variables**: Copy `.env.example` to `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APPWRITE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
@@ -214,6 +232,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - **/auth/customers/customers/create**: Create new customer profile with tags
 - **/auth/customers/customers/[id]**: View customer details with tabs (overview, details, notes, interactions, activity timeline)
 - **/auth/customers/customers/[id]/edit**: Edit customer information with tags
+- **/auth/family-tree/tree**: Interactive family tree visualization with real-time editing
+- **/auth/family-tree/relationships/create**: Create new relationships between persons
 - **/auth/admin/security**: Security management with IP blocking and event monitoring
 
 ## 🏗️ Application Architecture
@@ -614,6 +634,8 @@ npx shadcn@latest add toast
 
 - **next-themes**: Theme switching
 - **recharts**: Data visualization
+- **d3**: Data visualization library (used by family-chart)
+- **family-chart**: Interactive family tree visualization library
 - **date-fns**: Date utilities
 - **cmdk**: Command palette
 - **sonner**: Toast notifications
@@ -632,6 +654,7 @@ npx shadcn@latest add toast
 │   │   │   ├── export/          # Customer export (CSV, JSON, Excel)
 │   │   │   ├── import/          # Customer import (CSV, JSON, Excel)
 │   │   │   └── [id]/            # Customer CRUD APIs
+│   │   ├── clean-family-tree/   # Family tree cleanup API (for testing)
 │   │   └── [other-api-routes]   # Other API endpoints
 │   ├── auth/                     # Protected application pages
 │   │   ├── audit/               # Audit log viewer
@@ -646,6 +669,9 @@ npx shadcn@latest add toast
 │   │   │   ├── [id]/            # View customer (overview, details, notes)
 │   │   │   │   └── edit/       # Edit customer
 │   │   │   └── create/          # Create customer
+│   │   ├── family-tree/         # Family tree management system
+│   │   │   ├── tree/            # Interactive family tree visualization
+│   │   │   └── relationships/   # Relationship management
 │   │   ├── dashboard/           # Main dashboard
 │   │   ├── layout.tsx           # Auth layout with sidebar
 │   │   ├── profile/             # User profile management
@@ -670,6 +696,9 @@ npx shadcn@latest add toast
 │   ├── audit-log.ts             # Audit logging system
 │   ├── auth-context.tsx         # Authentication context
 │   ├── language-context.tsx     # Internationalization context
+│   ├── family-tree-types.ts     # Family tree TypeScript type definitions
+│   ├── family-tree-transform.ts # Data transformation utilities (Appwrite → family-chart)
+│   ├── family-tree-save.ts      # Save utilities (family-chart → Appwrite)
 │   └── utils.ts                 # Utility functions
 ├── public/
 │   └── locales/                 # Translation files
@@ -689,6 +718,11 @@ npx shadcn@latest add toast
 │   ├── APPWRITE_DB_CUSTOMERS.md # Customer management schema
 │   ├── APPWRITE_DB_CUSTOMER_INTERACTIONS.md # Customer interactions schema
 │   ├── APPWRITE_DB_CUSTOMER_NOTES.md # Customer notes schema
+│   ├── APPWRITE_DB_PERSONS.md   # Family tree persons collection schema
+│   ├── APPWRITE_DB_FAMILIES.md  # Family tree families collection schema
+│   ├── APPWRITE_DB_RELATIONSHIPS.md # Family tree relationships collection schema
+│   ├── FAMILY_TREE_SCHEMA_DIAGNOSIS.md # Family tree schema analysis
+│   ├── FAMILY_TREE_API_TRANSFORMATION.md # Family tree data transformation guide
 │   ├── TIPTAP_COMPONENTS.md     # Rich text editor guide
 │   ├── NICE_TO_HAVE.md          # Future enhancements roadmap
 │   ├── APPWRITE_DB_AUDIT_LOG.md # Audit logging setup
